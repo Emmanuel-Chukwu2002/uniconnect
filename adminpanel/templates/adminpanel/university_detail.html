@@ -1,0 +1,50 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}{{ uni.name }}{% endblock %}
+{% block content %}
+<div class="ad-head"><div><a href="{% url 'staff_universities' %}" class="mut"><i class="bi bi-arrow-left"></i> Universities</a>
+  <h1>{{ uni.name }}</h1><p>{{ uni.short_name }} · @{{ uni.email_domain }} · {% if uni.is_active %}<span class="pill green">Active</span>{% else %}<span class="pill grey">Inactive — hidden from registration</span>{% endif %}</p></div></div>
+
+<div class="ad-stats">
+  <div><b>{{ n_students }}</b><small>Registered students</small></div>
+  <div><b>{{ n_verified }}</b><small>Verified students</small></div>
+  <div><b>{{ faculties|length }}</b><small>Faculties</small></div>
+  <div><b>{{ admins|length }}</b><small>Admins &amp; moderators</small></div>
+</div>
+
+<div class="ad-grid2">
+  {% if 'manage_universities' in admin.perms %}
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Details &amp; verification</h2></div>
+    <form method="post" class="ad-panel-body ad-form">{% csrf_token %}<input type="hidden" name="what" value="update">
+      <label>Full name<input class="ad-input" name="name" value="{{ uni.name }}" maxlength="200" required></label>
+      <div class="ad-form-row">
+        <label>Short name<input class="ad-input" name="short_name" value="{{ uni.short_name }}" maxlength="20" required></label>
+        <label>Student email domain <small>students verify with this</small><input class="ad-input" name="email_domain" value="{{ uni.email_domain }}" maxlength="100" required></label>
+      </div>
+      <label>Matric number hint <small>shown at registration</small><input class="ad-input" name="matric_format_hint" value="{{ uni.matric_format_hint }}" maxlength="100"></label>
+      <label class="ad-check"><input type="checkbox" name="is_active" value="1"{% if uni.is_active %} checked{% endif %}> Active (open for registration)</label>
+      <div><button class="ad-btn primary" type="submit">Save</button></div>
+    </form></section>
+  {% endif %}
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Admins &amp; moderators</h2>{% if 'assign_roles' in admin.perms %}<a href="{% url 'staff_settings' %}">Manage</a>{% endif %}</div>
+    <div class="ad-table-wrap"><table class="ad-table"><tbody>
+      {% for r in admins %}<tr><td>@{{ r.user.username }}</td><td>{{ r.get_role_display }}</td></tr>{% empty %}<tr><td class="ad-empty">No one is assigned to this university yet.</td></tr>{% endfor %}
+    </tbody></table></div></section>
+</div>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Faculties and departments</h2></div>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Faculty</th><th>Departments (students)</th><th>Students</th>{% if 'manage_structure' in admin.perms %}<th>Add a department</th>{% endif %}</tr></thead><tbody>
+  {% for f in faculties %}
+    <tr><td class="ttl">{{ f.name }}</td>
+      <td class="mut">{% for d, n in f.depts %}{{ d.name }} ({{ n }}){% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+      <td class="num">{{ f.n_students }}</td>
+      {% if 'manage_structure' in admin.perms %}<td><form method="post" style="display:flex;gap:6px">{% csrf_token %}<input type="hidden" name="what" value="department"><input type="hidden" name="faculty" value="{{ f.pk }}"><input class="ad-input" name="name" maxlength="150" required placeholder="Department name" aria-label="New department in {{ f.name }}"><button class="ad-btn sm" type="submit">Add</button></form></td>{% endif %}
+    </tr>
+  {% empty %}<tr><td colspan="4" class="ad-empty">No faculties yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if 'manage_structure' in admin.perms %}
+    <form method="post" class="ad-toolbar" style="border-top:1px solid var(--ad-border);border-bottom:0">{% csrf_token %}<input type="hidden" name="what" value="faculty">
+      <input class="ad-input" name="name" maxlength="150" required placeholder="New faculty, e.g. Faculty of Engineering" aria-label="New faculty" style="flex:1">
+      <button class="ad-btn primary" type="submit"><i class="bi bi-plus-lg"></i> Add faculty</button></form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'feed/base_app.html' %}
+{% load static %}
+{% comment %}
+  Create / edit a community (communities/views.py: create, edit).
+  The banner preview updates as you pick a photo (static/js/communities.js).
+{% endcomment %}
+{% block title %}{% if is_edit %}Edit {{ community.name }}{% else %}Create a community{% endif %} — UniConnect{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/communities.css' %}?v=3">{% endblock %}
+
+{% block feed_content %}
+<div class="cm cm-formpage">
+  <div class="cm-topbar">
+    <a href="{% if is_edit %}{% url 'community_detail' community.id %}{% else %}{% url 'communities' %}{% endif %}" class="cm-icon-btn" aria-label="Cancel"><i class="bi bi-x-lg"></i></a>
+    <div class="cm-topbar-text"><strong>{% if is_edit %}Edit community{% else %}Create a community{% endif %}</strong><small>{% if is_edit %}{{ community.name }}{% else %}For your course, department, club or hostel{% endif %}</small></div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="cm-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="cm-form-error">{{ form.non_field_errors|striptags }}</div>{% endif %}
+
+    {# Banner #}
+    <div class="cm-field">
+      <span class="cm-label">Banner <small>optional</small></span>
+      <label class="cm-banner-picker js-cm-banner-picker{% if is_edit and community.banner %} has-photo{% endif %} cm-c-{% if is_edit %}{{ community.colour }}{% else %}blue{% endif %}"
+             {% if is_edit and community.banner %}style="background-image:url('{{ community.banner.url }}')"{% endif %}>
+        <input type="file" name="banner" accept="image/*" class="js-cm-banner-input" hidden>
+        <span class="cm-banner-picker-hint"><i class="bi bi-camera"></i> <span class="js-cm-banner-hint">{% if is_edit and community.banner %}Change banner photo{% else %}Add a banner photo{% endif %}</span></span>
+      </label>
+      {% if is_edit and community.banner %}
+        <label class="cm-check"><input type="checkbox" name="remove_banner" class="js-cm-remove-banner"> Remove banner photo</label>
+      {% endif %}
+      {% for e in form.banner.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    {# Icon (logo) #}
+    <div class="cm-field cm-icon-field">
+      <span class="cm-label">Icon <small>optional &middot; a square logo shown by the name</small></span>
+      <div class="cm-icon-row">
+        <label class="cm-icon-picker js-cm-icon-picker cm-c-{% if is_edit %}{{ community.colour }}{% else %}blue{% endif %}{% if is_edit and community.icon %} has-photo{% endif %}"
+               {% if is_edit and community.icon %}style="background-image:url('{{ community.icon.url }}')"{% endif %}>
+          <input type="file" name="icon" accept="image/*" class="js-cm-icon-input" hidden>
+          <i class="bi bi-camera"></i>
+        </label>
+        <span class="cm-hint">Without one, your community's colour and its topic's icon are used.</span>
+      </div>
+      {% if is_edit and community.icon %}
+        <label class="cm-check"><input type="checkbox" name="remove_icon"> Remove icon</label>
+      {% endif %}
+      {% for e in form.icon.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="cm-field">
+      <label class="cm-label" for="{{ form.name.id_for_label }}">Name</label>
+      <input type="text" name="name" id="{{ form.name.id_for_label }}" class="cm-input js-cm-count-input" data-max="60" value="{{ form.name.value|default:'' }}" maxlength="60" autocomplete="off" placeholder="e.g. CSC 400 Level, Python Club, Hall 3" required>
+      <div class="cm-field-foot"><span class="cm-hint">Make it easy to find.</span><span class="cm-counter js-cm-counter">0/60</span></div>
+      {% for e in form.name.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="cm-field">
+      <label class="cm-label" for="{{ form.description.id_for_label }}">Purpose</label>
+      <textarea name="description" id="{{ form.description.id_for_label }}" class="cm-input js-cm-count-input" data-max="500" rows="3" maxlength="500" placeholder="What is this community about? Who should join?" required>{{ form.description.value|default:'' }}</textarea>
+      <div class="cm-field-foot"><span class="cm-hint">Shown on the community and in Explore.</span><span class="cm-counter js-cm-counter">0/500</span></div>
+      {% for e in form.description.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="cm-field">
+      <label class="cm-label" for="{{ form.tags.id_for_label }}">Tags <small>optional &middot; up to 10, separated by commas</small></label>
+      <input type="text" name="tags" id="{{ form.tags.id_for_label }}" class="cm-input" value="{{ form.tags.value|default:'' }}" maxlength="250" autocomplete="off" placeholder="e.g. Python, Django, Web Dev">
+      <div class="cm-field-foot"><span class="cm-hint">Shown as chips under the description, and found by search.</span></div>
+      {% for e in form.tags.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <fieldset class="cm-field">
+      <legend class="cm-label">Topic</legend>
+      <div class="cm-topic-picker">
+        {% for value, label, icon in topics %}
+          <label class="cm-topic-option">
+            <input type="radio" name="topic" value="{{ value }}" {% if form.topic.value == value %}checked{% endif %}>
+            <span><i class="bi {{ icon }}"></i> {{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% for e in form.topic.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </fieldset>
+
+    <fieldset class="cm-field">
+      <legend class="cm-label">Who can join</legend>
+      <div class="cm-policy-picker">
+        <label class="cm-policy-option">
+          <input type="radio" name="join_policy" value="open" {% if form.join_policy.value != 'restricted' %}checked{% endif %}>
+          <span class="cm-policy-card"><i class="bi bi-globe2"></i><span><strong>Open</strong><small>Students from any university can join and post straight away.</small></span></span>
+        </label>
+        <label class="cm-policy-option">
+          <input type="radio" name="join_policy" value="restricted" {% if form.join_policy.value == 'restricted' %}checked{% endif %}>
+          <span class="cm-policy-card"><i class="bi bi-lock"></i><span><strong>Restricted</strong><small>Everyone can read it; admins and moderators approve who joins.</small></span></span>
+        </label>
+      </div>
+      {% for e in form.join_policy.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </fieldset>
+
+    <div class="cm-field">
+      <label class="cm-label" for="{{ form.rules.id_for_label }}">Rules <small>optional &middot; one per line, up to 10</small></label>
+      <textarea name="rules" id="{{ form.rules.id_for_label }}" class="cm-input" rows="4" placeholder="Be kind and respectful&#10;Keep posts on topic&#10;No spam or adverts">{% if form.is_bound %}{{ form.data.rules|default:'' }}{% else %}{{ form.initial.rules|default:'' }}{% endif %}</textarea>
+      {% for e in form.rules.errors %}<div class="cm-field-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="cm-form-actions">
+      <a href="{% if is_edit %}{% url 'community_detail' community.id %}{% else %}{% url 'communities' %}{% endif %}" class="cm-btn cm-btn-ghost">Cancel</a>
+      <button type="submit" class="cm-btn cm-btn-primary">{% if is_edit %}Save changes{% else %}<i class="bi bi-plus-lg"></i> Create community{% endif %}</button>
+    </div>
+  </form>
+
+  {% if is_edit %}
+    <section class="cm-panel cm-danger">
+      <h2 class="cm-panel-title">Delete this community</h2>
+      <p class="cm-muted">This removes {{ community.name }}, its members list and every post in it, for everyone. It can't be undone. Type the community's name to confirm.</p>
+      <form method="post" action="{% url 'community_delete' community.id %}" class="cm-danger-form">
+        {% csrf_token %}
+        <input type="text" name="confirm_name" class="cm-input js-cm-confirm-name" data-name="{{ community.name }}" placeholder="{{ community.name }}" autocomplete="off" aria-label="Type the community name to confirm">
+        <button type="submit" class="cm-btn cm-btn-danger js-cm-delete-btn" disabled><i class="bi bi-trash3"></i> Delete community</button>
+      </form>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% static 'js/communities.js' %}?v=1"></script>{% endblock %}

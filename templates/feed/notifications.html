@@ -1,0 +1,21 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Notifications — UniConnect{% endblock %}
+
+{% block feed_content %}
+<div class="notif-page">
+  <div class="notif-page-head nt-head">
+    <h1 class="notif-heading">Notifications</h1>
+    {% if any_unread %}
+      <form method="post" action="{% url 'notifications_mark_all' %}">{% csrf_token %}<input type="hidden" name="tab" value="{{ tab }}">
+        <button type="submit" class="nt-markall"><i class="bi bi-check2-all"></i> Mark all as read</button>
+      </form>
+    {% endif %}
+  </div>
+  <nav class="nt-tabs" aria-label="Notification types">
+    {% for t in tabs %}
+      <a href="{% url 'notifications' %}{% if t.key != 'all' %}?tab={{ t.key }}{% endif %}" class="{% if t.key == tab %}is-on{% endif %}"><i class="bi {{ t.icon }}"></i> {{ t.label }}{% if t.unread %} <span class="nt-dot">{{ t.unread }}</span>{% endif %}</a>
+    {% endfor %}
+  </nav>
+  {% include 'feed/_notification_list.html' %}
+</div>
+{% endblock %}

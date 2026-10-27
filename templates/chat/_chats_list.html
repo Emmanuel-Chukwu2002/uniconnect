@@ -1,0 +1,63 @@
+{% comment %}
+  The Chats tab: header, search, filter chips, Archived, chat rows and
+  the new-chat button. Shared by chats.html and conversation.html (the
+  list stays beside an open chat on wide screens).
+{% endcomment %}
+<header class="wa-pane-header">
+  <h1 class="wa-brand">Messages</h1>
+  <h1 class="wa-pane-title">Chats</h1>
+  <div class="wa-header-actions">
+    <button type="button" class="wa-icon-btn wa-desktop-only js-wa-new-chat" title="New chat" aria-label="New chat"><i class="bi bi-plus-square"></i></button>
+    <div class="dropdown">
+      <button type="button" class="wa-icon-btn" data-bs-toggle="dropdown" aria-label="More options"><i class="bi bi-three-dots-vertical"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end wa-menu">
+        <li><a class="dropdown-item" href="{% url 'chat_archived' %}" data-wa-nav>Archived</a></li>
+        <li><a class="dropdown-item" href="{% url 'chat_starred' %}" data-wa-nav>Starred messages</a></li>
+        <li><a class="dropdown-item" href="{% url 'chat_you' %}" data-wa-nav>Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'home' %}">Back to UniConnect</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<div class="wa-pane-scroll js-wa-list-scroll">
+  <label class="wa-search">
+    <i class="bi bi-search"></i>
+    <input type="search" class="js-wa-search" placeholder="Search your chats and messages" aria-label="Search your chats and messages" autocomplete="off" enterkeyhint="search">
+  </label>
+
+  <div class="wa-chips" role="tablist" aria-label="Filter chats">
+    <button type="button" class="wa-chip{% if open_filter != 'requests' %} is-active{% endif %} js-wa-chip" data-filter="all">All</button>
+    <button type="button" class="wa-chip js-wa-chip" data-filter="unread">Unread <span class="wa-chip-count js-wa-unread-chip">{% if unread_filter_count %}{{ unread_filter_count }}{% endif %}</span></button>
+    <button type="button" class="wa-chip js-wa-chip" data-filter="favourite">Favourites</button>
+    {# Private chats from people you don't follow wait here (chat/requests.py). #}
+    <button type="button" class="wa-chip{% if open_filter == 'requests' %} is-active{% endif %} js-wa-chip" data-filter="requests">Message requests <span class="wa-chip-count js-wa-requests-chip">{% if request_count %}{{ request_count }}{% endif %}</span></button>
+    <button type="button" class="wa-chip js-wa-chip" data-filter="group">Groups <span class="wa-chip-count">{% if groups_count %}{{ groups_count }}{% endif %}</span></button>
+  </div>
+
+  {% if archived_count %}
+  <a href="{% url 'chat_archived' %}" class="wa-archived-row" data-wa-nav>
+    <span class="wa-archived-icon"><i class="bi bi-archive"></i></span>
+    <span class="wa-archived-label">Archived</span>
+    <span class="wa-archived-count">{{ archived_count }}</span>
+  </a>
+  {% endif %}
+
+  <h3 class="wa-search-heading js-wa-chats-heading" hidden>Chats</h3>
+  <div class="wa-rows js-wa-rows">
+    {% for row in rows %}
+      {% include 'chat/_chat_row.html' %}
+    {% endfor %}
+  </div>
+
+  {# While searching: people and messages that match (chatlist.js fills this in). #}
+  <div class="wa-search-results js-wa-search-results" hidden></div>
+
+  <div class="wa-empty js-wa-empty" {% if rows %}hidden{% endif %}>
+    <i class="bi bi-chat-square-text"></i>
+    <p class="js-wa-empty-text">{% if rows %}No chats match.{% else %}No chats yet. Tap <i class="bi bi-plus-square"></i> to message someone on UniConnect.{% endif %}</p>
+  </div>
+</div>
+
+<button type="button" class="wa-fab js-wa-new-chat" title="New chat" aria-label="New chat"><i class="bi bi-chat-square-fill"></i><i class="bi bi-plus-lg wa-fab-plus"></i></button>

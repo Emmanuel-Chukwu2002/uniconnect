@@ -1,0 +1,9 @@
+{# The "..." menu on a community card or row (Explore). Real actions only. #}
+<div class="dropdown cm-more">
+  <button type="button" class="cm-more-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More about {{ c.name }}"><i class="bi bi-three-dots"></i></button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" href="{% url 'community_detail' c.id %}"><i class="bi bi-box-arrow-up-right"></i> Open community</a></li>
+    <li><a class="dropdown-item" href="{% url 'community_detail' c.id %}?tab=about"><i class="bi bi-info-circle"></i> About &amp; rules</a></li>
+    <li><button type="button" class="dropdown-item js-cm-copy-link" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'community_detail' c.id %}"><i class="bi bi-link-45deg"></i> Copy link</button></li>
+  </ul>
+</div>

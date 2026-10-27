@@ -1,0 +1,21 @@
+{% comment %}One group in the list (index.html). Same card look as Opportunities.{% endcomment %}
+{% with info=group.type_info %}
+<article class="op-card sg-card{% if not group.is_open or group.is_full %} is-muted{% endif %}">
+  <a href="{{ group.get_absolute_url }}" class="op-card-link" aria-label="{{ group.title }}"></a>
+  {% if group.course_code %}<span class="sg-code is-{{ info.colour }}">{{ group.course_code }}</span>
+  {% else %}<span class="sg-tile is-{{ info.colour }}"><i class="bi {{ info.icon }}"></i></span>{% endif %}
+  <div class="op-card-body">
+    <h3>{{ group.name }}</h3>
+    <p class="op-org">{{ info.label }}{% if group.department %} · {{ group.department.name }}{% endif %}{% if group.level %} · {{ group.level.name }}{% endif %}</p>
+    <div class="op-tags">
+      <span class="op-tag"><i class="bi {{ group.privacy_icon }}"></i> {{ group.get_privacy_display }}</span>
+      {% if group.is_full %}<span class="op-tag is-closed"><i class="bi bi-people-fill"></i> Full · {{ group.n_members }}/{{ group.max_members }}</span>
+      {% elif not group.is_open %}<span class="op-tag is-closed"><i class="bi bi-pause-circle"></i> Not taking members</span>
+      {% else %}<span class="op-tag is-internship"><i class="bi bi-people"></i> {{ group.n_members }}{% if group.max_members %}/{{ group.max_members }}{% endif %} member{{ group.n_members|pluralize }}</span>{% endif %}
+      {% if group.schedule %}<span class="op-tag"><i class="bi bi-clock"></i> {{ group.schedule }}</span>{% endif %}
+    </div>
+  </div>
+  {% if group.my_state == 'joined' %}<span class="sg-joined" title="You're a member"><i class="bi bi-check-circle-fill"></i> Joined</span>
+  {% elif group.my_state == 'requested' %}<span class="sg-joined is-pending" title="Waiting for an admin"><i class="bi bi-hourglass-split"></i> Requested</span>{% endif %}
+</article>
+{% endwith %}

@@ -1,0 +1,88 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}{{ opp.title }} — Opportunities — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}One opportunity (opportunities/views.py detail). Styles: restyle.css ("Detail pages").{% endcomment %}
+<div class="dt is-sheet">
+  <div class="dt-hero">
+    <div class="dt-hero-bar">
+      <a href="{% url 'opportunities' %}" class="dt-icon-btn is-glass" aria-label="Back to Opportunities"><i class="bi bi-arrow-left"></i></a>
+      <button type="button" class="dt-icon-btn is-solid js-dt-share" data-url="{{ request.scheme }}://{{ request.get_host }}{{ opp.get_absolute_url }}" data-title="{{ opp.title }}" aria-label="Share" title="Share"><i class="bi bi-share-fill"></i></button>
+    </div>
+    <div class="dt-hero-photo" style="background-image:url('{{ opp.banner_url }}')">
+      <span class="dt-banner-shade"></span>
+      <span class="dt-hero-word">{{ opp.get_kind_display|lower }}</span>
+    </div>
+  </div>
+
+  <article class="dt-body dt-sheet{% if not opp.is_open %} is-closed{% endif %}">
+    <header class="dt-org">
+      <span class="dt-org-logo is-{{ opp.kind }}">{{ opp.initials }}</span>
+      <div>
+        <h2 class="dt-title">{{ opp.title }}</h2>
+        <p class="dt-org-name">{{ opp.organization }}</p>
+      </div>
+    </header>
+
+    <div class="dt-chips">
+      <span class="dt-chip is-{{ opp.kind }}"><i class="bi {{ opp.icon }}"></i> {{ opp.get_kind_display }}</span>
+      {% if opp.is_remote %}<span class="dt-chip">Remote</span>{% endif %}
+      {% if opp.location %}<span class="dt-chip"><i class="bi bi-geo-alt"></i> {{ opp.location }}</span>{% endif %}
+      {% if opp.reward %}<span class="dt-chip">{{ opp.reward }}</span>{% endif %}
+    </div>
+
+    <p class="dt-deadline">
+      {% if opp.deadline %}Deadline: {{ opp.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
+      {% if not opp.is_open %}<span class="dt-pill is-closed">Closed</span>
+      {% elif opp.days_left == 0 %}<span class="dt-pill is-urgent">Last day today</span>
+      {% elif opp.days_left != None and opp.days_left <= 7 %}<span class="dt-pill is-urgent">{{ opp.days_left }} day{{ opp.days_left|pluralize }} left</span>{% endif %}
+    </p>
+
+    <h3 class="dt-sub">About the role</h3>
+    <div class="dt-text">{{ opp.description|linebreaks|urlize }}</div>
+
+    {% if opp.requirements %}
+      <h3 class="dt-sub">Requirements</h3>
+      <ul class="dt-bullets">{% for r in opp.requirements %}<li>{{ r }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div class="dt-actions">
+      {% if opp.is_open %}
+        {% if opp.apply_url %}<a href="{{ opp.apply_url }}" class="dt-btn is-grow" target="_blank" rel="noopener noreferrer" data-no-soft>Apply Now</a>
+        {% else %}<a href="mailto:{{ opp.apply_email }}?subject={{ opp.title|urlencode }}" class="dt-btn is-grow" data-no-soft>Apply Now by email</a>{% endif %}
+      {% else %}
+        <span class="dt-btn is-grow is-disabled" aria-disabled="true"><i class="bi bi-lock"></i> Applications closed</span>
+      {% endif %}
+      <button type="button" class="dt-square js-op-save{% if saved %} is-on{% endif %}" data-url="{% url 'opportunity_save' opp.pk %}" aria-pressed="{% if saved %}true{% else %}false{% endif %}" aria-label="Save to Bookmarks" title="Save to Bookmarks">
+        <i class="bi {% if saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+      </button>
+    </div>
+    {% if opp.apply_url and opp.apply_email %}<p class="dt-muted">You can also email <a href="mailto:{{ opp.apply_email }}">{{ opp.apply_email }}</a>.</p>{% endif %}
+
+    <footer class="dt-poster">
+      <a href="{% url 'user_profile' opp.posted_by.username %}" class="dt-face is-sm" style="{% if opp.posted_by.student_profile.profile_photo %}background-image:url({{ opp.posted_by.student_profile.profile_photo.url }}){% endif %}">{% if not opp.posted_by.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+      <span>Shared by <a href="{% url 'user_profile' opp.posted_by.username %}">{{ opp.posted_by.get_full_name|default:opp.posted_by.username }}</a> · {{ opp.created_at|ago }} · <span class="js-op-save-count">{{ save_count }}</span> saved</span>
+    </footer>
+  </article>
+
+  {% if opp.posted_by_id == request.user.id %}
+    <section class="dt-body dt-manage">
+      <h3 class="dt-sub">Manage</h3>
+      <div class="st-actions is-split">
+        <a href="{% url 'opportunity_edit' opp.pk %}" class="st-btn-ghost"><i class="bi bi-pencil"></i> Edit</a>
+        <form method="post" action="{% url 'opportunity_close' opp.pk %}">{% csrf_token %}<button type="submit" class="st-btn-ghost"><i class="bi {% if opp.is_closed %}bi-unlock{% else %}bi-lock{% endif %}"></i> {% if opp.is_closed %}Reopen{% else %}Mark as closed{% endif %}</button></form>
+        <details class="op-delete">
+          <summary class="st-btn-ghost is-danger"><i class="bi bi-trash3"></i> Delete</summary>
+          <form method="post" action="{% url 'opportunity_delete' opp.pk %}">{% csrf_token %}<p>Delete this opportunity for good?</p><button type="submit" class="st-btn is-danger">Yes, delete</button></form>
+        </details>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'opportunities/_save_js.html' %}
+{% include 'feed/_detail_share_js.html' %}
+{% endblock %}

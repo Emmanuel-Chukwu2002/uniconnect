@@ -1,0 +1,4 @@
+{# The banner: the community's photo, or its own colour with its topic's icon. #}
+<div class="{{ cls|default:'cm-banner' }} cm-c-{{ c.colour }}{% if c.banner %} has-photo{% endif %}"{% if c.banner %} style="background-image:url('{{ c.banner.url }}')"{% endif %}>
+  {% if not c.banner %}<i class="bi {{ c.topic_icon }}" aria-hidden="true"></i>{% endif %}
+</div>

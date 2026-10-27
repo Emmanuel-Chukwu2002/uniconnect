@@ -1,0 +1,7 @@
+{# The "Email address or matric number" box on the sign-in page (login.html); errs = that field's errors. #}
+<label class="visually-hidden" for="id_identifier">Email address or matric number</label>
+<div class="lp-input">
+  <i class="bi bi-envelope lp-input-icon"></i>
+  <input type="text" name="identifier" id="id_identifier" value="{{ identifier }}" class="form-control{% if errs %} is-invalid{% endif %}" placeholder="Email address or matric number" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+</div>
+{% for e in errs %}<div class="lp-error">{{ e }}</div>{% endfor %}

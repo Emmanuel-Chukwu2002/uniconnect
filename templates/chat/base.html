@@ -1,0 +1,58 @@
+{% extends 'feed/base_app.html' %}
+{% load static %}
+{% comment %}
+  The Messages shell — private chats. Two panes:
+    .wa-list-pane  the chats list (no Updates / Communities / Calls / You tab row any more;
+                   Settings is in the list's ⋮ menu)
+    .wa-main-pane  the open conversation (or a placeholder)
+  On phones only one pane shows at a time, and the app's own bottom bar
+  (base_app.html) sits at the bottom like on every other page. static/js/chat/navigation.js swaps panes between pages
+  without a full reload, so the WebSocket stays connected.
+{% endcomment %}
+{% block title %}{% block wa_title %}Messages{% endblock %} — UniConnect{% endblock %}
+{% block shell_class %}wa-page{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}?v=35">
+{% endblock %}
+
+{% block feed_content %}
+<div class="wa-app wa-tab-{{ tab }}{% if conversation %} has-conversation{% endif %} wa-wallpaper-{{ chat_settings.wallpaper }}"
+     id="waApp" data-tab="{{ tab }}" data-me="{{ me.id }}" data-conversation="{{ conversation.id|default:'' }}"
+     data-enter-send="{{ chat_settings.enter_to_send|yesno:'1,0' }}" data-sounds="{{ chat_settings.sounds|yesno:'1,0' }}">
+
+  <section class="wa-list-pane" id="waListPane">
+    {% block list_pane %}{% endblock %}
+  </section>
+
+  <section class="wa-main-pane" id="waMainPane">
+    {% block main_pane %}
+      <div class="wa-placeholder">
+        <div class="wa-placeholder-icon"><i class="bi bi-chat-dots"></i></div>
+        <h2>UniConnect Messages</h2>
+        <p>Chat with students on UniConnect in real time. Pick a chat, or start a new one with <i class="bi bi-plus-square"></i>.</p>
+      </div>
+    {% endblock %}
+  </section>
+
+</div>
+
+{% include 'chat/_sheets.html' %}
+<div class="wa-conn" id="waConn" role="status" hidden></div>
+{{ me|json_script:"waMe" }}
+<div id="waPageData">{% block page_data %}{% endblock %}</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chat/util.js' %}?v=1"></script>
+<script src="{% static 'js/chat/websocket.js' %}?v=1"></script>
+<script src="{% static 'js/chat/navigation.js' %}?v=1"></script>
+<script src="{% static 'js/chat/chatlist.js' %}?v=7"></script>
+<script src="{% static 'js/chat/conversation.js' %}?v=14"></script>
+<script src="{% static 'js/chat/composer.js' %}?v=6"></script>
+<script src="{% static 'js/chat/newchat.js' %}?v=1"></script>
+<script src="{% static 'js/chat/calls.js' %}?v=1"></script>
+<script src="{% static 'js/chat/status.js' %}?v=1"></script>
+<script src="{% static 'js/chat/communities.js' %}?v=1"></script>
+<script src="{% static 'js/chat/profile.js' %}?v=1"></script>
+{% endblock %}

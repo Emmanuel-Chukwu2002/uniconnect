@@ -1,0 +1,14 @@
+<header class="wa-pane-header wa-subpage-header">
+  <a href="{% url 'messages' %}" class="wa-icon-btn" data-wa-nav aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="wa-pane-title is-visible">Archived</h1>
+</header>
+<div class="wa-pane-scroll">
+  <p class="wa-note">Archived chats stay here, even when new messages arrive. Open a chat and use <i class="bi bi-three-dots-vertical"></i> → Unarchive to move it back.</p>
+  <div class="wa-rows js-wa-rows" data-archived-list="1">
+    {% for row in rows %}{% include 'chat/_chat_row.html' %}{% endfor %}
+  </div>
+  <div class="wa-empty js-wa-empty" {% if rows %}hidden{% endif %}>
+    <i class="bi bi-archive"></i>
+    <p>No archived chats.</p>
+  </div>
+</div>

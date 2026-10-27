@@ -1,0 +1,2 @@
+{# The community's icon: its logo, or its colour with its topic's icon. cls sets the size/shape. #}
+<span class="cm-icon {{ cls|default:'' }} cm-c-{{ c.colour }}{% if c.icon %} has-photo{% endif %}"{% if c.icon %} style="background-image:url('{{ c.icon.url }}')"{% endif %} aria-hidden="true">{% if not c.icon %}<i class="bi {{ c.topic_icon }}"></i>{% endif %}</span>

@@ -1,0 +1,57 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_content %}
+<section class="bs-hero">
+  <div class="bs-hero-text">
+    <span class="bs-kicker"><i class="bi bi-mortarboard-fill"></i> Your campus bookshop</span>
+    <h1>Find the books for your courses — from students who've finished with them.</h1>
+    <form class="bs-search bs-search-hero" action="{% url 'bookshop_browse' %}" method="get" role="search">
+      <i class="bi bi-search"></i>
+      <input type="search" name="q" placeholder="Title, author or course code (e.g. CSC 411)" aria-label="Search books">
+      <button type="submit" class="bs-btn bs-btn-primary">Search</button>
+    </form>
+    <div class="bs-hero-stats">
+      <span><strong>{{ total_available }}</strong> book{{ total_available|pluralize }} for sale</span>
+      <span><strong>{{ seller_count }}</strong> seller{{ seller_count|pluralize }}</span>
+      <span><i class="bi bi-geo-alt"></i> Meet &amp; pay on campus</span>
+    </div>
+  </div>
+  {% with fan=shelves.0.books|slice:":3" %}
+    {% if fan %}
+      <div class="bs-hero-fan" aria-hidden="true">
+        {% for b in fan %}<div class="bs-fan-book bs-fan-{{ forloop.counter }}">{% include 'bookshop/_cover.html' %}</div>{% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+</section>
+
+<div class="bs-chips" role="list">
+  {% for c in categories %}
+    <a role="listitem" href="{% url 'bookshop_browse' %}?category={{ c.code }}" class="bs-chip">
+      <i class="bi {{ c.icon }}"></i><span>{{ c.label }}</span>{% if c.count %}<em>{{ c.count }}</em>{% endif %}
+    </a>
+  {% endfor %}
+</div>
+
+{% include 'recommendations/_row.html' with recs=recs hint='Picked for your courses, your department and what you like' %}
+
+{% for s in shelves %}
+  {% include 'bookshop/_shelf.html' %}
+{% empty %}
+  <div class="bs-empty">
+    <div class="bs-empty-art"><i class="bi bi-book"></i></div>
+    <h3>The shelves are empty — for now</h3>
+    <p>Be the first to sell a book at your university. It takes a minute.</p>
+    <a href="{% url 'bookshop_sell' %}" class="bs-btn bs-btn-primary"><i class="bi bi-plus-lg"></i> Sell a book</a>
+  </div>
+{% endfor %}
+
+<section class="bs-how">
+  <h2>How it works</h2>
+  <div class="bs-how-grid">
+    <div class="bs-how-step"><span class="bs-how-icon"><i class="bi bi-camera"></i></span><strong>List your book</strong><p>Snap the cover, set a price and add the course code.</p></div>
+    <div class="bs-how-step"><span class="bs-how-icon"><i class="bi bi-chat-dots"></i></span><strong>Chat with buyers</strong><p>Students message you in UniConnect — no numbers shared unless you want.</p></div>
+    <div class="bs-how-step"><span class="bs-how-icon"><i class="bi bi-hand-thumbs-up"></i></span><strong>Meet &amp; swap</strong><p>Meet somewhere on campus, check the book, then pay. Mark it sold.</p></div>
+  </div>
+  <a href="{% url 'bookshop_sell' %}" class="bs-btn bs-btn-ghost"><i class="bi bi-plus-lg"></i> Sell a book</a>
+</section>
+{% endblock %}

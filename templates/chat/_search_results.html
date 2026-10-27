@@ -1,0 +1,34 @@
+{% load chat_tags %}
+{% comment %}
+  Extra results under the chat list while searching (chat/views.py search,
+  shown by chatlist.js): your archived chats whose name matches, and messages
+  in your chats that contain the words — only people you've chatted with. A message opens its chat scrolled to
+  it (conversation.js, ?m=<id>).
+{% endcomment %}
+{% if archived %}
+  <h3 class="wa-search-heading">Archived chats</h3>
+  {% for c in archived %}
+    <a href="{% url 'chat_conversation' c.conversation %}" class="wa-row wa-search-message" data-wa-nav>
+      <span class="wa-row-avatar">{% include 'chat/_avatar.html' with p=c.info size=49 %}</span>
+      <span class="wa-row-body">
+        <span class="wa-row-top"><span class="wa-row-name">{{ c.info.title }}</span></span>
+        <span class="wa-row-bottom"><span class="wa-row-preview"><span class="wa-preview-text"><i class="bi bi-archive wa-preview-icon"></i> Archived</span></span></span>
+      </span>
+    </a>
+  {% endfor %}
+{% endif %}
+{% if messages %}
+  <h3 class="wa-search-heading">Messages</h3>
+  {% for m in messages %}
+    <a href="{% url 'chat_conversation' m.conversation %}?m={{ m.id }}" class="wa-row wa-search-message" data-wa-nav>
+      <span class="wa-row-avatar">{% include 'chat/_avatar.html' with p=m.info size=49 %}</span>
+      <span class="wa-row-body">
+        <span class="wa-row-top">
+          <span class="wa-row-name">{{ m.info.title }}</span>
+          <time class="wa-row-time js-wa-time" data-ts="{{ m.time|date:'c' }}" data-format="list">{{ m.time|wa_time }}</time>
+        </span>
+        <span class="wa-row-bottom"><span class="wa-row-preview"><span class="wa-preview-text">{% if m.who %}{{ m.who }}: {% endif %}{% if m.icon %}<i class="bi {{ m.icon }} wa-preview-icon"></i> {% endif %}{{ m.snippet }}</span></span></span>
+      </span>
+    </a>
+  {% endfor %}
+{% endif %}

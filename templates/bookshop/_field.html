@@ -1,0 +1,5 @@
+<div class="bs-field{% if f.errors %} has-error{% endif %}{% if wide %} bs-field-wide{% endif %}">
+  <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="bs-req">*</span>{% endif %}</label>
+  {{ f }}
+  {% if f.errors %}<span class="bs-field-error">{{ f.errors|striptags }}</span>{% elif f.help_text %}<span class="bs-field-help">{{ f.help_text }}</span>{% endif %}
+</div>

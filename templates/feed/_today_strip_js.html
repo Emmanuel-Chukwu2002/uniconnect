@@ -1,0 +1,76 @@
+{% comment %}Script for the Today strip (feed/_today_strip.html). Included in home.html's extra_js.{% endcomment %}
+<script>
+  // Today strip: open a sheet from a <template>; answer the question of the day in place.
+  UC.onPage(function (doc, signal) {
+    // Each row scrolls sideways: arrows on the sides, one dot per screenful.
+    doc.querySelectorAll('.js-td-scroll').forEach(function (box) {
+      var row = box.querySelector('.td-row'), prev = box.querySelector('.js-td-prev'), next = box.querySelector('.js-td-next');
+      var dots = box.nextElementSibling && box.nextElementSibling.classList.contains('js-td-dots') ? box.nextElementSibling : null;
+      function pages() { return Math.max(1, Math.ceil((row.scrollWidth - 4) / row.clientWidth)); }
+      function page() { var max = row.scrollWidth - row.clientWidth; return max <= 0 ? 0 : Math.round(row.scrollLeft / max * (pages() - 1)); }
+      function draw() {
+        var n = pages(), at = page();
+        prev.hidden = row.scrollLeft <= 4;
+        next.hidden = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4;
+        if (!dots) { return; }
+        if (dots.children.length !== (n > 1 ? n : 0)) {
+          dots.innerHTML = '';
+          for (var i = 0; n > 1 && i < n; i++) {
+            var d = document.createElement('span'); d.dataset.i = i; dots.appendChild(d);
+          }
+        }
+        [].forEach.call(dots.children, function (d, i) { d.classList.toggle('on', i === at); });
+      }
+      function go(dir) { row.scrollBy({ left: dir * row.clientWidth * 0.9, behavior: 'smooth' }); }
+      prev.addEventListener('click', function () { go(-1); }, { signal: signal });
+      next.addEventListener('click', function () { go(1); }, { signal: signal });
+      if (dots) {
+        dots.addEventListener('click', function (e) {
+          var d = e.target.closest('span'); if (!d) { return; }
+          row.scrollTo({ left: (row.scrollWidth - row.clientWidth) * (+d.dataset.i) / (pages() - 1), behavior: 'smooth' });
+        }, { signal: signal });
+      }
+      var t; row.addEventListener('scroll', function () { cancelAnimationFrame(t); t = requestAnimationFrame(draw); }, { passive: true, signal: signal });
+      window.addEventListener('resize', draw, { signal: signal });
+      draw();
+    });
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.js-td-open');
+      if (!b) { return; }
+      var tpl = document.getElementById(b.dataset.sheet), sheet = document.getElementById('tdSheet');
+      if (!tpl || !sheet) { return; }
+      var body = sheet.querySelector('.js-td-body');
+      body.innerHTML = ''; body.appendChild(tpl.content.cloneNode(true));
+      sheet.dataset.from = b.dataset.sheet;
+      bootstrap.Modal.getOrCreateInstance(sheet).show();
+    }, { signal: signal });
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.classList || !form.classList.contains('js-tq-form')) { return; }
+      e.preventDefault(); e.stopPropagation();
+      var data = new FormData(form, e.submitter || undefined);
+      form.querySelectorAll('button').forEach(function (x) { x.disabled = true; });
+      fetch(form.action, { method: 'POST', body: data, credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+        .then(function (res) {
+          var box = form.closest('.js-tq'), wrap = document.createElement('div');
+          wrap.innerHTML = res.html.trim();
+          box.replaceWith(wrap.firstElementChild);
+          // keep the strip (and its template) in step: answered, right or wrong
+          var sheet = document.getElementById('tdSheet'), id = sheet.dataset.from;
+          var tpl = document.getElementById(id); if (tpl) { tpl.innerHTML = res.html; }
+          var btn = document.querySelector('.js-td-open[data-sheet="' + id + '"]');
+          if (btn && !btn.classList.contains('is-done')) {
+            btn.classList.add('is-done');
+            var badge = document.createElement('span');
+            badge.className = 'td-badge ' + (res.right ? 'is-right' : 'is-wrong');
+            badge.innerHTML = '<i class="bi ' + (res.right ? 'bi-check-lg' : 'bi-x-lg') + '"></i>';
+            btn.querySelector('.td-ring').appendChild(badge);
+            var sub = btn.querySelector('.js-td-sub'); if (sub) { sub.textContent = 'Answered'; }
+          }
+        })
+        .catch(function () { form.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); if (window.showToast) { showToast('Something went wrong — try again.'); } });
+    }, { capture: true, signal: signal });
+  });
+</script>

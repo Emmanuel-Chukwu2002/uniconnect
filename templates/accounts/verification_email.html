@@ -1,0 +1,27 @@
+{# HTML version of the sign-up verification email (accounts/verification.py). Email apps need inline styles. #}
+<!doctype html>
+<html><body style="margin:0;padding:0;background:#F3F7FD;font-family:Arial,Helvetica,sans-serif;color:#1D2B4F;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F7FD;padding:32px 12px;">
+<tr><td align="center">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #E6EBF2;border-radius:16px;">
+    <tr><td style="padding:32px 32px 8px;font-size:24px;font-weight:800;color:#0B1B4A;">Uni<span style="color:#1F6FEB;">Connect</span></td></tr>
+    <tr><td style="padding:8px 32px 0;font-size:16px;line-height:1.6;">
+      Hi {{ student.user.first_name }},<br><br>
+      Welcome to UniConnect! Use this code to verify your university email:
+    </td></tr>
+    <tr><td align="center" style="padding:24px 32px;">
+      <div style="display:inline-block;padding:16px 28px;border-radius:12px;background:#EEF4FF;font-size:34px;font-weight:800;letter-spacing:10px;color:#0B1B4A;">{{ code }}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px;font-size:15px;line-height:1.6;">
+      Type it on the <b>Check your inbox</b> screen to activate your account. Or tap the button instead:
+    </td></tr>
+    <tr><td align="center" style="padding:24px 32px;">
+      <a href="{{ verify_url }}" style="display:inline-block;padding:13px 32px;border-radius:999px;background:#1F6FEB;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;">Verify my account</a>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px;font-size:13px;line-height:1.6;color:#5C6B87;">
+      If you didn't sign up for UniConnect, ignore this email.
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>

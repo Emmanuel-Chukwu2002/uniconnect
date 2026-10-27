@@ -1,0 +1,75 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Opportunities — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  The Opportunities board (opportunities/views.py board). Styles:
+  static/css/restyle.css ("Opportunities").
+{% endcomment %}
+<div class="st-top op-top">
+  <a href="{% url 'home' %}" class="st-back" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+  <div class="op-top-text">
+    <h1>Opportunities</h1>
+    <p>{{ open_count }} open{% if closing_soon %} · {{ closing_soon }} closing this week{% endif %}</p>
+  </div>
+  <a href="{% url 'opportunity_create' %}" class="st-btn op-post-btn"><i class="bi bi-plus-lg"></i> Post</a>
+</div>
+
+<form class="sr-box op-search" method="get" action="{% url 'opportunities' %}" role="search">
+  <button type="submit" class="sr-go" aria-label="Search" title="Search"><i class="bi bi-search"></i></button>
+  <input type="search" name="q" value="{{ q }}" placeholder="Search internships, scholarships, companies…" aria-label="Search opportunities">
+  {% if tab != 'explore' %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
+  {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+  {% if q %}<a href="?tab={{ tab }}{% if kind %}&amp;kind={{ kind }}{% endif %}" class="sr-clear" aria-label="Clear search"><i class="bi bi-x-circle-fill"></i></a>{% endif %}
+</form>
+
+<nav class="sr-tabs" aria-label="Opportunity lists">
+  {% for key, label in tabs %}<a href="?tab={{ key }}" class="{% if key == tab %}is-on{% endif %}">{{ label }}</a>{% endfor %}
+</nav>
+
+<div class="op-chips" role="group" aria-label="Type">
+  <a href="?tab={{ tab }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if remote %}&amp;remote=1{% endif %}" class="{% if not kind %}is-on{% endif %}">All</a>
+  {% for key, label in kinds %}
+    <a href="?tab={{ tab }}&amp;kind={{ key }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if remote %}&amp;remote=1{% endif %}" class="{% if kind == key %}is-on{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<form class="op-filters" method="get" action="{% url 'opportunities' %}">
+  <input type="hidden" name="tab" value="{{ tab }}">{% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}{% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+  <label class="op-check"><input type="checkbox" name="remote" value="1" class="st-switch" {% if remote %}checked{% endif %} onchange="this.form.requestSubmit()"> Remote only</label>
+  {% if tab == 'explore' %}<label class="op-check"><input type="checkbox" name="closed" value="1" class="st-switch" {% if show_closed %}checked{% endif %} onchange="this.form.requestSubmit()"> Show closed</label>{% endif %}
+  <label class="op-sort">Sort
+    <select name="sort" onchange="this.form.requestSubmit()">
+      <option value="new"{% if sort == 'new' %} selected{% endif %}>Newest</option>
+      <option value="deadline"{% if sort == 'deadline' %} selected{% endif %}>Deadline soonest</option>
+    </select>
+  </label>
+</form>
+
+{% if groups is not None %}
+  {% if groups %}
+    {% include 'feed/_pc_sections.html' with card='opportunities/_pc_card.html' %}
+  {% else %}
+    <div class="sr-card sr-nothing">
+      <i class="bi bi-briefcase"></i>
+      {% if kind or remote %}<h2>Nothing matches</h2><p>Try removing a filter.</p>
+      {% elif mine_count %}<h2>Only your own posts so far</h2><p>They're under <a href="?tab=mine">Posted by me</a>. When classmates share opportunities, they show up here.</p>
+      {% else %}<h2>No open opportunities yet</h2><p>Be the first to <a href="{% url 'opportunity_create' %}">post one</a>.</p>{% endif %}
+    </div>
+  {% endif %}
+{% else %}
+  {% if section %}
+    <div class="pc-crumb">
+      <a href="?{{ see_all }}"><i class="bi bi-arrow-left"></i> All opportunities</a>
+      <span><b>{{ section.title }}</b> · {{ total }}</span>
+    </div>
+  {% endif %}
+  {% url 'opportunity_create' as create_url %}
+  {% if q or kind or remote %}{% include 'feed/_pc_grid.html' with card='opportunities/_pc_card.html' empty_icon='bi-briefcase' empty_title='Nothing matches' empty_text='Try other words or remove a filter.' %}
+  {% elif tab == 'saved' %}{% include 'feed/_pc_grid.html' with card='opportunities/_pc_card.html' empty_icon='bi-bookmark' empty_title='No saved opportunities' empty_text='Tap Save on an opportunity to keep it here.' %}
+  {% elif tab == 'mine' %}{% with empty_text='Know of an internship, job or scholarship? <a href="'|add:create_url|add:'">Share it</a> with your classmates.' %}{% include 'feed/_pc_grid.html' with card='opportunities/_pc_card.html' empty_icon='bi-briefcase' empty_title="You haven't posted any" %}{% endwith %}
+  {% else %}{% with empty_text='Be the first to <a href="'|add:create_url|add:'">post one</a>.' %}{% include 'feed/_pc_grid.html' with card='opportunities/_pc_card.html' empty_icon='bi-briefcase' empty_title='No open opportunities yet' %}{% endwith %}{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}{% include 'feed/_pc_act_js.html' %}{% endblock %}

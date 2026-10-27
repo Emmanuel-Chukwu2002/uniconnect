@@ -1,0 +1,25 @@
+{% comment %}One course as a card (courses/index.html): a band in the course's colour, its icon,
+code and title, coursemates or people you follow taking it, and Add (feed/_pc_act_js.html) or Open.{% endcomment %}
+{% with c=item %}
+<article class="pc-card" style="--i:{{ i|default:0 }};--hue:{{ c.cover_hue }}">
+  <a href="{{ c.get_absolute_url }}" class="pc-cover is-pattern" tabindex="-1" aria-hidden="true"></a>
+  <a href="{{ c.get_absolute_url }}" class="pc-avatar is-tile" tabindex="-1" aria-hidden="true"><i class="bi {{ c.icon }}"></i></a>
+  <div class="pc-body">
+    <a href="{{ c.get_absolute_url }}" class="pc-name">{{ c.code }}</a>
+    <p class="pc-sub">{{ c.title }}</p>
+    <div class="pc-mutual">
+      {% if c.known %}
+        <span class="pc-faces">{% for f in c.faces %}{% include 'feed/_pc_face.html' %}{% endfor %}</span>
+        <span>{% if c.n_mates %}{{ c.n_mates }} coursemate{{ c.n_mates|pluralize }} take{{ c.n_mates|pluralize:'s,' }} this{% else %}{{ c.known }} you follow take{{ c.known|pluralize:'s,' }} this{% endif %}</span>
+      {% else %}
+        <span class="pc-where"><i class="bi bi-people"></i> {{ c.n_students }} student{{ c.n_students|pluralize }}{% if c.n_groups %} · {{ c.n_groups }} group{{ c.n_groups|pluralize }}{% endif %}</span>
+      {% endif %}
+    </div>
+    {% if c.mine %}
+      <a href="{{ c.get_absolute_url }}" class="pc-follow" data-state="done"><i class="bi bi-box-arrow-in-right"></i> Open</a>
+    {% else %}
+      <button type="button" class="pc-follow js-pc-act" data-kind="course" data-url="{% url 'course_enroll' c.pk %}"><i class="bi bi-plus-lg"></i> Add</button>
+    {% endif %}
+  </div>
+</article>
+{% endwith %}

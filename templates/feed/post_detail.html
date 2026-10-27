@@ -1,0 +1,31 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Post by {{ post.author.get_full_name|default:post.author.username }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+<div class="profile-topbar">
+  <a href="javascript:history.back()" class="profile-back-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">Post</div>
+  </div>
+</div>
+
+{# The opened post: the expanded X-style header and the time under the media (the feed card keeps the compact one-line header). #}
+{% if in_thread %}
+  {# A thread (feed/threads.py): earlier posts above, later ones under, joined by a line. #}
+  <div class="th-group">
+    {% if thread_root.community_id %}<a href="{% url 'community_detail' thread_root.community_id %}" class="post-card-community-label th-community"><i class="bi bi-people-fill"></i> {{ thread_root.community.name }}</a>{% endif %}
+    {# The line joins the avatars down to the opened post; it doesn't run through the opened post's text. #}
+    {% for p in thread_before %}<div class="th-item{% if not forloop.first %} has-prev{% endif %} has-next">{% include 'feed/_post_card.html' with post=p in_community=True in_thread=True %}</div>{% endfor %}
+    <div class="th-item is-current{% if thread_before %} has-prev{% endif %}">{% include 'feed/_post_detail_main.html' with hide_community=True %}</div>
+    {% for p in thread_after %}<div class="th-item{% if not forloop.first %} has-prev{% endif %}{% if not forloop.last %} has-next{% endif %}">{% include 'feed/_post_card.html' with post=p in_community=True in_thread=True %}</div>{% endfor %}
+    {% if can_add_to_thread %}
+      <a href="{% url 'compose_post' %}?thread={{ thread_root.id }}" class="th-add"><span class="th-add-plus"><i class="bi bi-plus-lg"></i></span> Add another post</a>
+    {% endif %}
+  </div>
+{% else %}
+  {% include 'feed/_post_detail_main.html' %}
+  {% if can_add_to_thread %}
+    <a href="{% url 'compose_post' %}?thread={{ post.id }}" class="th-add is-alone"><span class="th-add-plus"><i class="bi bi-plus-lg"></i></span> Add another post <span class="th-add-note">— turn this into a thread</span></a>
+  {% endif %}
+{% endif %}
+{% endblock %}

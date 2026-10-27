@@ -1,0 +1,67 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if section %}{{ section.title }} — {% endif %}Who to follow — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  Who to follow (feed/views.py who_to_follow_page, feed/people.py): people in
+  groups, closest first — coursemates, department, faculty, university, other
+  universities — 3 cards each with "See all". ?section=<key> shows one group in
+  full; ?q= searches. Styles: restyle.css ("Who to follow cards").
+{% endcomment %}
+<div class="profile-topbar">
+  <a href="{% if section or query %}{% url 'who_to_follow' %}{% else %}{% url 'home' %}{% endif %}" class="profile-back-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">{% if section %}{{ section.title }}{% else %}Who to follow{% endif %}</div>
+    <div class="profile-topbar-sub">{% if section %}{{ total }} {{ section.sub|lower }}{% elif query %}{{ total }} result{{ total|pluralize }} for “{{ query }}”{% else %}People you may know, closest first{% endif %}</div>
+  </div>
+</div>
+
+<form class="people-search" method="get" action="{% url 'who_to_follow' %}" role="search">
+  <i class="bi bi-search"></i>
+  <input type="search" name="q" value="{{ query }}" placeholder="Search by name, username or department" aria-label="Search people">
+  {% if query %}<a href="{% url 'who_to_follow' %}" class="people-search-clear" aria-label="Clear search"><i class="bi bi-x-lg"></i></a>{% endif %}
+</form>
+
+{% if groups is not None %}
+  {% for g in groups %}
+    <section class="pc-section" style="--s:{{ forloop.counter0 }}" aria-labelledby="pc-{{ g.key }}">
+      <header class="pc-head">
+        <div>
+          <h2 id="pc-{{ g.key }}">{{ g.title }}</h2>
+          <p>{{ g.sub }}</p>
+        </div>
+        {% if g.total > g.people|length %}<a href="?section={{ g.key }}" class="pc-all">See all <span>{{ g.total }}</span></a>{% endif %}
+      </header>
+      <div class="pc-row">
+        {% for p in g.people %}{% include 'feed/_person_card.html' with i=forloop.counter0 section_key=g.key %}{% endfor %}
+      </div>
+    </section>
+  {% empty %}
+    <div class="people-empty">
+      <i class="bi bi-people"></i>
+      <h4>You're following everyone</h4>
+      <p>There's no one new to follow right now. Check back as more students join.</p>
+    </div>
+  {% endfor %}
+{% else %}
+  <section class="pc-section is-full">
+    <div class="pc-grid">
+      {% for p in people %}{% include 'feed/_person_card.html' with i=forloop.counter0|add:0 section_key=section.key %}
+      {% empty %}
+        <div class="people-empty">
+          <i class="bi bi-people"></i>
+          {% if query %}<h4>No one found</h4><p>No one you don't already follow matches “{{ query }}”.</p>
+          {% else %}<h4>No one here yet</h4><p>Everyone in this group is already someone you follow.</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="people-pages" aria-label="Pages">
+      {% if page.has_previous %}<a href="?{% if query %}q={{ query|urlencode }}&{% endif %}{% if section %}section={{ section.key }}&{% endif %}page={{ page.previous_page_number }}"><i class="bi bi-chevron-left"></i> Previous</a>{% else %}<span></span>{% endif %}
+      <span class="people-pages-info">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?{% if query %}q={{ query|urlencode }}&{% endif %}{% if section %}section={{ section.key }}&{% endif %}page={{ page.next_page_number }}">Next <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+    </nav>
+  {% endif %}
+{% endif %}
+{% endblock %}

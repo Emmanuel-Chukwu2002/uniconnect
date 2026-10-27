@@ -1,0 +1,75 @@
+{% extends 'chat/base.html' %}
+{% block wa_title %}You{% endblock %}
+{% block list_pane %}
+<header class="wa-pane-header">
+  <h1 class="wa-pane-title is-visible">Settings</h1>
+</header>
+<div class="wa-pane-scroll wa-you">
+  <div class="wa-you-hero">
+    {% include 'chat/_avatar.html' with p=me size=72 %}
+    <div class="wa-you-text">
+      <span class="wa-you-name">{{ me.name }}</span>
+      <span class="wa-you-about js-wa-about-text">{{ about_text }}</span>
+    </div>
+    <a href="{% url 'edit_profile' %}" class="wa-icon-btn" title="Edit profile on UniConnect" aria-label="Edit profile"><i class="bi bi-pencil"></i></a>
+  </div>
+
+  <form class="wa-about-form js-wa-about-form">
+    <label class="wa-field"><span>About</span>
+      <input type="text" class="wa-input js-wa-about-input" maxlength="140" value="{{ about_text }}"></label>
+    <button type="submit" class="wa-btn-primary">Save</button>
+  </form>
+
+  <h2 class="wa-section-title">Privacy</h2>
+  <label class="wa-setting">
+    <i class="bi bi-check2-all"></i>
+    <span class="wa-setting-text"><span>Read receipts</span><small>If off, people won't see blue ticks from you, and you won't see theirs.</small></span>
+    <input type="checkbox" class="wa-switch js-wa-setting" data-field="read_receipts" {% if chat_settings.read_receipts %}checked{% endif %}>
+  </label>
+  <label class="wa-setting">
+    <i class="bi bi-eye"></i>
+    <span class="wa-setting-text"><span>Last seen and online</span><small>Who can see when you're online</small></span>
+    <select class="wa-select js-wa-setting" data-field="last_seen_visibility">
+      <option value="everyone" {% if chat_settings.last_seen_visibility == 'everyone' %}selected{% endif %}>Everyone</option>
+      <option value="nobody" {% if chat_settings.last_seen_visibility == 'nobody' %}selected{% endif %}>Nobody</option>
+    </select>
+  </label>
+
+  <h2 class="wa-section-title">Chats</h2>
+  <label class="wa-setting">
+    <i class="bi bi-arrow-return-left"></i>
+    <span class="wa-setting-text"><span>Enter is send</span><small>Enter sends; Shift + Enter adds a new line</small></span>
+    <input type="checkbox" class="wa-switch js-wa-setting" data-field="enter_to_send" {% if chat_settings.enter_to_send %}checked{% endif %}>
+  </label>
+  <label class="wa-setting">
+    <i class="bi bi-image"></i>
+    <span class="wa-setting-text"><span>Chat wallpaper</span></span>
+    <select class="wa-select js-wa-setting" data-field="wallpaper">
+      <option value="doodle" {% if chat_settings.wallpaper == 'doodle' %}selected{% endif %}>Doodle</option>
+      <option value="plain" {% if chat_settings.wallpaper == 'plain' %}selected{% endif %}>Plain</option>
+    </select>
+  </label>
+
+  <h2 class="wa-section-title">Notifications</h2>
+  <label class="wa-setting">
+    <i class="bi bi-volume-up"></i>
+    <span class="wa-setting-text"><span>Message sounds</span><small>A short sound for new messages in chats you aren't looking at</small></span>
+    <input type="checkbox" class="wa-switch js-wa-setting" data-field="sounds" {% if chat_settings.sounds %}checked{% endif %}>
+  </label>
+
+  <h2 class="wa-section-title">Account</h2>
+  <a class="wa-setting" href="{% url 'profile' %}"><i class="bi bi-person"></i><span class="wa-setting-text"><span>UniConnect profile</span><small>Name, photo and bio</small></span><i class="bi bi-chevron-right wa-muted"></i></a>
+  <a class="wa-setting" href="{% url 'account_settings' %}"><i class="bi bi-gear"></i><span class="wa-setting-text"><span>Account settings</span><small>Password and account</small></span><i class="bi bi-chevron-right wa-muted"></i></a>
+  <a class="wa-setting" href="{% url 'chat_starred' %}" data-wa-nav><i class="bi bi-star"></i><span class="wa-setting-text"><span>Starred messages</span><small>Messages you starred to find later</small></span><i class="bi bi-chevron-right wa-muted"></i></a>
+  <a class="wa-setting" href="{% url 'chat_archived' %}" data-wa-nav><i class="bi bi-archive"></i><span class="wa-setting-text"><span>Archived chats</span></span><i class="bi bi-chevron-right wa-muted"></i></a>
+  <div class="wa-setting is-disabled" title="Not available yet"><i class="bi bi-laptop"></i><span class="wa-setting-text"><span>Linked devices</span><small>Coming soon. Open UniConnect in any browser to use Messages.</small></span></div>
+  <a class="wa-setting" href="{% url 'home' %}"><i class="bi bi-house-door"></i><span class="wa-setting-text"><span>Back to UniConnect</span></span><i class="bi bi-chevron-right wa-muted"></i></a>
+</div>
+{% endblock %}
+{% block main_pane %}
+<div class="wa-placeholder">
+  <div class="wa-placeholder-icon"><i class="bi bi-gear"></i></div>
+  <h2>Settings</h2>
+  <p>Changes save as soon as you make them.</p>
+</div>
+{% endblock %}

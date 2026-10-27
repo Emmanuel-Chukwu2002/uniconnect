@@ -1,0 +1,42 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}#{{ tag }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}A hashtag's posts (feed/hashtags.py). Styles: restyle.css ("Hashtag page").{% endcomment %}
+<div class="ht">
+  <div class="st-top">
+    <a href="javascript:history.back()" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>#{{ tag }}</h1>
+  </div>
+
+  <section class="ht-hero">
+    <span class="ht-hash">#</span>
+    <div class="ht-hero-text">
+      <h2>#{{ tag }}</h2>
+      <p>{{ total }} post{{ total|pluralize }} · {{ people }} {% if people == 1 %}person{% else %}people{% endif %} at your university</p>
+    </div>
+    <a href="{% url 'compose_post' %}?text=%23{{ tag|urlencode }}" class="ht-compose"><i class="bi bi-pencil-square"></i> Post</a>
+  </section>
+
+  {% if related %}
+    <div class="ht-related" role="list" aria-label="Used with #{{ tag }}">
+      <span class="ht-related-label">Also used:</span>
+      {% for t in related %}<a role="listitem" href="{% url 'hashtag' t %}" class="sg-chip">#{{ t }}</a>{% endfor %}
+    </div>
+  {% endif %}
+
+  <nav class="ex-tabs ht-tabs" aria-label="Sort posts">
+    <a href="?sort=top" class="{% if sort == 'top' %}is-on{% endif %}">Top</a>
+    <a href="?sort=latest" class="{% if sort == 'latest' %}is-on{% endif %}">Latest</a>
+  </nav>
+
+  <div class="ht-posts">
+    {% for post in posts %}
+      {% include 'feed/_post_card.html' %}
+    {% empty %}
+      <div class="rp-card md-empty"><i class="bi bi-hash"></i><p>No posts with #{{ tag }} yet. Be the first — tap Post.</p></div>
+    {% endfor %}
+    {% if total > posts|length %}<p class="ht-more">Showing the {{ posts|length }} {% if sort == 'top' %}most liked{% else %}newest{% endif %} posts.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

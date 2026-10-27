@@ -1,0 +1,30 @@
+{% comment %}
+"Recommended for you": one row of cards from recommendations/engine.py (Rec objects),
+shared by Bookshop, Marketplace, Events, Groups and Communities.
+  recs     the Rec list          title   heading (default "Recommended for you")
+  row_id   optional id           hint    optional line under the heading
+Each card has Interested / Not interested (recommendations/_actions.html,
+static/js/recommendations.js). Styles: restyle.css ("Recommendations").
+{% endcomment %}
+{% if recs %}
+<section class="rc"{% if row_id %} id="{{ row_id }}"{% endif %} aria-label="{{ title|default:'Recommended for you' }}">
+  <header class="rc-head">
+    <h2><i class="bi bi-stars"></i> {{ title|default:"Recommended for you" }}</h2>
+    {% if hint %}<p>{{ hint }}</p>{% endif %}
+  </header>
+  <div class="rc-row" role="list">
+    {% for r in recs %}
+      <article class="rc-card js-rec-card" role="listitem" data-rec-type="{{ r.item_type }}" data-rec-id="{{ r.item_id }}">
+        <a href="{{ r.url }}" class="rc-link">
+          <span class="rc-thumb"{% if r.image %} style="background-image:url('{{ r.image }}')"{% endif %}>{% if not r.image %}<i class="bi {{ r.icon }}"></i>{% endif %}</span>
+          <span class="rc-title">{{ r.title }}</span>
+          <span class="rc-sub">{{ r.sub }}</span>
+          {% if r.reason %}<span class="rc-reason"><i class="bi bi-lightbulb"></i> {{ r.reason }}</span>{% endif %}
+        </a>
+        {% include 'recommendations/_actions.html' with item_type=r.item_type item_id=r.item_id value=r.feedback %}
+        <p class="rc-gone">Got it — you'll see less like this. <button type="button" class="js-rec-undo">Undo</button></p>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

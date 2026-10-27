@@ -1,0 +1,147 @@
+{% comment %}
+  A post's "..." menu: edit / delete on your own post; follow, report and
+  so on for anyone else's. Shared by the feed card (_post_card.html) and
+  the Post Details page (_post_detail_main.html).
+{% endcomment %}
+    {% if post.author_id == request.user.id %}
+      <div class="post-card-menu dropdown">
+        <button type="button" class="post-card-menu-btn" data-bs-toggle="dropdown" aria-label="More options">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end post-card-dropdown post-card-dropdown-wide">
+          <li>
+            <form method="post" action="{% url 'toggle_pin' post.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              {% if post.id == my_pinned_post_id %}
+                <button type="submit" class="dropdown-item"><i class="bi bi-pin-angle-fill"></i> Unpin from profile</button>
+              {% else %}
+                <button type="submit" class="dropdown-item"><i class="bi bi-pin-angle"></i> Pin to your profile</button>
+              {% endif %}
+            </form>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item js-bf-open" data-post-id="{{ post.id }}"><i class="bi bi-folder-plus"></i> {% if post.user_has_bookmarked %}Move to a bookmark folder{% else %}Save to a bookmark folder{% endif %}</button>
+          </li>
+          <li>
+            <a href="{% url 'post_analytics' post.id %}" class="dropdown-item">
+              <i class="bi bi-bar-chart-line"></i> View post activity
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'post_settings' post.id %}?s=disclosure" class="dropdown-item">
+              <i class="bi bi-tag"></i> {% if post.disclosure %}Change label ({{ post.get_disclosure_display }}){% else %}Add content disclosure{% endif %}
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'edit_post' post.id %}?next={{ request.get_full_path|urlencode }}" class="dropdown-item">
+              <i class="bi bi-pencil"></i> Edit post
+            </a>
+          </li>
+          {# Deleting (feed/threads.py remove): in a thread, the other posts stay. #}
+          {% if post.thread_size %}
+            <li>
+              <form method="post" action="{% url 'delete_post' post.id %}" class="post-card-delete-form">
+                {% csrf_token %}
+                <input type="hidden" name="scope" value="one"><input type="hidden" name="on_detail" value="{% if on_post_detail or in_thread %}1{% endif %}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="button" class="dropdown-item post-card-delete-btn js-confirm-delete-post" data-confirm-title="Delete just this post?" data-confirm-text="The rest of the thread stays — the next post becomes its first post. This can't be undone."><i class="bi bi-trash3"></i> Delete just this post</button>
+              </form>
+            </li>
+            <li>
+              <form method="post" action="{% url 'delete_post' post.id %}" class="post-card-delete-form">
+                {% csrf_token %}
+                <input type="hidden" name="scope" value="thread">
+                <input type="hidden" name="next" value="{% if on_post_detail or in_thread %}{% url 'home' %}{% else %}{{ request.get_full_path }}{% endif %}">
+                <button type="button" class="dropdown-item post-card-delete-btn js-confirm-delete-post" data-confirm-title="Delete the whole thread?" data-confirm-text="This deletes all {{ post.thread_size|add:1 }} posts in the thread. It can't be undone."><i class="bi bi-trash3-fill"></i> Delete the whole thread ({{ post.thread_size|add:1 }} posts)</button>
+              </form>
+            </li>
+          {% else %}
+            <li>
+              <form method="post" action="{% url 'delete_post' post.id %}" class="post-card-delete-form">
+                {% csrf_token %}
+                {% if post.thread_root_id %}<input type="hidden" name="on_detail" value="{% if on_post_detail or in_thread %}1{% endif %}">{% endif %}
+                <input type="hidden" name="next" value="{% if on_post_detail and not post.thread_root_id %}{% url 'home' %}{% else %}{{ request.get_full_path }}{% endif %}">
+                <button type="button" class="dropdown-item post-card-delete-btn js-confirm-delete-post"{% if post.thread_root_id %} data-confirm-title="Delete this post from your thread?" data-confirm-text="Only this post goes — the rest of the thread stays in order. This can't be undone."{% endif %}><i class="bi bi-trash3"></i> Delete post</button>
+              </form>
+            </li>
+          {% endif %}
+          <li>
+            <a href="{% url 'post_settings' post.id %}?s=reply" class="dropdown-item">
+              <i class="bi bi-chat-dots"></i> Change who can reply
+            </a>
+          </li>
+          <li>
+            <form method="post" action="{% url 'mute_replies' post.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              {% if post.replies_muted %}
+                <button type="submit" class="dropdown-item"><i class="bi bi-bell"></i> Unmute replies</button>
+              {% else %}
+                <button type="submit" class="dropdown-item"><i class="bi bi-bell-slash"></i> Mute replies</button>
+              {% endif %}
+            </form>
+          </li>
+        </ul>
+      </div>
+    {% else %}
+      <div class="post-card-menu dropdown">
+        <button type="button" class="post-card-menu-btn" data-bs-toggle="dropdown" aria-label="More options">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end post-card-dropdown post-card-dropdown-wide">
+          {# Interested (recommendations/feedback.py): explicit interest, used by Trending and People You May Know. #}
+          <li>
+            <form method="post" action="{% url 'recommendation_feedback' %}" class="js-rec-form js-rec-post">
+              {% csrf_token %}
+              <input type="hidden" name="item_type" value="post"><input type="hidden" name="item_id" value="{{ post.id }}">
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <input type="hidden" name="value" value="{% if post.id in rec_interested_posts %}{% else %}interested{% endif %}">
+              <button type="submit" class="dropdown-item js-rec-interested{% if post.id in rec_interested_posts %} is-on{% endif %}" aria-pressed="{% if post.id in rec_interested_posts %}true{% else %}false{% endif %}">
+                <i class="bi {% if post.id in rec_interested_posts %}bi-star-fill{% else %}bi-star{% endif %}"></i> <span>{% if post.id in rec_interested_posts %}Interested (undo){% else %}Interested in this post{% endif %}</span>
+              </button>
+            </form>
+          </li>
+          <li>
+            <form method="post" action="{% url 'hide_post' post.id %}" class="js-hide-post-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% if on_post_detail %}{% url 'home' %}{% else %}{{ request.get_full_path }}{% endif %}">
+              <button type="submit" class="dropdown-item"><i class="bi bi-emoji-frown"></i> Not interested in this post</button>
+            </form>
+          </li>
+          <li>
+            <button type="button"
+                    class="dropdown-item post-card-follow-btn"
+                    data-user-id="{{ post.author_id }}"
+                    data-username="{{ post.author.username }}"
+                    data-status="{% if post.author_id in following_ids %}accepted{% elif post.author_id in pending_ids %}pending{% else %}none{% endif %}">
+              <i class="bi {% if post.author_id in following_ids %}bi-person-dash{% elif post.author_id in pending_ids %}bi-hourglass-split{% else %}bi-person-plus{% endif %}"></i>
+              <span class="post-card-follow-label">{% if post.author_id in following_ids %}Unfollow{% elif post.author_id in pending_ids %}Cancel request to{% else %}Follow{% endif %} @{{ post.author.username }}</span>
+            </button>
+          </li>
+          <li>
+            <form method="post" action="{% url 'block_toggle' post.author.username %}" class="js-block-form" data-name="{{ post.author.get_full_name|default:post.author.username }}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% if on_post_detail %}{% url 'home' %}{% else %}{{ request.get_full_path }}{% endif %}">
+              <button type="submit" class="dropdown-item"><i class="bi bi-slash-circle"></i> Block @{{ post.author.username }}</button>
+            </form>
+          </li>
+          <li>
+            <form method="post" action="{% url 'mute_toggle' post.author.username %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% if on_post_detail %}{% url 'home' %}{% else %}{{ request.get_full_path }}{% endif %}">
+              <button type="submit" class="dropdown-item"><i class="bi bi-volume-mute"></i> Mute @{{ post.author.username }}</button>
+            </form>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item js-bf-open" data-post-id="{{ post.id }}"><i class="bi bi-folder-plus"></i> {% if post.user_has_bookmarked %}Move to a bookmark folder{% else %}Save to a bookmark folder{% endif %}</button>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a href="{% url 'report_post' post.id %}" class="dropdown-item post-card-report-btn is-danger">
+              <i class="bi bi-flag"></i> Report post
+            </a>
+          </li>
+        </ul>
+      </div>
+    {% endif %}

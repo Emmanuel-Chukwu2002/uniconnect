@@ -1,0 +1,8 @@
+{% comment %}Under a post's header: its content disclosure label and, when replies are limited, who can reply (feed/post_settings.py).{% endcomment %}
+{% if post.disclosure or post.reply_policy != 'everyone' or post.location %}
+  <div class="post-labels">
+    {% if post.location %}<a href="{% url 'search' %}?q={{ post.location|urlencode }}&amp;type=posts" class="post-label is-place"><i class="bi bi-geo-alt-fill"></i> {{ post.location }}</a>{% endif %}
+    {% if post.disclosure == 'promo' %}<span class="post-label is-promo"><i class="bi bi-megaphone"></i> Paid promotion</span>{% elif post.disclosure == 'ai' %}<span class="post-label is-ai"><i class="bi bi-stars"></i> Made with AI</span>{% endif %}
+    {% if post.reply_policy == 'following' %}<span class="post-label"><i class="bi bi-person-check"></i> People {{ post.author.first_name|default:post.author.username }} follows can reply</span>{% elif post.reply_policy == 'mentioned' %}<span class="post-label"><i class="bi bi-at"></i> Only people mentioned can reply</span>{% endif %}
+  </div>
+{% endif %}

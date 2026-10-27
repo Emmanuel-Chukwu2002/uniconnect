@@ -1,0 +1,56 @@
+<!-- Shared body for the Edit Profile modal (desktop) and full-page
+     composer (mobile) — everything below the header, which each
+     caller renders itself with its own close/back icon. -->
+<div class="editprofile-cover" style="{% if student.cover_photo %}background-image:url({{ student.cover_photo.url }}){% endif %}">
+  <label class="editprofile-photo-btn editprofile-cover-btn" title="Change cover photo">
+    <i class="bi bi-camera-fill"></i>
+    {{ form.cover_photo }}
+  </label>
+</div>
+
+<div class="editprofile-avatar-row">
+  <div class="editprofile-avatar" style="{% if student.profile_photo %}background-image:url({{ student.profile_photo.url }}){% endif %}">
+    {% if not student.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    <label class="editprofile-photo-btn editprofile-avatar-btn" title="Change profile photo">
+      <i class="bi bi-camera-fill"></i>
+      {{ form.profile_photo }}
+    </label>
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="editprofile-error">{{ form.non_field_errors|striptags }}</div>
+{% endif %}
+
+<div class="editprofile-fields">
+  <div class="editprofile-field">
+    <label for="{{ form.name.id_for_label }}">Name</label>
+    {{ form.name }}
+    {% if form.name.errors %}<div class="editprofile-field-error">{{ form.name.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="editprofile-field">
+    <label for="{{ form.bio.id_for_label }}">Bio</label>
+    {{ form.bio }}
+  </div>
+
+  <div class="editprofile-field">
+    <label for="{{ form.location.id_for_label }}">Location</label>
+    {{ form.location }}
+  </div>
+
+  <div class="editprofile-field">
+    <label for="{{ form.website.id_for_label }}">Website</label>
+    {{ form.website }}
+    {% if form.website.errors %}<div class="editprofile-field-error">{{ form.website.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="editprofile-field">
+    <label for="{{ form.date_of_birth.id_for_label }}">Date of birth</label>
+    {{ form.date_of_birth }}
+    <label class="editprofile-toggle-row" for="{{ form.show_date_of_birth.id_for_label }}">
+      {{ form.show_date_of_birth }}
+      <span>Show my date of birth on my profile</span>
+    </label>
+  </div>
+</div>

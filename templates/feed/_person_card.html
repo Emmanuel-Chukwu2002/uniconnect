@@ -1,0 +1,22 @@
+{% comment %}One person on the Who to follow page (feed/people.py): cover, photo, name, a line about them,
+mutual connections and Follow (the same .follow-btn handler as everywhere else, static/js/app.js).{% endcomment %}
+{% with u=p.user %}
+<article class="pc-card{% if section_key == 'pymk' %} js-rec-card{% endif %}" style="--i:{{ i|default:0 }}"{% if section_key == 'pymk' %} data-rec-type="user" data-rec-id="{{ u.id }}"{% endif %}>
+  {% if section_key == 'pymk' %}{% include 'recommendations/_dismiss.html' with user_id=u.id %}{% endif %}
+  <a href="{% url 'user_profile' u.username %}" class="pc-cover" style="{% if p.cover_photo %}background-image:url('{{ p.cover_photo.url }}'){% else %}--hue:{{ p.cover_hue }}{% endif %}" tabindex="-1" aria-hidden="true"></a>
+  <a href="{% url 'user_profile' u.username %}" class="pc-avatar" style="{% if p.profile_photo %}background-image:url('{{ p.profile_photo.url }}'){% else %}--hue:{{ p.cover_hue }}{% endif %}" tabindex="-1" aria-hidden="true">{% if not p.profile_photo %}{{ u.first_name|default:u.username|slice:':1'|upper }}{% endif %}</a>
+  <div class="pc-body">
+    <a href="{% url 'user_profile' u.username %}" class="pc-name">{{ u.get_full_name|default:u.username }}{% if p.is_verified %} <i class="bi bi-patch-check-fill pc-tick" title="Verified student"></i>{% endif %}</a>
+    <p class="pc-sub">{% if p.bio %}{{ p.bio }}{% else %}{{ p.department.name }} · {{ p.level.name }}{% endif %}</p>
+    <div class="pc-mutual">
+      {% if p.mutual %}
+        <span class="pc-faces">{% for f in p.mutual_faces %}{% with sp=f.student_profile %}<span class="pc-face" title="{{ f.get_full_name|default:f.username }}" style="{% if sp.profile_photo %}background-image:url('{{ sp.profile_photo.url }}'){% endif %}">{% if not sp.profile_photo %}{{ f.first_name|default:f.username|slice:':1'|upper }}{% endif %}</span>{% endwith %}{% endfor %}</span>
+        <span>{{ p.mutual }} mutual connection{{ p.mutual|pluralize }}</span>
+      {% else %}
+        {% if p.pymk_reason %}<span class="pc-where"><i class="bi bi-lightbulb"></i> {{ p.pymk_reason }}</span>{% else %}<span class="pc-where"><i class="bi bi-mortarboard"></i> {{ p.university.short_name|default:p.university.name }}{% if section_key == 'elsewhere' or not section_key %} · {{ p.department.name }}{% endif %}</span>{% endif %}
+      {% endif %}
+    </div>
+    <button type="button" class="pc-follow follow-btn" data-user-id="{{ u.id }}" data-status="none">Follow</button>
+  </div>
+</article>
+{% endwith %}

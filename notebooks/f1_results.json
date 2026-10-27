@@ -1,0 +1,42 @@
+{
+ "protocol": "latest 25% of each student's touched listings held out; top-5 new available listings; per-student P/R/F1 averaged",
+ "students": 295,
+ "results": {
+  "Random": {
+   "precision": 0.0169,
+   "recall": 0.0244,
+   "f1_macro": 0.0191,
+   "f1_of_means": 0.02
+  },
+  "Most popular": {
+   "precision": 0.0278,
+   "recall": 0.0451,
+   "f1_macro": 0.0322,
+   "f1_of_means": 0.0344
+  },
+  "Popular in dept group": {
+   "precision": 0.0712,
+   "recall": 0.1062,
+   "f1_macro": 0.0813,
+   "f1_of_means": 0.0852
+  },
+  "Item-item CF": {
+   "precision": 0.0325,
+   "recall": 0.0469,
+   "f1_macro": 0.0366,
+   "f1_of_means": 0.0384
+  },
+  "Content (TF-IDF)": {
+   "precision": 0.0556,
+   "recall": 0.0779,
+   "f1_macro": 0.0609,
+   "f1_of_means": 0.0649
+  },
+  "Hybrid (app)": {
+   "precision": 0.0773,
+   "recall": 0.1154,
+   "f1_macro": 0.0876,
+   "f1_of_means": 0.0926
+  }
+ }
+}

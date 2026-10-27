@@ -1,0 +1,16 @@
+{% comment %}One opportunity on the board (list.html). The bookmark saves it (script in list.html).{% endcomment %}
+<article class="op-card{% if not opp.is_open %} is-closed{% endif %}">
+  <a href="{{ opp.get_absolute_url }}" class="op-card-link" aria-label="{{ opp.title }} at {{ opp.organization }}"></a>
+  <span class="op-ico is-{{ opp.kind }}"><i class="bi {{ opp.icon }}"></i></span>
+  <div class="op-card-body">
+    <h3>{{ opp.title }}</h3>
+    <p class="op-org">{{ opp.organization }}{% if opp.location %} · {{ opp.location }}{% endif %}{% if opp.is_remote %} · Remote{% endif %}</p>
+    <div class="op-tags">
+      <span class="op-tag is-{{ opp.kind }}">{{ opp.get_kind_display }}</span>
+      {% if opp.reward %}<span class="op-tag"><i class="bi bi-cash-coin"></i> {{ opp.reward }}</span>{% endif %}
+      {% include 'opportunities/_deadline.html' %}
+    </div>
+  </div>
+  <button type="button" class="op-save js-op-save{% if opp.pk in saved_ids %} is-on{% endif %}" data-url="{% url 'opportunity_save' opp.pk %}"
+          aria-pressed="{% if opp.pk in saved_ids %}true{% else %}false{% endif %}" aria-label="Save" title="Save"><i class="bi {% if opp.pk in saved_ids %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i></button>
+</article>

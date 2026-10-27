@@ -1,0 +1,241 @@
+/* =========================================================
+   Post-login app shell — dark mode palette copied exactly
+   from UnifyApp; light mode based on the new reference UI.
+   ========================================================= */
+:root{
+  --bg:#323946;
+  --surface:hsl(252,30%,10%);
+  --surface-alt:hsl(252,25%,16%);
+  --border:hsl(252,20%,24%);
+  --text:hsl(252,30%,95%);
+  --text-muted:hsl(252,15%,65%);
+  --accent:#2179FF;
+  --accent-contrast:hsl(252,30%,95%);
+  --danger:hsl(0,95%,65%);
+  --success:hsl(120,95%,65%);
+  --card-shadow:0 1px 3px rgba(0,0,0,.4);
+}
+body.light-mode{
+  --bg:#F4F6FA;
+  --surface:#FFFFFF;
+  --surface-alt:#F0F2F7;
+  --border:#E5E9F0;
+  --text:#1F2937;
+  --text-muted:#6B7280;
+  --accent:#4A6CF7;
+  --accent-contrast:#FFFFFF;
+  --danger:#E5484D;
+  --success:#30A46C;
+  --card-shadow:0 2px 10px rgba(16,24,40,.08);
+}
+
+/* Remove visible scrollbars everywhere, keep scrolling functional */
+*{scrollbar-width:none;-ms-overflow-style:none;}
+*::-webkit-scrollbar{display:none;}
+
+body{background:var(--bg);}
+
+.app-shell{
+  display:flex;
+  gap:20px;
+  height:100vh;
+  padding:20px 24px;
+  align-items:flex-start;
+  box-sizing:border-box;
+}
+
+/* ---------------- Left sidebar ---------------- */
+.app-sidebar{
+  flex:0 0 250px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  height:100%;
+  overflow-y:auto;
+}
+.sidebar-main-card, .sidebar-bottom-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--card-shadow);
+  padding:20px 16px;
+}
+.app-logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:'Newsreader',serif;
+  font-weight:700;
+  font-size:19px;
+  color:var(--accent);
+  padding:4px 8px 20px;
+}
+.app-logo i{font-size:22px;}
+
+.app-nav-link{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px 12px;
+  border-radius:10px;
+  color:var(--text-muted);
+  text-decoration:none;
+  font-size:14.5px;
+  font-weight:500;
+  margin-bottom:2px;
+}
+.app-nav-link i{font-size:18px;width:20px;text-align:center;}
+.app-nav-link:hover{background:var(--surface-alt);color:var(--text);text-decoration:none;}
+.app-nav-link.active{background:var(--accent);color:var(--accent-contrast);font-weight:600;}
+
+.sidebar-bottom-card{border-radius:18px;}
+
+.theme-toggle-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  margin:6px 0 10px;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.theme-icon{position:relative;font-size:15px;color:var(--text-muted);}
+.theme-icon-sun{display:none;}
+body.light-mode .theme-icon-moon{display:none;}
+body.light-mode .theme-icon-sun{display:inline-block;}
+.theme-toggle-label{flex:1;font-size:13.5px;font-weight:600;color:var(--text);}
+.theme-toggle-switch{
+  position:relative;
+  width:40px;height:22px;
+  border-radius:999px;
+  background:var(--surface-alt);
+  border:1px solid var(--border);
+  cursor:pointer;
+  padding:0;
+  flex:0 0 40px;
+}
+.theme-toggle-thumb{
+  position:absolute;top:2px;left:2px;
+  width:16px;height:16px;
+  border-radius:50%;
+  background:var(--text-muted);
+  transition:left .2s ease, background .2s ease;
+}
+body.light-mode .theme-toggle-switch{background:var(--accent);}
+body.light-mode .theme-toggle-thumb{left:20px;background:#fff;}
+
+.sidebar-profile-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 12px;
+  margin-bottom:6px;
+}
+.sidebar-avatar{
+  width:36px;height:36px;
+  border-radius:50%;
+  background-size:cover;
+  background-position:center;
+  background-color:var(--surface-alt);
+  flex:0 0 36px;
+  border:1px solid var(--border);
+}
+.sidebar-profile-name{font-size:13.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ---------------- Center content ---------------- */
+.app-main{
+  flex:1;
+  min-width:0;
+  max-width:640px;
+  height:100%;
+  overflow-y:auto;
+}
+
+/* ---------------- Right sidebar ---------------- */
+.app-right-sidebar{
+  flex:0 0 320px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  height:100%;
+  overflow-y:auto;
+}
+.right-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--card-shadow);
+  padding:18px;
+}
+
+.search-card{display:flex;align-items:center;gap:10px;padding:12px 16px;}
+.search-card i{color:var(--text-muted);}
+.search-card input{
+  border:none;background:none;outline:none;
+  flex:1;color:var(--text);font-size:14px;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.search-card input::placeholder{color:var(--text-muted);}
+
+.right-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.right-card-head h6{margin:0;font-family:'Newsreader',serif;font-weight:700;font-size:16px;color:var(--text);}
+.right-card-head a{font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;}
+
+.event-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.event-row:last-of-type{border-bottom:none;}
+.event-date-badge{
+  flex:0 0 42px;width:42px;height:42px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:16px;
+}
+.event-badge-primary{background:rgba(74,108,247,.15);color:var(--accent);}
+.event-badge-danger{background:rgba(229,72,77,.15);color:var(--danger);}
+.event-badge-success{background:rgba(48,164,108,.15);color:var(--success);}
+.event-info{flex:1;min-width:0;}
+.event-title{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.event-location{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;}
+
+.quicklinks-card{display:flex;flex-direction:column;gap:2px;padding:10px;}
+.quicklinks-card a{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 10px;border-radius:10px;
+  color:var(--text);text-decoration:none;font-size:14px;font-weight:500;
+}
+.quicklinks-card a:hover{background:var(--surface-alt);text-decoration:none;color:var(--text);}
+.quicklinks-card a i{font-size:17px;color:var(--accent);width:20px;text-align:center;}
+
+.wtf-row{display:flex;align-items:center;gap:10px;padding:9px 0;}
+.wtf-avatar{
+  width:38px;height:38px;border-radius:50%;
+  background-size:cover;background-position:center;
+  background-color:var(--surface-alt);flex:0 0 38px;
+}
+.wtf-info{flex:1;min-width:0;}
+.wtf-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wtf-handle{font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.follow-btn{border-radius:999px;font-size:12.5px;padding:5px 14px;}
+.show-more-link{display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--accent);text-decoration:none;font-weight:600;}
+
+.empty-state-small{color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0;}
+
+.center-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--card-shadow);
+  padding:22px;
+  margin-bottom:16px;
+}
+.center-card h4{font-family:'Newsreader',serif;color:var(--text);margin-bottom:8px;}
+.center-card p{color:var(--text-muted);margin:0;}
+
+@media (max-width: 992px){
+  .app-shell{flex-direction:column;height:auto;}
+  .app-sidebar, .app-main, .app-right-sidebar{
+    flex:1 1 auto;
+    width:100%;
+    height:auto;
+    overflow-y:visible;
+  }
+}

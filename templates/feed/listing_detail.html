@@ -1,0 +1,100 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}{{ listing.title }} — Marketplace — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}One marketplace listing (feed/views.py listing_detail; Chat seller / Make offer are
+feed/details.py). Styles: restyle.css ("Detail pages").{% endcomment %}
+{% with sp=listing.seller.student_profile %}
+<div class="dt">
+  <div class="dt-topbar">
+    <a href="{% url 'marketplace' %}" class="dt-icon-btn" aria-label="Back to Marketplace"><i class="bi bi-arrow-left"></i></a>
+    <h1>Listing</h1>
+    <button type="button" class="dt-icon-btn js-dt-share" data-url="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" data-title="{{ listing.title }}" aria-label="Share listing" title="Share"><i class="bi bi-share"></i></button>
+    {% if listing.seller_id != request.user.id %}<a href="{% url 'report_item' 'listing' listing.id %}" class="dt-icon-btn" aria-label="Report listing" title="Report listing"><i class="bi bi-flag"></i></a>{% endif %}
+  </div>
+
+  <div class="dt-photo{% if not listing.cover_image %} is-empty{% endif %}" id="listingMainImage" {% if listing.cover_image %}style="background-image:url('{{ listing.cover_image.url }}')"{% endif %}>
+    {% if not listing.cover_image %}<i class="bi {{ listing.category_icon }}"></i>{% endif %}
+    {% if listing.is_sold %}<span class="dt-sold">Sold</span>{% endif %}
+  </div>
+  {% if listing.images.all|length > 1 %}
+    <div class="dt-thumbs">
+      {% for img in listing.images.all %}
+        <button type="button" class="dt-thumb js-listing-thumb{% if forloop.first %} active{% endif %}" data-image-url="{{ img.image.url }}" style="background-image:url('{{ img.image.url }}')" aria-label="Photo {{ forloop.counter }}"></button>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <article class="dt-body">
+    <div class="dt-title-row">
+      <h2 class="dt-title">{{ listing.title }}</h2>
+      <span class="dt-ago">{{ listing.created_at|ago }}</span>
+    </div>
+    <div class="dt-price">₦{{ listing.price|floatformat:"-2g" }}</div>
+
+    <a href="{% url 'seller_reviews' listing.seller.username %}?from={{ listing.id }}" class="dt-seller" title="See {{ listing.seller.first_name|default:'the seller' }}'s reviews">
+      <span class="dt-seller-avatar" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+      <span class="dt-seller-text">
+        <b>{{ listing.seller.get_full_name|default:listing.seller.username }}</b>
+        <small><i class="bi bi-patch-check-fill"></i> Verified student{% if sp.university %} · {{ sp.university.short_name }}{% endif %}</small>
+        <small class="dt-stars-line">{% if seller_rating.count %}<i class="bi bi-star-fill"></i> {{ seller_rating.avg }} ({{ seller_rating.count }} review{{ seller_rating.count|pluralize }}){% else %}<i class="bi bi-star"></i> No reviews yet{% endif %}</small>
+      </span>
+      <i class="bi bi-chevron-right dt-chev"></i>
+    </a>
+
+    <dl class="dt-facts">
+      <div><dt>Condition:</dt><dd>{{ listing.get_condition_display }}</dd></div>
+      {% if listing.location %}<div><dt>Location:</dt><dd>{{ listing.location }}</dd></div>{% endif %}
+      <div><dt>Category:</dt><dd>{{ listing.get_category_display }}</dd></div>
+      <div><dt>Available:</dt><dd>{{ listing.quantity_available }}</dd></div>
+    </dl>
+
+    {% if listing.description %}<div class="dt-text">{{ listing.description|linebreaks|urlize }}</div>{% endif %}
+
+    {% if is_own_listing %}
+      <p class="dt-note"><i class="bi bi-info-circle"></i> <span>This is your listing — edit it or mark it sold from <a href="{% url 'marketplace' %}?tab=mine">Marketplace › Mine</a>.</span></p>
+    {% elif listing.is_sold %}
+      <p class="dt-note"><i class="bi bi-info-circle"></i> <span>This item has already been sold.</span></p>
+    {% else %}
+      <div class="dt-actions is-stacked">
+        <form method="post" action="{% url 'listing_chat' listing.id %}">{% csrf_token %}
+          <button type="submit" class="dt-btn"><i class="bi bi-chat-dots"></i> Chat Seller</button>
+        </form>
+        <details class="dt-offer">
+          <summary class="dt-btn is-ghost"><i class="bi bi-tag"></i> Make Offer</summary>
+          <form method="post" action="{% url 'listing_offer' listing.id %}" class="dt-offer-form">{% csrf_token %}
+            <label for="dtOffer">Your offer</label>
+            <div class="dt-offer-row">
+              <span class="dt-naira">₦</span>
+              <input type="text" inputmode="numeric" id="dtOffer" name="amount" placeholder="{{ listing.price|floatformat:'0' }}" autocomplete="off" required>
+              <button type="submit" class="dt-btn is-sm">Send offer</button>
+            </div>
+            <small>Your offer goes to the seller as a chat message — you can edit it before sending.</small>
+          </form>
+        </details>
+        <form method="post" action="{% url 'add_to_cart' %}" class="dt-cart">{% csrf_token %}
+          <input type="hidden" name="listing_id" value="{{ listing.id }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit" class="dt-link"><i class="bi bi-cart-plus"></i> {% if in_cart_quantity %}Add another to cart ({{ in_cart_quantity }} in cart){% else %}Add to cart{% endif %}</button>
+        </form>
+      </div>
+    {% endif %}
+  </article>
+</div>
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+{% include 'feed/_detail_share_js.html' %}
+<script>
+$(function () {
+  $(document).off('click.dtthumb').on('click.dtthumb', '.js-listing-thumb', function () {
+    $('#listingMainImage').css('background-image', "url('" + $(this).data('image-url') + "')").removeClass('is-empty').find('i').hide();
+    $('.js-listing-thumb').removeClass('active');
+    $(this).addClass('active');
+  });
+});
+</script>
+{% endblock %}

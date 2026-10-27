@@ -1,0 +1,31 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>User Management</h1><p>Find student accounts, check their reports and act when it's justified.{% if admin.university %} Showing {{ admin.university.short_name }} only.{% endif %}</p></div></div>
+<section class="ad-panel">
+  <form method="get" class="ad-toolbar">
+    <input type="search" name="q" value="{{ q }}" placeholder="Name, username{% if 'private_details' in admin.perms %}, email, matric number{% endif %}, university, faculty or department" aria-label="Search users">
+    <select name="status" aria-label="Status">{% for v, l in statuses %}<option value="{{ v }}"{% if v == status %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    {% if universities %}<select name="university" aria-label="University"><option value="">All universities</option>{% for u in universities %}<option value="{{ u.pk }}"{% if u.pk|stringformat:'s' == uni %} selected{% endif %}>{{ u.short_name }}</option>{% endfor %}</select>{% endif %}
+    <button class="ad-btn primary" type="submit"><i class="bi bi-search"></i> Search</button>
+  </form>
+  <div class="ad-table-wrap"><table class="ad-table">
+    <thead><tr><th>Student</th><th>University</th><th>Department · Level</th><th>Joined</th><th>Open reports</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for p in page %}
+      <tr>
+        <td><div class="ad-user"><span class="ad-avatar"{% if p.profile_photo %} style="background-image:url('{{ p.profile_photo.url }}')"{% endif %}>{% if not p.profile_photo %}{{ p.user.first_name|default:p.user.username|slice:':1'|upper }}{% endif %}</span>
+          <div><b>{{ p.user.get_full_name|default:p.user.username }}{% if p.is_flagged %}<i class="bi bi-exclamation-triangle-fill ad-flag" title="Flagged: many open reports or a shared matric number"></i>{% endif %}</b><small>@{{ p.user.username }}{% if 'private_details' in admin.perms %} · {{ p.university_email }}{% endif %}</small></div></div></td>
+        <td>{{ p.university.short_name }}</td>
+        <td class="mut">{{ p.department.name }} · {{ p.level.name }}</td>
+        <td class="mut">{{ p.created_at|date:"d M Y" }}</td>
+        <td class="num">{% if p.n_reports %}<span class="pill red">{{ p.n_reports }}</span>{% else %}<span class="mut">0</span>{% endif %}</td>
+        <td>{% if p.is_suspended %}<span class="pill red">Suspended</span>{% elif not p.user.is_active %}<span class="pill grey">Deactivated</span>{% elif p.is_verified %}<span class="pill green">Verified</span>{% else %}<span class="pill amber">Unverified</span>{% endif %}</td>
+        <td><a class="ad-btn sm" href="{% url 'staff_user' p.user_id %}">View</a></td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="ad-empty">No students match.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'adminpanel/_pages.html' %}
+</section>
+{% endblock %}

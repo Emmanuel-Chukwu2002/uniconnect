@@ -1,0 +1,49 @@
+{% extends 'accounts/auth_base.html' %}
+{% comment %}
+  Two-column frame shared by sign-in and sign-up (static/css/login.css):
+  the UniConnect introduction on the left stays put, and only the right-hand
+  panel (#lpPanel) changes. static/js/auth.js swaps that panel in place when
+  someone clicks Sign Up / Sign In or moves through the sign-up steps, so the
+  page never reloads; without JavaScript every link and form still works as
+  a normal page load.
+{% endcomment %}
+{% block auth_body %}
+{% block welcome %}{% endblock %}
+<div class="lp-split">
+  <aside class="lp-intro">
+    <a href="{% url 'login' %}" class="lp-brand" aria-label="UniConnect">
+      <i class="bi bi-mortarboard-fill lp-cap"></i>
+      <span>
+        <span class="lp-name">Uni<b>Connect</b></span>
+        <span class="lp-tagline">Your University. Your Community.</span>
+      </span>
+    </a>
+
+    <h1 class="lp-headline">Connect <span class="lp-spark">&#10022;</span> Learn<br>Grow <span class="lp-spark">&#10022;</span> Together</h1>
+    <p class="lp-lede">UniConnect is the ultimate social platform for university students. Join communities, discover opportunities, access resources, and be part of your campus life &mdash; all in one place.</p>
+
+    <ul class="lp-features">
+      <li><span class="lp-ico"><i class="bi bi-people-fill"></i></span><span><b>Join Communities</b>Find your people and share interests</span></li>
+      <li><span class="lp-ico"><i class="bi bi-briefcase-fill"></i></span><span><b>Find Opportunities</b>Internships, scholarships, events and more</span></li>
+      <li><span class="lp-ico is-green"><i class="bi bi-book-half"></i></span><span><b>Access Resources</b>Notes, study groups, course discussions</span></li>
+      <li><span class="lp-ico"><i class="bi bi-chat-dots"></i></span><span><b>Chat &amp; Connect</b>Message friends and join groups</span></li>
+      <li><span class="lp-ico is-pink"><i class="bi bi-shop"></i></span><span><b>Marketplace</b>Buy, sell and trade within your campus</span></li>
+      <li><span class="lp-ico"><i class="bi bi-bank"></i></span><span><b>Campus Pulse</b>Stay updated with what's happening</span></li>
+    </ul>
+
+    <figure class="lp-photo">
+      <img src="https://images.pexels.com/photos/6147219/pexels-photo-6147219.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1260" alt="Students sitting together on campus steps with a laptop" onerror="this.remove()">
+      <svg class="lp-wave" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70 C 150 125, 330 120, 600 20 L600 120 L0 120 Z"/></svg>
+      <figcaption>
+        <span>More than a platform&hellip;</span>
+        <span>It's your university home</span>
+        <svg class="lp-swash" viewBox="0 0 80 12" aria-hidden="true"><path d="M2 10 C 25 4, 50 2, 78 2"/></svg>
+      </figcaption>
+    </figure>
+  </aside>
+
+  <main class="lp-main" id="lpPanel">
+    {% block panel %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

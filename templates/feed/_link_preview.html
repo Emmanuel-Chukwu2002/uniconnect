@@ -1,0 +1,12 @@
+{% comment %}The card for the first link in a post (feed/link_previews.py): picture, title, summary, address.
+  Classes are lk-* (not lp-*): lp-* belongs to the sign-in page (login.css), and this stylesheet loads there too.{% endcomment %}
+{% with lp=post.link_preview %}
+<a href="{{ lp.url }}" class="lk-card{% if not lp.image_url %} no-image{% endif %}" target="_blank" rel="noopener noreferrer nofollow ugc">
+  {% if lp.image_url %}<span class="lk-image" style="background-image:url('{{ lp.image_url|urlencode:':/?=&%#.,-_~+' }}')" aria-hidden="true"></span>{% endif %}
+  <span class="lk-body">
+    <span class="lk-title">{{ lp.title }}</span>
+    {% if lp.description %}<span class="lk-desc">{{ lp.description }}</span>{% endif %}
+    <span class="lk-url"><i class="bi bi-link-45deg"></i> {{ lp.site_name|default:lp.domain }}</span>
+  </span>
+</a>
+{% endwith %}

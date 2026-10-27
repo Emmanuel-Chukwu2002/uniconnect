@@ -1,0 +1,27 @@
+{% comment %}
+  One member (m = CommunityMember) with their role. With `manage`
+  (admins and moderators), a menu: moderators remove members; admins
+  also choose roles and remove moderators.
+{% endcomment %}
+<div class="cm-member">
+  <a href="{% url 'user_profile' m.user.username %}" class="cm-member-avatar" style="{% if m.user.student_profile.profile_photo %}background-image:url('{{ m.user.student_profile.profile_photo.url }}'){% endif %}">{% if not m.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+  <a href="{% url 'user_profile' m.user.username %}" class="cm-member-info">
+    <span class="cm-member-name">{{ m.user.get_full_name|default:m.user.username }}{% if m.user_id == request.user.id %} <span class="cm-you">(you)</span>{% endif %}</span>
+    <span class="cm-member-sub">@{{ m.user.username }}{% if m.user.student_profile.department %} &middot; {{ m.user.student_profile.department.name }}{% endif %}{% if m.user.student_profile.university %} &middot; {{ m.user.student_profile.university.short_name }}{% endif %}</span>
+  </a>
+  {% if m.role == 'admin' %}<span class="cm-role cm-role-admin"><i class="bi bi-shield-fill-check"></i> Admin</span>
+  {% elif m.role == 'moderator' %}<span class="cm-role cm-role-mod"><i class="bi bi-shield-check"></i> Mod</span>{% endif %}
+  {% if manage and m.user_id != request.user.id and m.role == 'member' or manage and m.user_id != request.user.id and is_admin %}
+    <div class="dropdown cm-member-menu">
+      <button type="button" class="cm-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Manage {{ m.user.get_full_name|default:m.user.username }}"><i class="bi bi-three-dots"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end post-card-dropdown">
+        {% if is_admin %}
+          {% if m.role != 'moderator' %}<li><form method="post" action="{% url 'community_member_action' community.id m.id 'role' %}">{% csrf_token %}<input type="hidden" name="role" value="moderator"><button type="submit" class="dropdown-item"><i class="bi bi-shield-check"></i> Make moderator</button></form></li>{% endif %}
+          {% if m.role != 'admin' %}<li><form method="post" action="{% url 'community_member_action' community.id m.id 'role' %}">{% csrf_token %}<input type="hidden" name="role" value="admin"><button type="submit" class="dropdown-item"><i class="bi bi-shield-fill-check"></i> Make admin</button></form></li>{% endif %}
+          {% if m.role != 'member' %}<li><form method="post" action="{% url 'community_member_action' community.id m.id 'role' %}">{% csrf_token %}<input type="hidden" name="role" value="member"><button type="submit" class="dropdown-item"><i class="bi bi-person"></i> Make regular member</button></form></li>{% endif %}
+        {% endif %}
+        <li><form method="post" action="{% url 'community_member_action' community.id m.id 'remove' %}">{% csrf_token %}<button type="submit" class="dropdown-item text-danger"><i class="bi bi-person-dash"></i> Remove from community</button></form></li>
+      </ul>
+    </div>
+  {% endif %}
+</div>

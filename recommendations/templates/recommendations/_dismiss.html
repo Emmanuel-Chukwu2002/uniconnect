@@ -1,0 +1,7 @@
+{% comment %}People You May Know: dismiss one suggestion (Not interested on a person). Undo appears in its place.{% endcomment %}
+<form method="post" action="{% url 'recommendation_feedback' %}" class="js-rec-form rc-dismiss">{% csrf_token %}
+  <input type="hidden" name="item_type" value="user"><input type="hidden" name="item_id" value="{{ user_id }}">
+  <input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="value" value="not_interested">
+  <button type="submit" class="rc-btn rc-no js-rec-not" title="Not interested" aria-label="Don't suggest this person"><i class="bi bi-x-lg"></i></button>
+</form>
+<p class="rc-gone">Removed. <button type="button" class="js-rec-undo">Undo</button></p>

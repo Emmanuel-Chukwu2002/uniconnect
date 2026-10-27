@@ -1,0 +1,9 @@
+Hi {{ student.user.first_name }},
+
+Welcome to UniConnect. Please confirm your university email address to activate your account:
+
+{{ verify_url }}
+
+If you didn't create this account, you can safely ignore this email.
+
+— UniConnect

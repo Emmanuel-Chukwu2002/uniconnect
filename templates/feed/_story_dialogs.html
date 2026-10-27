@@ -1,0 +1,56 @@
+{% comment %}
+  The "Add to your story" upload dialog and the full-screen story
+  viewer. Used by the Home feed's Stories row and by Messages ->
+  Updates (which passes story_next so posting a status returns there).
+  app.js drives both (the Stories section near the end of the file).
+{% endcomment %}
+<div class="modal fade" id="storyUploadModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content compose-modal-content">
+      <form method="post" action="{% url 'create_story' %}" enctype="multipart/form-data" class="story-upload-form">
+        {% csrf_token %}
+        {% if story_next %}<input type="hidden" name="next" value="{{ story_next }}">{% endif %}
+        <div class="compose-modal-header">
+          <button type="button" class="compose-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+          <span class="story-upload-title">Add to your story</span>
+        </div>
+        <div class="story-upload-body">
+          <label class="story-upload-dropzone js-story-dropzone">
+            <img class="story-upload-preview js-story-upload-preview" alt="" hidden>
+            <span class="story-upload-placeholder js-story-upload-placeholder">
+              <i class="bi bi-image"></i>
+              <span>Choose a photo for your story</span>
+            </span>
+            {{ story_form.image }}
+          </label>
+          {{ story_form.caption }}
+        </div>
+        <div class="compose-modal-footer">
+          <span></span>
+          <button type="submit" class="btn btn-primary compose-post-btn js-story-upload-submit" disabled>Share to story</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="story-viewer" id="storyViewer" aria-hidden="true">
+  <div class="story-viewer-backdrop js-story-viewer-close"></div>
+  <div class="story-viewer-stage">
+    <div class="story-viewer-progress js-story-viewer-progress"></div>
+    <div class="story-viewer-header">
+      <div class="story-viewer-avatar js-story-viewer-avatar"></div>
+      <div class="story-viewer-head-text">
+        <span class="story-viewer-username js-story-viewer-username"></span>
+        <span class="story-viewer-time js-story-viewer-time"></span>
+      </div>
+      <button type="button" class="story-viewer-delete-btn js-story-viewer-delete" title="Delete this story" hidden><i class="bi bi-trash"></i></button>
+      <button type="button" class="story-viewer-close-btn js-story-viewer-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <img class="story-viewer-image js-story-viewer-image" alt="">
+    <div class="story-viewer-caption js-story-viewer-caption"></div>
+    <div class="story-viewer-views js-story-viewer-views"></div>
+    <button type="button" class="story-viewer-nav story-viewer-prev js-story-viewer-prev" aria-label="Previous story"><i class="bi bi-chevron-left"></i></button>
+    <button type="button" class="story-viewer-nav story-viewer-next js-story-viewer-next" aria-label="Next story"><i class="bi bi-chevron-right"></i></button>
+  </div>
+</div>

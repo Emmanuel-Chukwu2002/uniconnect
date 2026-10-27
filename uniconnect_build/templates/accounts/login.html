@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Sign in — UniConnect{% endblock %}
+
+{% block body %}
+<div class="portal">
+  <div class="portal-left">
+    <div class="crest">U</div>
+    <div>
+      <h1>Access your student portal</h1>
+      <p>One verified account for your university &mdash; your department, your courses, your people.</p>
+    </div>
+    <div class="portal-foot">UniConnect &middot; Student Information &amp; Community Platform</div>
+  </div>
+
+  <div class="portal-right">
+    <div class="portal-card">
+      <h2>Sign in</h2>
+      <div class="lede">Sign in with your university email</div>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-portal alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="login-mode-tabs">
+        <button type="button" class="mode-tab {% if mode != 'matric' %}active{% endif %}" data-mode="email">Email</button>
+        <button type="button" class="mode-tab {% if mode == 'matric' %}active{% endif %}" data-mode="matric">Registration Number</button>
+      </div>
+
+      <form method="post" id="emailLoginForm" novalidate style="{% if mode == 'matric' %}display:none;{% endif %}">
+        {% csrf_token %}
+        <input type="hidden" name="login_mode" value="email">
+        {{ email_form|crispy }}
+        <button type="submit" class="btn btn-primary btn-gold mt-2">Sign in</button>
+      </form>
+
+      <form method="post" id="matricLoginForm" novalidate style="{% if mode != 'matric' %}display:none;{% endif %}">
+        {% csrf_token %}
+        <input type="hidden" name="login_mode" value="matric">
+        {{ matric_form|crispy }}
+        <button type="submit" class="btn btn-primary btn-gold mt-2">Sign in</button>
+      </form>
+
+      <div class="switch-line">New student? <a href="{% url 'register' %}">Register with your matric number</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(function () {
+    $('.mode-tab').on('click', function () {
+      var mode = $(this).data('mode');
+      $('.mode-tab').removeClass('active');
+      $(this).addClass('active');
+      if (mode === 'email') {
+        $('#emailLoginForm').show();
+        $('#matricLoginForm').hide();
+      } else {
+        $('#emailLoginForm').hide();
+        $('#matricLoginForm').show();
+      }
+    });
+  });
+</script>
+{% endblock %}

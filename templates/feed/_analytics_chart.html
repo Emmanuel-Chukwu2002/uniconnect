@@ -1,0 +1,37 @@
+{% comment %}
+  Impressions per day, as columns (feed/analytics.py daily_bars). One series,
+  so no legend: the heading names it. Each column has a hover/focus tooltip;
+  "Show as a table" has the same numbers. Styles: restyle.css ("Post analytics").
+{% endcomment %}
+<figure class="an-chart" aria-labelledby="an-chart-title">
+  <figcaption class="an-chart-head"><h2 id="an-chart-title">{{ chart_title }}</h2><small>{{ chart_note }}</small></figcaption>
+  {% if scale %}
+    <div class="an-plot" style="--cols:{{ bars|length }}">
+      <div class="an-grid" aria-hidden="true">
+        <span style="bottom:100%"><em>{{ scale }}</em></span>
+        <span style="bottom:50%"><em>{{ scale_mid }}</em></span>
+        <span style="bottom:0"><em>0</em></span>
+      </div>
+      <div class="an-cols">
+        {% for b in bars %}
+          <div class="an-col" tabindex="0" aria-label="{{ b.label }}: {{ b.n }} impression{{ b.n|pluralize }}">
+            <span class="an-bar{% if not b.n %} is-zero{% endif %}" style="height:{{ b.pct }}%"></span>
+            <span class="an-tip" role="tooltip"><b>{{ b.n }}</b> impression{{ b.n|pluralize }}<small>{{ b.label }}</small></span>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="an-x" aria-hidden="true">
+        {% for b in bars %}<span>{% if forloop.first or forloop.last or bars|length <= 14 %}{{ b.short }}{% endif %}</span>{% endfor %}
+      </div>
+    </div>
+    <details class="an-table">
+      <summary>Show as a table</summary>
+      <table>
+        <thead><tr><th scope="col">Day</th><th scope="col">Impressions</th></tr></thead>
+        <tbody>{% for b in bars %}<tr><td>{{ b.label }}</td><td>{{ b.n }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </details>
+  {% else %}
+    <div class="an-empty"><i class="bi bi-bar-chart-line"></i><p>No impressions yet. They show up here as people scroll past {{ empty_what }}.</p></div>
+  {% endif %}
+</figure>

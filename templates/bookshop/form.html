@@ -1,0 +1,69 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_title %}{% if editing %}Edit listing{% else %}Sell a book{% endif %}{% endblock %}
+{% block bs_content %}
+<div class="bs-form-head">
+  <h1>{% if editing %}Edit your listing{% else %}Sell a book{% endif %}</h1>
+  <p>{% if editing %}Changes show up straight away.{% else %}List it in a minute — students at your university will see it in the Bookshop.{% endif %}</p>
+</div>
+
+{% if form.non_field_errors %}<div class="bs-alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="bs-form" novalidate>
+  {% csrf_token %}
+  <div class="bs-form-cover">
+    <div class="bs-uploader js-bs-uploader{% if book.cover %} has-image{% endif %}">
+      <img class="bs-uploader-img js-bs-cover-preview" alt="Cover preview" {% if book.cover %}src="{{ book.cover.url }}"{% else %}hidden{% endif %}>
+      <label class="bs-uploader-empty" for="{{ form.cover.id_for_label }}">
+        <i class="bi bi-camera"></i>
+        <strong>Add a cover photo</strong>
+        <span>A clear photo of the front cover sells faster</span>
+      </label>
+      {{ form.cover }}
+    </div>
+    <div class="bs-uploader-actions">
+      <label for="{{ form.cover.id_for_label }}" class="bs-btn bs-btn-ghost"><i class="bi bi-image"></i> <span class="js-bs-cover-label">{% if book.cover %}Change photo{% else %}Choose photo{% endif %}</span></label>
+      <button type="button" class="bs-btn bs-btn-ghost bs-btn-danger-text js-bs-cover-remove"{% if not book.cover %} hidden{% endif %}><i class="bi bi-trash"></i> Remove</button>
+      <input type="hidden" name="remove_cover" value="0" class="js-bs-remove-cover">
+    </div>
+    {% if form.cover.errors %}<span class="bs-field-error">{{ form.cover.errors|striptags }}</span>{% endif %}
+    <p class="bs-form-tip"><i class="bi bi-lightbulb"></i> No photo? We'll make a neat cover from the title.</p>
+  </div>
+
+  <div class="bs-form-fields">
+    <fieldset class="bs-card-box">
+      <legend>About the book</legend>
+      <div class="bs-field-grid">
+        {% include 'bookshop/_field.html' with f=form.title wide=1 %}
+        {% include 'bookshop/_field.html' with f=form.author wide=1 %}
+        {% include 'bookshop/_field.html' with f=form.category %}
+        {% include 'bookshop/_field.html' with f=form.condition %}
+        {% include 'bookshop/_field.html' with f=form.edition %}
+      </div>
+    </fieldset>
+    <fieldset class="bs-card-box">
+      <legend>Price &amp; course</legend>
+      <div class="bs-field-grid">
+        {% include 'bookshop/_field.html' with f=form.price %}
+        {% include 'bookshop/_field.html' with f=form.course_code %}
+        {% include 'bookshop/_field.html' with f=form.department wide=1 %}
+      </div>
+    </fieldset>
+    <fieldset class="bs-card-box">
+      <legend>Description</legend>
+      {% include 'bookshop/_field.html' with f=form.description wide=1 %}
+    </fieldset>
+    <fieldset class="bs-card-box">
+      <legend>Handing it over</legend>
+      <div class="bs-field-grid">
+        {% include 'bookshop/_field.html' with f=form.meetup_spot wide=1 %}
+        {% include 'bookshop/_field.html' with f=form.contact_phone wide=1 %}
+      </div>
+      <p class="bs-form-tip"><i class="bi bi-shield-check"></i> Buyers can always message you in UniConnect. Your phone number only shows if you add it.</p>
+    </fieldset>
+    <div class="bs-form-submit">
+      <a href="{% if editing %}{% url 'bookshop_detail' book.pk %}{% else %}{% url 'bookshop' %}{% endif %}" class="bs-btn bs-btn-ghost">Cancel</a>
+      <button type="submit" class="bs-btn bs-btn-primary bs-btn-lg"><i class="bi {% if editing %}bi-check-lg{% else %}bi-upload{% endif %}"></i> {% if editing %}Save changes{% else %}Put it on sale{% endif %}</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

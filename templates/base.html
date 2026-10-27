@@ -1,0 +1,621 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}UniConnect{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    /* Settings > Appearance: font and text size chosen on this device
+       (localStorage uc-font / uc-font-size). Applied before the page draws;
+       styles in static/css/restyle.css ("Font and text size"). */
+    window.UC = window.UC || {};
+    UC.applyFontPrefs = function () {
+      var d = document.documentElement, font = null, size = null;
+      try { font = localStorage.getItem('uc-font'); size = localStorage.getItem('uc-font-size'); } catch (e) {}
+      if (size && size !== '3') { d.setAttribute('data-font-size', size); } else { d.removeAttribute('data-font-size'); }
+      if (font && font !== 'default') { d.setAttribute('data-font', font); } else { d.removeAttribute('data-font'); }
+      var web = { inter: 'Inter:wght@400;500;600;700;800', nunito: 'Nunito+Sans:wght@400;600;700;800', poppins: 'Poppins:wght@400;500;600;700' }[font];
+      if (web && !document.getElementById('ucFont-' + font)) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet'; l.id = 'ucFont-' + font;
+        l.href = 'https://fonts.googleapis.com/css2?family=' + web + '&display=swap';
+        document.head.appendChild(l);
+      }
+    };
+    UC.applyFontPrefs();
+  </script>
+
+  <!-- Bootstrap 5 (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}?v=8">
+  <link rel="stylesheet" href="{% static 'css/media-viewer.css' %}?v=8">
+  {% block extra_css %}{% endblock %}
+  {# The look from the design PDF, on top of every page's own styles (remove this line to undo it). #}
+  <link rel="stylesheet" href="{% static 'css/restyle.css' %}?v=88">
+
+  <!-- Page switching fade. Inside the app, static/js/nav.js loads pages in
+       place (no refresh); for the few full page loads left (Messages, login,
+       ...) the browser keeps the old page on screen until the new one is
+       ready, then fades it in. -->
+  <style>
+    @view-transition { navigation: auto; }
+    /* A short, even cross-fade; the sidebars look the same in both pages,
+       so only the middle visibly changes. */
+    ::view-transition-group(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+    /* Opening Messages (or leaving it): the left menu and the right bar slide
+       to their new width and the middle grows, instead of jumping. The names
+       are only switched on for those page loads (script below). */
+    html.vt-messages .app-sidebar { view-transition-name: uc-left; }
+    html.vt-messages .app-right-sidebar, html.vt-messages .app-right-rail { view-transition-name: uc-right; }
+    html.vt-messages .app-main { view-transition-name: uc-main; }
+    html.vt-messages::view-transition-group(uc-left), html.vt-messages::view-transition-group(uc-right), html.vt-messages::view-transition-group(uc-main),
+    html.vt-messages::view-transition-old(uc-left), html.vt-messages::view-transition-new(uc-left),
+    html.vt-messages::view-transition-old(uc-right), html.vt-messages::view-transition-new(uc-right),
+    html.vt-messages::view-transition-old(uc-main), html.vt-messages::view-transition-new(uc-main) {
+      animation-duration: .5s; animation-timing-function: cubic-bezier(.22,.8,.26,1);
+    }
+    html.vt-messages::view-transition-old(uc-left), html.vt-messages::view-transition-new(uc-left),
+    html.vt-messages::view-transition-old(uc-right), html.vt-messages::view-transition-new(uc-right),
+    html.vt-messages::view-transition-old(uc-main), html.vt-messages::view-transition-new(uc-main) { width: 100%; height: 100%; object-fit: none; object-position: left top; overflow: clip; }
+    @media (prefers-reduced-motion: reduce) {
+      ::view-transition-group(root), ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+      html.vt-messages::view-transition-group(*), html.vt-messages::view-transition-old(*), html.vt-messages::view-transition-new(*) { animation: none; }
+    }
+  </style>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      function isMessages(url) { try { return /^\/messages(\/|$)/.test(new URL(url, location.href).pathname); } catch (e) { return false; } }
+      // Old page, just before it is captured: going to or from Messages?
+      window.addEventListener('pageswap', function (e) {
+        var to = e.activation && e.activation.entry && e.activation.entry.url;
+        if (e.viewTransition && (isMessages(location.href) || isMessages(to))) { root.classList.add('vt-messages'); }
+      });
+      // New page, before its first paint.
+      window.addEventListener('pagereveal', function (e) {
+        var from = window.navigation && navigation.activation && navigation.activation.from && navigation.activation.from.url;
+        if (e.viewTransition && (isMessages(location.href) || isMessages(from))) {
+          root.classList.add('vt-messages');
+          e.viewTransition.finished.finally(function () { root.classList.remove('vt-messages'); });
+        }
+      });
+      // Coming back from the back/forward cache: no leftover names.
+      window.addEventListener('pageshow', function (e) { if (e.persisted) { root.classList.remove('vt-messages'); } });
+    })();
+  </script>
+
+</head>
+<body>
+<script>
+  // Light (white) is the default; dark only when chosen with the Dark Mode
+  // switch or Settings > Appearance (saved as theme = "dark").
+  var ucTheme = null;
+  try { ucTheme = localStorage.getItem('theme'); } catch (e) {}
+  if (ucTheme !== 'dark') {
+    document.body.classList.add('light-mode');
+  }
+</script>
+
+{% if messages or new_class_reminders %}
+  <div class="toast-stack" id="toastStack">
+    {% for r in new_class_reminders %}
+      {# A class starting soon (courses/reminders.py). Stays until closed or tapped. #}
+      <div class="class-reminder-pop" role="alert">
+        <span class="class-reminder-ico"><i class="bi bi-alarm-fill"></i></span>
+        <a class="class-reminder-text" href="{{ r.url }}"><b>{{ r.title }}</b><span>{{ r.text }}</span></a>
+        <button type="button" class="toast-close-btn js-reminder-close" aria-label="Dismiss"><i class="bi bi-x"></i></button>
+      </div>
+    {% endfor %}
+    {% for message in messages %}
+      <div class="toast-message toast-{{ message.tags }}">
+        <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+        <span>{{ message }}</span>
+        <button type="button" class="toast-close-btn" aria-label="Dismiss"><i class="bi bi-x"></i></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if user.is_authenticated %}
+  <!-- Quote composer: opened from a post's Repost menu -> Quote
+       (static/js/app.js, "Repost & Quote"). One shared pop-up for every
+       page; the post being quoted is loaded into .js-quote-preview. -->
+  <div class="modal fade" id="quoteComposerModal" tabindex="-1" aria-labelledby="quoteComposerTitle" aria-hidden="true"
+       data-me-id="{{ user.id }}" data-me-url="{% url 'user_profile' user.username %}">
+    <div class="modal-dialog modal-dialog-centered quote-modal-dialog">
+      <div class="modal-content compose-modal-content quote-modal-content">
+        <form class="js-quote-form" method="post" enctype="multipart/form-data" novalidate data-no-soft data-ajax-submit="1">
+          <div class="compose-modal-header">
+            <button type="button" class="compose-close-btn" data-bs-dismiss="modal" aria-label="Cancel"><i class="bi bi-x-lg"></i></button>
+            <span class="quote-modal-title" id="quoteComposerTitle">Quote post</span>
+            <span class="quote-modal-spacer"></span>
+          </div>
+          <div class="compose-modal-body">
+            <div class="compose-avatar" style="{% if user.student_profile.profile_photo %}background-image:url({{ user.student_profile.profile_photo.url }}){% endif %}">
+              {% if not user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+            </div>
+            <div class="compose-input-area quote-input-area">
+              <div class="quote-modal-who"><strong>{{ user.get_full_name|default:user.username }}</strong> <span>@{{ user.username }}</span></div>
+              <textarea name="content" class="quote-textarea js-quote-text" placeholder="Add a comment" rows="2" maxlength="500" aria-label="Your comment"></textarea>
+              {# Your own photos / video for the quote (same rules as any post: up to 4 photos, or one video). #}
+              <div class="compose-media-preview-grid js-new-media-grid quote-media-grid"></div>
+              {% include 'feed/_compose_video_extras.html' %}
+              <div class="quote-preview-slot js-quote-preview"></div>
+              <div class="compose-reply-pill"><i class="bi bi-globe2"></i> Everyone can reply</div>
+              <div class="quote-error js-quote-error" role="alert" hidden></div>
+            </div>
+          </div>
+          <div class="compose-modal-footer">
+            <div class="compose-toolbar">
+              <label class="compose-tool-btn" title="Add up to 4 photos, or a video">
+                <i class="bi bi-image"></i>
+                <input type="file" accept="image/*,video/*" class="compose-media-input js-quote-media-input" name="media" multiple hidden>
+              </label>
+              <span class="compose-tool-btn compose-tool-disabled" title="GIFs are coming soon"><i class="bi bi-filetype-gif"></i></span>
+              <span class="compose-tool-btn compose-tool-disabled" title="Polls are coming soon"><i class="bi bi-bar-chart-steps"></i></span>
+              <span class="compose-tool-btn compose-tool-disabled" title="Emoji picker is coming soon"><i class="bi bi-emoji-smile"></i></span>
+              <span class="compose-tool-btn compose-tool-disabled" title="Scheduling is coming soon"><i class="bi bi-clock-history"></i></span>
+              <span class="compose-tool-btn compose-tool-disabled" title="Location tagging is coming soon"><i class="bi bi-geo-alt"></i></span>
+            </div>
+            <div class="quote-footer-right">
+              <span class="quote-counter js-quote-counter" aria-live="polite">0 / 500</span>
+              <button type="submit" class="btn btn-primary quote-submit-btn js-quote-submit" disabled>Quote</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if user.is_authenticated %}
+  {# Bookmark folders picker (static/js/bookmark-folders.js, feed/bookmark_folders.py) #}
+  <div class="modal fade" id="bookmarkFolderModal" tabindex="-1" aria-hidden="true" aria-labelledby="bfTitle">
+    <div class="modal-dialog modal-dialog-centered bf-dialog">
+      <div class="modal-content bf-modal">
+        <div class="bf-head">
+          <h3 id="bfTitle" class="js-bf-title">Save to a folder</h3>
+          <button type="button" class="bf-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="bf-list js-bf-list" role="list"><div class="bf-loading"><span class="spinner-border spinner-border-sm"></span></div></div>
+        <form class="bf-new js-bf-new-form" autocomplete="off">
+          <i class="bi bi-folder-plus"></i>
+          <input type="text" class="js-bf-new-name" maxlength="30" placeholder="New folder, e.g. Exam prep" aria-label="New folder name">
+          <button type="submit" class="dt-btn is-sm">Create</button>
+        </form>
+        <p class="bf-error js-bf-error" role="alert" hidden></p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content confirm-modal-content">
+        <div class="confirm-modal-body">
+          <h6 class="confirm-modal-title">Delete this post?</h6>
+          <p class="confirm-modal-text">This can't be undone.</p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn confirm-modal-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn confirm-modal-delete-btn" id="confirmDeleteModalBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register-for-event modal — opened from an event card's Register
+       button (Events tab). One shared modal, re-centered on whichever
+       event was clicked via the hidden event_id field, so you pick a
+       role before joining instead of being registered immediately. -->
+  <div class="modal fade" id="eventRegisterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered event-register-modal-dialog">
+      <div class="modal-content confirm-modal-content">
+        <form method="post" action="{% url 'toggle_attendance' %}" id="eventRegisterForm">
+          {% csrf_token %}
+          <input type="hidden" name="event_id" id="eventRegisterEventId" value="">
+          <input type="hidden" name="next" id="eventRegisterNext" value="">
+          <div class="confirm-modal-body">
+            <h6 class="confirm-modal-title">Register</h6>
+            <div class="event-register-modal-field">
+              <label>Event</label>
+              <div class="events-input event-register-modal-static" id="eventRegisterEventTitle"></div>
+            </div>
+            <div class="event-register-modal-field">
+              <label for="eventRegisterRoleSelect">Role</label>
+              <select name="attendee_type" id="eventRegisterRoleSelect" class="events-select">
+                <option value="attendee">Attendee</option>
+                <option value="speaker">Speaker</option>
+                <option value="vip">VIP</option>
+              </select>
+            </div>
+          </div>
+          <div class="confirm-modal-footer">
+            <button type="button" class="btn confirm-modal-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn confirm-modal-register-btn">Register</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit-event modal — opened from an event card's 3-dot menu ("Edit
+       event"). One shared modal, re-targeted and pre-filled via JS from
+       the clicked card's data-event-* attributes, same reuse pattern as
+       the register/delete modals above. -->
+  <div class="modal fade" id="eventEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered event-edit-modal-dialog">
+      <div class="modal-content confirm-modal-content">
+        <form method="post" id="eventEditForm" enctype="multipart/form-data" class="events-form"
+              data-url-template="{% url 'edit_event' 0 %}">
+          {% csrf_token %}
+          <div class="confirm-modal-body">
+            <h6 class="confirm-modal-title">Edit event</h6>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="eventEditTitle">Event name</label>
+                <input type="text" name="title" id="eventEditTitle" class="events-input" required>
+              </div>
+              <div class="events-form-field">
+                <label for="eventEditCategory">Category</label>
+                <select name="category" id="eventEditCategory" class="events-select">
+                  <option value="conference">Conference</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="concert">Concert</option>
+                  <option value="sports">Sports</option>
+                  <option value="exhibition">Exhibition</option>
+                  <option value="networking">Networking</option>
+                  <option value="festival">Festival</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="eventEditDate">Date</label>
+                <input type="date" name="date" id="eventEditDate" class="events-input" required>
+              </div>
+              <div class="events-form-field">
+                <label for="eventEditTime">Time</label>
+                <input type="time" name="time" id="eventEditTime" class="events-input">
+              </div>
+            </div>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="eventEditLocation">Location</label>
+                <input type="text" name="location" id="eventEditLocation" class="events-input" required>
+              </div>
+              <div class="events-form-field">
+                <label for="eventEditCapacity">Max participants</label>
+                <input type="number" name="capacity" id="eventEditCapacity" class="events-input" min="1" placeholder="Optional">
+              </div>
+            </div>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="eventEditPrice">Entry fee (₦)</label>
+                <input type="number" step="0.01" name="price" id="eventEditPrice" class="events-input" placeholder="0">
+              </div>
+              <div class="events-form-field">
+                <label for="eventEditImage">Event image</label>
+                <input type="file" name="image" id="eventEditImage" class="events-input" accept="image/*">
+                <small class="events-form-hint">Leave blank to keep the current image. For a crisp banner, use one at least 800px wide.</small>
+              </div>
+            </div>
+            <div class="events-form-field">
+              <label for="eventEditDescription">Description</label>
+              <textarea name="description" id="eventEditDescription" class="events-textarea" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="confirm-modal-footer">
+            <button type="button" class="btn confirm-modal-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn confirm-modal-register-btn">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit-listing modal — same shared-modal-with-URL-template pattern
+       as eventEditModal above, pre-filled from the clicked menu item's
+       data-listing-* attributes. Photos added here are *appended* to
+       the listing's existing photos, not a replacement. -->
+  <div class="modal fade" id="listingEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered event-edit-modal-dialog">
+      <div class="modal-content confirm-modal-content">
+        <form method="post" id="listingEditForm" enctype="multipart/form-data" class="events-form"
+              data-url-template="{% url 'edit_listing' 0 %}">
+          {% csrf_token %}
+          <div class="confirm-modal-body">
+            <h6 class="confirm-modal-title">Edit listing</h6>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="listingEditTitle">Item name</label>
+                <input type="text" name="title" id="listingEditTitle" class="events-input" required>
+              </div>
+              <div class="events-form-field">
+                <label for="listingEditCategory">Category</label>
+                <select name="category" id="listingEditCategory" class="events-select">
+                  <option value="textbooks">Textbooks</option>
+                  <option value="electronics">Electronics</option>
+                  <option value="furniture">Furniture</option>
+                  <option value="clothing">Clothing</option>
+                  <option value="appliances">Appliances</option>
+                  <option value="sports">Sports & Fitness</option>
+                  <option value="tickets">Tickets & Vouchers</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="listingEditCondition">Condition</label>
+                <select name="condition" id="listingEditCondition" class="events-select">
+                  <option value="new">New</option>
+                  <option value="like_new">Like New</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                </select>
+              </div>
+              <div class="events-form-field">
+                <label for="listingEditPrice">Price (₦)</label>
+                <input type="number" step="0.01" name="price" id="listingEditPrice" class="events-input" required>
+              </div>
+            </div>
+            <div class="events-form-row">
+              <div class="events-form-field">
+                <label for="listingEditQuantity">Quantity available</label>
+                <input type="number" name="quantity_available" id="listingEditQuantity" class="events-input" min="0" required>
+              </div>
+              <div class="events-form-field">
+                <label for="listingEditLocation">Meetup location</label>
+                <input type="text" name="location" id="listingEditLocation" class="events-input">
+              </div>
+            </div>
+            <div class="events-form-field">
+              <label for="listingEditImages">Add more photos</label>
+              <input type="file" name="images" id="listingEditImages" class="events-input" accept="image/*" multiple>
+              <small class="events-form-hint">Optional — new photos are added alongside the existing ones.</small>
+            </div>
+            <div class="events-form-field">
+              <label for="listingEditDescription">Description</label>
+              <textarea name="description" id="listingEditDescription" class="events-textarea" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="confirm-modal-footer">
+            <button type="button" class="btn confirm-modal-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn confirm-modal-register-btn">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event details modal — opened by clicking anywhere on an event
+       card (Events tab) that isn't one of its own controls (the 3-dot
+       menu, the register/attend button). Shows everything about the
+       event, including its cover photo, read via JS from the clicked
+       card's data-event-* attributes — no extra fetch needed. -->
+  <div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered event-details-modal-dialog">
+      <div class="modal-content confirm-modal-content event-details-modal-content">
+        <button type="button" class="event-details-modal-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        <div class="events-card-banner event-details-modal-banner" id="eventDetailsBanner">
+          <i class="bi" id="eventDetailsBannerIcon"></i>
+        </div>
+        <div class="event-details-modal-body">
+          <div class="events-card-top">
+            <h5 class="events-card-title" id="eventDetailsTitle"></h5>
+            <span class="events-card-category-pill" id="eventDetailsCategoryPill"></span>
+          </div>
+          <div class="events-card-meta">
+            <span><i class="bi bi-geo-alt"></i> <span id="eventDetailsLocation"></span></span>
+            <span><i class="bi bi-calendar3"></i> <span id="eventDetailsDateTime"></span></span>
+            <span id="eventDetailsOrganizerRow"><i class="bi bi-person"></i> Organized by <span id="eventDetailsOrganizer"></span></span>
+          </div>
+          <p class="event-details-modal-description" id="eventDetailsDescription"></p>
+          <div class="events-card-footer">
+            <span class="events-card-price" id="eventDetailsPrice"></span>
+            <span class="events-card-spots" id="eventDetailsAttending"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="mediaLightboxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered lightbox-dialog">
+      <div class="modal-content lightbox-content">
+        <button type="button" class="lightbox-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        <div class="lightbox-media-wrap">
+          <button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous photo"><i class="bi bi-chevron-left"></i></button>
+          <div class="lightbox-media"></div>
+          <button type="button" class="lightbox-nav lightbox-next" aria-label="Next photo"><i class="bi bi-chevron-right"></i></button>
+          <span class="lightbox-counter"></span>
+        </div>
+        <div class="lightbox-footer">
+          <div class="lightbox-actions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments modal — opened from a post's comment icon. Desktop:
+       the post (text/media) and the comment thread sit side by side,
+       so you can read comments while still seeing the content.
+       Mobile: the same modal, stacked instead of side-by-side (see
+       app.css). Both panes load lazily via AJAX when the modal opens. -->
+  <div class="modal fade" id="commentsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg comments-modal-dialog">
+      <div class="modal-content comments-modal-content">
+        <div class="comments-modal-header">
+          <div class="comments-modal-title-group">
+            <span class="comments-modal-title js-comments-count-title">Comments</span>
+            <button type="button" class="comments-modal-sort-btn" disabled title="Sorting comments is coming soon">
+              <i class="bi bi-sliders"></i>
+            </button>
+          </div>
+          <button type="button" class="comments-modal-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="comments-modal-body">
+          <div class="comments-modal-post-pane js-comments-post-pane"></div>
+          <div class="comments-modal-thread-pane">
+            <div class="comments-sheet-handle js-comments-sheet-handle" aria-hidden="true">
+              <span class="comments-sheet-handle-bar"></span>
+            </div>
+            <div class="comments-modal-thread-list js-comments-thread-list"></div>
+            <form class="comments-modal-composer js-comment-composer">
+              <div class="comment-composer-media-preview js-comment-media-preview"></div>
+              <div class="comment-composer-row">
+                <div class="comment-composer-avatar" style="{% if user.student_profile.profile_photo %}background-image:url({{ user.student_profile.profile_photo.url }}){% endif %}">
+                  {% if not user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+                </div>
+                <input type="text" class="comment-composer-input js-comment-composer-input" placeholder="Write a comment…" maxlength="1000">
+                <div class="comment-composer-extra-icons">
+                  <label class="comment-composer-icon-btn comment-composer-icon-enabled" title="Add a photo or video">
+                    <i class="bi bi-image"></i>
+                    <input type="file" class="js-comment-media-input" accept="image/*,video/*" hidden>
+                  </label>
+                  <button type="button" class="comment-composer-icon-btn comment-composer-icon-enabled js-emoji-btn" title="Emoji" aria-label="Add an emoji"><i class="bi bi-emoji-smile"></i></button>
+                </div>
+                <button type="submit" class="comment-composer-send-btn" aria-label="Post comment"><i class="bi bi-send-fill"></i></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share sheet — opened from a post's Share icon (.js-share-post).
+       A bottom sheet over the feed, so the video stays visible behind
+       it. Built on the same Bootstrap modal as the comments sheet (that
+       gives focus handling, Esc to close and page-scroll locking); the
+       slide-up, the dimmed backdrop and drag-to-dismiss are app.js +
+       app.css (see "Share sheet" in both). Things UniConnect can't do
+       yet (direct messages, reposts, reports, stitching) are shown as
+       "Soon", the same way the post menu already handles them. -->
+  <div class="modal share-sheet-modal" id="shareSheet" tabindex="-1" aria-labelledby="shareSheetTitle" aria-hidden="true"
+       data-bs-backdrop="false" data-invite-url="{{ request.scheme }}://{{ request.get_host }}{% url 'register' %}">
+    <div class="modal-dialog share-sheet-dialog">
+      <div class="modal-content share-sheet">
+        <div class="share-sheet-handle js-share-sheet-handle" aria-hidden="true"><span class="share-sheet-handle-bar"></span></div>
+        <div class="share-sheet-header">
+          <button type="button" class="share-sheet-icon-btn js-share-search-toggle" aria-label="Search people" aria-expanded="false" aria-controls="shareSheetSearch">
+            <i class="bi bi-search"></i>
+          </button>
+          <h2 class="share-sheet-title" id="shareSheetTitle">Send to</h2>
+          <button type="button" class="share-sheet-icon-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="share-sheet-search" hidden>
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" id="shareSheetSearch" class="js-share-search-input" placeholder="Search people you follow" autocomplete="off">
+        </div>
+
+        <div class="share-sheet-scroll">
+          <div class="share-row js-share-people" role="list" aria-label="People you follow">
+            {% for f in share_contacts %}
+              {% with person=f.following %}
+                <button type="button" class="share-target share-person js-share-person" role="listitem"
+                        data-name="{{ person.get_full_name|default:person.username }}" data-username="{{ person.username }}">
+                  <span class="share-target-icon share-person-avatar" {% if person.student_profile.profile_photo %}style="background-image:url('{{ person.student_profile.profile_photo.url }}')"{% endif %}>
+                    {% if not person.student_profile.profile_photo %}{{ person.first_name|default:person.username|first|upper }}{{ person.last_name|first|upper }}{% endif %}
+                  </span>
+                  <span class="share-target-label">{{ person.get_full_name|default:person.username }}</span>
+                </button>
+              {% endwith %}
+            {% endfor %}
+            <button type="button" class="share-target js-share-invite" role="listitem">
+              <span class="share-target-icon share-icon-invite"><i class="bi bi-plus-lg"></i></span>
+              <span class="share-target-label">Invite</span>
+            </button>
+            <p class="share-people-empty js-share-people-empty" hidden>No one you follow matches that name.</p>
+          </div>
+
+          <div class="share-row" role="list" aria-label="Share to">
+            <span class="share-target is-soon" role="listitem" title="Reposting is coming soon">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-repeat"></i></span>
+              <span class="share-target-label">Repost<small>Soon</small></span>
+            </span>
+            <a class="share-target js-share-out" role="listitem" data-network="whatsapp" target="_blank" rel="noopener" href="#">
+              <span class="share-target-icon share-icon-whatsapp"><i class="bi bi-whatsapp"></i></span>
+              <span class="share-target-label">WhatsApp</span>
+            </a>
+            <button type="button" class="share-target js-share-copy" role="listitem">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-link-45deg"></i></span>
+              <span class="share-target-label js-share-copy-label">Copy link</span>
+            </button>
+            <a class="share-target js-share-out" role="listitem" data-network="telegram" target="_blank" rel="noopener" href="#">
+              <span class="share-target-icon share-icon-telegram"><i class="bi bi-telegram"></i></span>
+              <span class="share-target-label">Telegram</span>
+            </a>
+            <a class="share-target js-share-out" role="listitem" data-network="facebook" target="_blank" rel="noopener" href="#">
+              <span class="share-target-icon share-icon-facebook"><i class="bi bi-facebook"></i></span>
+              <span class="share-target-label">Facebook</span>
+            </a>
+            <a class="share-target js-share-out" role="listitem" data-network="x" target="_blank" rel="noopener" href="#">
+              <span class="share-target-icon share-icon-x"><i class="bi bi-twitter-x"></i></span>
+              <span class="share-target-label">X</span>
+            </a>
+            <a class="share-target js-share-out" role="listitem" data-network="email" href="#">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-envelope"></i></span>
+              <span class="share-target-label">Email</span>
+            </a>
+            <button type="button" class="share-target js-share-native" role="listitem" hidden>
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-three-dots"></i></span>
+              <span class="share-target-label">More</span>
+            </button>
+          </div>
+
+          <div class="share-row share-row-actions" role="list" aria-label="More actions">
+            <span class="share-target is-soon" role="listitem" title="Reporting posts is coming soon">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-flag"></i></span>
+              <span class="share-target-label">Report<small>Soon</small></span>
+            </span>
+            <span class="share-target is-soon" role="listitem" title="Personalizing your feed is coming soon">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-heartbreak"></i></span>
+              <span class="share-target-label">Not interested<small>Soon</small></span>
+            </span>
+            <span class="share-target is-soon js-share-stitch" role="listitem" title="Stitching videos is coming soon">
+              <span class="share-target-icon share-icon-neutral"><i class="bi bi-scissors"></i></span>
+              <span class="share-target-label">Stitch<small>Soon</small></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% block body %}{% endblock %}
+
+<!-- jQuery (CDN, latest 3.x) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Bootstrap 5 bundle (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/nav.js' %}?v=9"></script>
+<script src="{% static 'js/feed-reveal.js' %}?v=4"></script>
+<script src="{% static 'js/app.js' %}?v=75"></script>
+<script src="{% static 'js/polls.js' %}?v=2"></script>
+<script src="{% static 'js/chat-polls.js' %}?v=2"></script>
+<script src="{% static 'js/mute-picker.js' %}?v=1"></script>
+<script src="{% static 'js/chat-pins.js' %}?v=1"></script>
+<script src="{% static 'js/chat-forward.js' %}?v=2"></script>
+<script src="{% static 'js/mentions.js' %}?v=2"></script>
+<script src="{% static 'js/compose-tools.js' %}?v=7"></script>
+<script src="{% static 'js/bookmark-folders.js' %}?v=1"></script>
+<script src="{% static 'js/post-views.js' %}?v=1"></script>
+<script src="{% static 'js/media-viewer.js' %}?v=7"></script>
+<script src="{% static 'js/video-player.js' %}?v=3"></script>
+<script src="{% static 'js/reels.js' %}?v=1"></script>
+<script src="{% static 'js/video-upload.js' %}?v=5"></script>
+<!-- Page-specific scripts. nav.js runs these again when it swaps a page in. -->
+<!-- Interested / Not interested on recommendations (recommendations app). -->
+<script src="{% static 'js/recommendations.js' %}?v=1"></script>
+
+<div id="ucPageScripts">{% block extra_js %}{% endblock %}</div>
+</body>
+</html>

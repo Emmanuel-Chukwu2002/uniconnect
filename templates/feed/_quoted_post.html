@@ -1,0 +1,49 @@
+{% comment %}
+  The original post shown inside a quote post (and in the quote
+  composer's preview). q = the quoted Post, or None if it was deleted.
+
+  Deliberately shallow: if q is itself a quote, it says who it quotes
+  instead of embedding again — so quotes of quotes never nest forever.
+  In the feed its photos and video show at the same size and layout as on
+  the original post (_post_media.html, embedded=True); its photos open the
+  original post rather than the photo viewer, so they never get mixed up
+  with the quote's own photos. The composer shows a compact preview.
+{% endcomment %}
+{% if q %}
+{% if in_composer %}
+{# The composer's preview: compact, just to show which post you're quoting. #}
+<div class="quote-embed quote-embed-static" data-quoted-id="{{ q.id }}">
+  {% include 'feed/_quoted_post_head.html' %}
+  {% with items=q.media_items.all %}
+    {% if items %}
+      <div class="quote-embed-media count-{{ items|length }}">
+        {% for m in items %}
+          <span class="quote-embed-thumb{% if m.is_video %} is-video{% endif %}">
+            {% if m.is_video %}
+              {% if m.poster_url %}<img src="{{ m.poster_url }}" alt="" loading="lazy">{% endif %}
+              <i class="bi bi-play-fill" aria-label="Video"></i>
+            {% else %}
+              <img src="{{ m.photo_thumb }}" alt="" loading="lazy">
+            {% endif %}
+          </span>
+        {% endfor %}
+      </div>
+    {% elif q.image %}
+      <div class="quote-embed-media count-1"><span class="quote-embed-thumb"><img src="{{ q.image.url }}" alt="" loading="lazy"></span></div>
+    {% elif q.video %}
+      <div class="quote-embed-media count-1"><span class="quote-embed-thumb is-video"><i class="bi bi-play-fill" aria-label="Video"></i></span></div>
+    {% endif %}
+  {% endwith %}
+</div>
+{% else %}
+{% comment %}In the feed: the original post with its photos and video at their full,
+   normal size (videos play right here). Clicking anywhere else on it
+   opens the original post (static/js/app.js, "Repost & Quote").{% endcomment %}
+<div class="quote-embed" data-quoted-id="{{ q.id }}" data-href="{% url 'post_detail' q.id %}" role="link" tabindex="0" aria-label="Quoted post by {{ q.author.get_full_name|default:q.author.username }}">
+  {% include 'feed/_quoted_post_head.html' %}
+  {% include 'feed/_post_media.html' with post=q embedded=True %}
+</div>
+{% endif %}
+{% else %}
+<div class="quote-embed quote-embed-gone"><i class="bi bi-eye-slash"></i> This post is unavailable.</div>
+{% endif %}

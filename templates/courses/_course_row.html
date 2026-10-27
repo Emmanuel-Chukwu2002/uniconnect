@@ -1,0 +1,15 @@
+{% comment %}One course in a list (courses/index.html). `c` is the course; `show_add` adds an Add button.{% endcomment %}
+<div class="cc-row">
+  <a href="{{ c.get_absolute_url }}" class="cc-row-link" aria-label="{{ c.code }} {{ c.title }}"></a>
+  <span class="cc-tile is-{{ c.colour }}"><i class="bi {{ c.icon }}"></i></span>
+  <span class="cc-row-text">
+    <b>{{ c.code }} – {{ c.title }}</b>
+    <small>{% if c.n_groups %}{{ c.n_groups }} study group{{ c.n_groups|pluralize }} · {% endif %}{{ c.n_students }} student{{ c.n_students|pluralize }}</small>
+  </span>
+  {% if show_add %}
+    {% if c.pk in my_ids %}<span class="cc-added"><i class="bi bi-check2"></i> Added</span>
+    {% else %}<form method="post" action="{% url 'course_enroll' c.pk %}" class="cc-add-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="cc-add"><i class="bi bi-plus-lg"></i> Add</button></form>{% endif %}
+  {% else %}
+    <i class="bi bi-chevron-right cc-chev"></i>
+  {% endif %}
+</div>

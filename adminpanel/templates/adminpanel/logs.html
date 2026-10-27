@@ -1,0 +1,18 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Admin Logs{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Admin Logs</h1><p>Every administrative action: who, what, which record, when and why. Entries can't be edited or deleted.</p></div></div>
+<section class="ad-panel">
+  <form method="get" class="ad-toolbar">
+    <select name="action" aria-label="Action"><option value="">Every action</option>{% for k, l in actions %}<option value="{{ k }}"{% if k == action %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <input type="search" name="who" value="{{ who }}" placeholder="Admin username" aria-label="Admin">
+    <button class="ad-btn" type="submit">Filter</button>
+  </form>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Record</th><th>Reason</th><th>University</th></tr></thead><tbody>
+  {% for l in page %}
+    <tr><td class="mut" style="white-space:nowrap">{{ l.created_at|date:"d M Y, H:i" }}</td><td>@{{ l.actor.username|default:"—" }}</td><td>{{ l.label }}</td>
+      <td>{{ l.target_label|default:"—"|truncatechars:60 }}{% if l.target_type %} <span class="mut">({{ l.target_type }}{% if l.target_id %} #{{ l.target_id }}{% endif %})</span>{% endif %}</td>
+      <td class="mut">{{ l.reason|truncatechars:120|default:"—" }}</td><td class="mut">{{ l.university.short_name|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="ad-empty">No actions logged yet.</td></tr>{% endfor %}
+  </tbody></table></div>{% include 'adminpanel/_pages.html' %}</section>
+{% endblock %}

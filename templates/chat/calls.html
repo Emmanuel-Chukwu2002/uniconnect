@@ -1,0 +1,46 @@
+{% extends 'chat/base.html' %}
+{% load chat_tags %}
+{% block wa_title %}Calls{% endblock %}
+{% block list_pane %}
+<header class="wa-pane-header">
+  <h1 class="wa-pane-title is-visible">Calls</h1>
+  <div class="wa-header-actions">
+    <div class="dropdown">
+      <button type="button" class="wa-icon-btn" data-bs-toggle="dropdown" aria-label="More options"><i class="bi bi-three-dots-vertical"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end wa-menu">
+        <li><button type="button" class="dropdown-item js-wa-new-call">New call</button></li>
+        <li><a class="dropdown-item" href="{% url 'home' %}">Back to UniConnect</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+<div class="wa-pane-scroll">
+  <h2 class="wa-section-title">Recent</h2>
+  {% for item in items %}
+    <div class="wa-call-row">
+      {% include 'chat/_avatar.html' with p=item.person size=49 %}
+      <span class="wa-row-body">
+        <span class="wa-row-name{% if item.missed %} is-missed{% endif %}">{{ item.person.name }}</span>
+        <span class="wa-call-meta">
+          <i class="bi {% if item.outgoing %}bi-arrow-up-right{% else %}bi-arrow-down-left{% endif %} {% if item.missed %}is-missed{% else %}is-ok{% endif %}"></i>
+          <time class="js-wa-time" data-ts="{{ item.call.started_at|date:'c' }}" data-format="call">{{ item.call.started_at|date:'j F, g:i a' }}</time>
+          {% if item.call.duration_seconds %}<span>· {{ item.call.duration_seconds|duration }}</span>{% endif %}
+        </span>
+      </span>
+      <button type="button" class="wa-icon-btn wa-call-again js-wa-call" data-user="{{ item.person.id }}" data-kind="{{ item.call.kind }}"
+              aria-label="{% if item.call.kind == 'video' %}Video call{% else %}Voice call{% endif %} {{ item.person.name }}">
+        <i class="bi {% if item.call.kind == 'video' %}bi-camera-video{% else %}bi-telephone{% endif %}"></i></button>
+    </div>
+  {% empty %}
+    <div class="wa-empty"><i class="bi bi-telephone"></i><p>No calls yet. Start one from a chat, or with the button below.</p></div>
+  {% endfor %}
+</div>
+<button type="button" class="wa-fab js-wa-new-call" aria-label="New call"><i class="bi bi-telephone-plus-fill"></i></button>
+{% endblock %}
+{% block main_pane %}
+<div class="wa-placeholder">
+  <div class="wa-placeholder-icon"><i class="bi bi-telephone"></i></div>
+  <h2>Calls</h2>
+  <p>Ring anyone on UniConnect. Your call history appears here.</p>
+</div>
+{% endblock %}

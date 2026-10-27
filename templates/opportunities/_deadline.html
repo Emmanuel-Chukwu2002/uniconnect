@@ -1,0 +1,6 @@
+{# Deadline badge: Closed / Last day / Closes in N days / date. #}
+{% if not opp.is_open %}<span class="op-tag is-closed"><i class="bi bi-lock"></i> Closed</span>
+{% elif opp.days_left == 0 %}<span class="op-tag is-urgent"><i class="bi bi-alarm"></i> Last day today</span>
+{% elif opp.days_left != None and opp.days_left <= 7 %}<span class="op-tag is-urgent"><i class="bi bi-alarm"></i> Closes in {{ opp.days_left }} day{{ opp.days_left|pluralize }}</span>
+{% elif opp.deadline %}<span class="op-tag"><i class="bi bi-calendar3"></i> Apply by {{ opp.deadline|date:"j M Y" }}</span>
+{% else %}<span class="op-tag"><i class="bi bi-infinity"></i> No deadline</span>{% endif %}

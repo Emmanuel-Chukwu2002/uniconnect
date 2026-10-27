@@ -1,0 +1,18 @@
+{% comment %}
+  The hover popup's content (latest few notifications), loaded by
+  app.js from /notifications/?preview=1. Same wording as the page —
+  it comes from feed/notifications.py.
+{% endcomment %}
+{% for entry in entries %}
+  <a href="{{ entry.url }}" class="notif-popup-item">
+    <div class="notif-popup-photo{% if entry.icon_avatar %} is-icon{% endif %}" {% if entry.avatar_url %}style="background-image:url({{ entry.avatar_url }})"{% endif %}>
+      {% if entry.icon_avatar %}<i class="bi {{ entry.icon_avatar }}"></i>{% elif not entry.avatar_url %}{{ entry.initials }}{% endif %}
+    </div>
+    <div class="notif-popup-text">
+      {{ entry.message }}
+      <small>{{ entry.time_ago }}</small>
+    </div>
+  </a>
+{% empty %}
+  <div class="notif-popup-empty">No notifications yet.</div>
+{% endfor %}

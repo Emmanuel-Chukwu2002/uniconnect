@@ -1,0 +1,32 @@
+<div class="modal fade" id="composePostModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content compose-modal-content">
+      <form method="post" action="{% url 'compose_post' %}" enctype="multipart/form-data" class="compose-form">
+        {% csrf_token %}
+        {% if community %}<input type="hidden" name="community" value="{{ community.id }}">{% endif %}
+        <div class="compose-modal-header">
+          <button type="button" class="compose-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+          <a href="{% url 'post_drafts' %}" class="compose-drafts-link">Drafts</a>
+        </div>
+        <div class="compose-modal-body">
+          <div class="compose-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">
+            {% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+          </div>
+          <div class="compose-input-area">
+            {% if community %}<div class="compose-community-pill"><i class="bi bi-people-fill"></i> Posting to <strong>{{ community.name }}</strong></div>{% endif %}
+            <textarea name="content" class="compose-textarea" placeholder="{% if community %}Share something with {{ community.name }}{% else %}What's happening?{% endif %}" rows="3"></textarea>
+            <div class="compose-media-preview-grid"></div>
+        {% include 'feed/_compose_poll.html' %}
+            {% include 'feed/_compose_video_extras.html' %}
+            {% include 'feed/_compose_extras.html' %}
+            <div class="compose-reply-pill">{% if community %}<i class="bi bi-people"></i> Shown in {{ community.name }} and to its members{% else %}<i class="bi bi-globe2"></i> Everyone can reply{% endif %}</div>
+          </div>
+        </div>
+        <div class="compose-modal-footer">
+          {% include 'feed/_compose_tools.html' %}
+          <button type="submit" class="btn btn-primary compose-post-btn" disabled>Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

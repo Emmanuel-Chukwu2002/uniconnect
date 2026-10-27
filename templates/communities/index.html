@@ -1,0 +1,167 @@
+{% extends 'feed/base_app.html' %}
+{% load static %}
+{% comment %}
+  Communities (communities/views.py: index).
+  Home    — posts from every community you're in, newest first.
+  Explore — browse by topic, search, and join. Styles: static/css/communities.css.
+{% endcomment %}
+{% block title %}Communities — UniConnect{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/communities.css' %}?v=4">{% endblock %}
+
+{% block feed_content %}
+<div class="cm">
+  <header class="cm-pagehead">
+    <span class="cm-pagehead-mark" aria-hidden="true"><i class="bi bi-people-fill"></i></span>
+    <div class="cm-pagehead-text">
+      <h1>Communities</h1>
+      <p>Find your people — at every university</p>
+    </div>
+    <a href="{% url 'community_create' %}" class="cm-btn cm-btn-primary"><i class="bi bi-plus-lg"></i><span>Create</span></a>
+  </header>
+
+  <nav class="cm-tabs cm-pagetabs" aria-label="Communities">
+    <a href="?tab=home" class="cm-tab {% if tab == 'home' %}active{% endif %}"><i class="bi bi-house-door"></i> Home</a>
+    <a href="?tab=explore" class="cm-tab {% if tab == 'explore' %}active{% endif %}"><i class="bi bi-compass"></i> Explore</a>
+  </nav>
+
+  {% if my_communities and tab == 'home' %}
+  <section class="cm-mine" aria-labelledby="cmMineTitle">
+    <h2 class="cm-section-title" id="cmMineTitle">Your communities</h2>
+    <div class="cm-mine-row">
+      {% for c in my_communities %}
+        <a href="{% url 'community_detail' c.id %}" class="cm-mine-tile">
+          {% include 'communities/_banner.html' with cls='cm-mine-banner' %}
+          <span class="cm-mine-name">{{ c.name }}</span>
+          <span class="cm-mine-meta">{{ c.n_members }} member{{ c.n_members|pluralize }}{% if c.my_role == 'admin' %} &middot; Admin{% elif c.my_role == 'moderator' %} &middot; Mod{% endif %}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if tab == 'home' %}
+    {% for post in posts %}
+      {% include 'feed/_post_card.html' %}
+    {% empty %}
+      <div class="cm-empty">
+        <span class="cm-empty-icon"><i class="bi bi-people"></i></span>
+        {% if my_communities %}
+          <h3>Nothing posted yet</h3>
+          <p>Posts in your communities show up here. Open one of them and share the first update.</p>
+        {% else %}
+          <h3>Join a community</h3>
+          <p>Courses, departments, clubs, hostels — find the groups you belong to and their posts will show up here.</p>
+          <a href="?tab=explore" class="cm-btn cm-btn-primary"><i class="bi bi-compass"></i> Explore communities</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <form class="cm-search" method="get" action="{% url 'communities' %}" role="search">
+      <input type="hidden" name="tab" value="explore">
+      {% if topic %}<input type="hidden" name="topic" value="{{ topic }}">{% endif %}
+      {% if only_mine %}<input type="hidden" name="uni" value="1">{% endif %}
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" value="{{ q }}" placeholder="Search communities" aria-label="Search communities" autocomplete="off">
+    </form>
+
+    <div class="cm-topics" aria-label="Browse topics">
+      <a href="?tab=explore{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if only_mine %}&amp;uni=1{% endif %}" class="cm-topic {% if not topic %}active{% endif %}"><i class="bi bi-grid-3x3-gap"></i> All</a>
+      {% for t in topics %}
+        <a href="?tab=explore&amp;topic={{ t.value }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if only_mine %}&amp;uni=1{% endif %}" class="cm-topic {% if topic == t.value %}active{% endif %}">
+          <i class="bi {{ t.icon }}"></i> {{ t.label }}{% if t.count %} <span class="cm-topic-count">{{ t.count }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+
+    {% if university %}
+      <div class="cm-scope-row">
+        <span class="cm-scope" role="group" aria-label="Which universities">
+          <a href="?tab=explore{% if topic %}&amp;topic={{ topic }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sort != 'popular' %}&amp;sort={{ sort }}{% endif %}" class="{% if not only_mine %}active{% endif %}"><i class="bi bi-globe2"></i> All universities</a>
+          <a href="?tab=explore&amp;uni=1{% if topic %}&amp;topic={{ topic }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sort != 'popular' %}&amp;sort={{ sort }}{% endif %}" class="{% if only_mine %}active{% endif %}"><i class="bi bi-mortarboard"></i> {{ university.short_name }}</a>
+        </span>
+      </div>
+    {% endif %}
+
+    {% if recommended %}
+      {# Recommended for You (communities.views._recommended) #}
+      <section class="cm-rec" aria-labelledby="cmRecTitle">
+        <div class="cm-sec-head">
+          <h2 class="cm-sec-title" id="cmRecTitle">Recommended for You</h2>
+          <a href="#cmAllTitle" class="cm-see-all">See All <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div class="cm-rec-row">
+          {% for c in recommended %}
+            <article class="cm-rec-card js-rec-card" data-rec-type="community" data-rec-id="{{ c.id }}">
+              <a href="{% url 'community_detail' c.id %}" class="cm-rec-banner cm-c-{{ c.colour }}" style="background-image:url('{% if c.banner %}{{ c.banner.url }}{% else %}{{ c.topic_photo_url }}{% endif %}')" aria-label="{{ c.name }}"></a>
+              <div class="cm-rec-top">
+                {% include 'communities/_icon.html' with cls='cm-icon-round' %}
+                {% include 'communities/_menu.html' %}
+              </div>
+              <a href="{% url 'community_detail' c.id %}" class="cm-rec-name">{{ c.name }}{% if c.is_verified %} <i class="bi bi-patch-check-fill cm-verified" title="Official community" aria-label="Verified"></i>{% endif %}</a>
+              <div class="cm-rec-members"><i class="bi bi-person"></i> <span class="js-cm-count" data-community-id="{{ c.id }}">{{ c.n_members }}</span> <span class="js-cm-count-word" data-community-id="{{ c.id }}">member{{ c.n_members|pluralize }}</span></div>
+              {% if c.rec_reason %}<p class="rc-reason cm-rec-why"><i class="bi bi-lightbulb"></i> {{ c.rec_reason }}</p>{% endif %}
+              <p class="cm-rec-desc">{{ c.description }}</p>
+              <div class="cm-rec-action">{% include 'communities/_join_button.html' with solid=True %}</div>
+              {% include 'recommendations/_actions.html' with item_type='community' item_id=c.id value=c.rec_feedback %}
+              <p class="rc-gone">Got it — you'll see less like this. <button type="button" class="js-rec-undo">Undo</button></p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {# All Communities, with the sort menu #}
+    <section class="cm-all" aria-labelledby="cmAllTitle">
+      <div class="cm-sec-head">
+        <h2 class="cm-sec-title" id="cmAllTitle">{% if q or topic %}{% with n=results|length %}{{ n }} communit{{ n|pluralize:"y,ies" }}{% endwith %}{% if topic_label %} <small>in {{ topic_label }}</small>{% endif %}{% if q %} <small>matching &ldquo;{{ q }}&rdquo;</small>{% endif %}{% else %}All Communities{% endif %}</h2>
+        <form method="get" action="{% url 'communities' %}" class="cm-sort">
+          <input type="hidden" name="tab" value="explore">
+          {% if topic %}<input type="hidden" name="topic" value="{{ topic }}">{% endif %}
+          {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+          {% if only_mine %}<input type="hidden" name="uni" value="1">{% endif %}
+          <label class="visually-hidden" for="cmSort">Sort communities</label>
+          <select name="sort" id="cmSort" class="cm-sort-select js-cm-sort">
+            {% for value, label in sorts %}<option value="{{ value }}"{% if value == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <noscript><button type="submit" class="cm-btn cm-btn-ghost cm-btn-sm">Sort</button></noscript>
+        </form>
+      </div>
+
+      <div class="cm-list">
+      {% for c in results %}
+        <article class="cm-row">
+          <a href="{% url 'community_detail' c.id %}" class="cm-row-icon" aria-label="{{ c.name }}">{% include 'communities/_icon.html' with cls='cm-icon-square' %}</a>
+          <div class="cm-row-body">
+            <a href="{% url 'community_detail' c.id %}" class="cm-row-name">{{ c.name }}{% if c.is_verified %} <i class="bi bi-patch-check-fill cm-verified" title="Official community" aria-label="Verified"></i>{% endif %}{% if c.is_restricted %} <i class="bi bi-lock-fill cm-lock" title="Restricted: requests are approved by moderators" aria-label="Restricted"></i>{% endif %}</a>
+            <div class="cm-row-members"><i class="bi bi-person"></i> <span class="js-cm-count" data-community-id="{{ c.id }}">{{ c.n_members }}</span> <span class="js-cm-count-word" data-community-id="{{ c.id }}">member{{ c.n_members|pluralize }}</span>{% if c.university.short_name %} <span class="cm-dot">&middot;</span> <span title="Started at {{ c.university.name }}">{{ c.university.short_name }}</span>{% endif %}</div>
+            <p class="cm-row-desc">{{ c.description }}</p>
+          </div>
+          {% if c.tag_list %}<div class="cm-row-tags">{% include 'communities/_tags.html' with show=4 rest="4:" %}</div>{% endif %}
+          <div class="cm-row-actions">
+            {% include 'communities/_join_button.html' with solid=True %}
+            {% include 'communities/_menu.html' %}
+          </div>
+        </article>
+      {% empty %}
+        <div class="cm-empty">
+          <span class="cm-empty-icon"><i class="bi bi-search"></i></span>
+          <h3>{% if q or topic %}No communities found{% else %}No communities yet{% endif %}</h3>
+          <p>{% if q or topic %}Try another word or topic — or start this community yourself.{% else %}Be the first to start one for your course, department, club or hostel.{% endif %}</p>
+          <a href="{% url 'community_create' %}{% if topic %}?topic={{ topic }}{% endif %}" class="cm-btn cm-btn-primary"><i class="bi bi-plus-lg"></i> Create a community</a>
+        </div>
+      {% endfor %}
+      </div>
+    </section>
+
+    {% if results %}
+      <a href="{% url 'community_create' %}{% if topic %}?topic={{ topic }}{% endif %}" class="cm-start-cta">
+        <span class="cm-start-cta-icon"><i class="bi bi-plus-lg"></i></span>
+        <span><strong>Can't find yours?</strong><small>Start a community for your course, club or hostel.</small></span>
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% static 'js/communities.js' %}?v=2"></script>{% endblock %}

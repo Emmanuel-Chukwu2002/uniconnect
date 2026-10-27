@@ -1,0 +1,17 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Help & Support{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Help &amp; Support</h1><p>How the dashboard works.</p></div></div>
+<section class="ad-panel"><div class="ad-panel-body ad-help">
+  <h3>Reports</h3>
+  <p>Students report posts, comments, accounts, listings, books, events, groups and communities. Each report starts as <b>Pending</b>. Open it and choose <b>Start review</b> so others know you have it, then decide:</p>
+  <ul><li><b>Dismiss</b> — nothing breaks the rules.</li><li><b>Remove content</b> — deletes it; its text stays on the report and in the audit log.</li><li><b>Warn owner</b> — the student sees a notice in the app until they acknowledge it.</li><li><b>Suspend owner</b> — signs them out and blocks sign-in, for a set time or until reactivated.</li></ul>
+  <p>Every decision needs a reason. Deciding one report closes every open report about the same thing.</p>
+  <h3>Roles</h3>
+  <p>Super Admins manage everything. University Admins manage their own university's students, content, faculties, departments and announcements, and can add Moderators and Support Staff for it. Moderators review reports and remove content. Support Staff look up accounts and verify students. See <a href="{% url 'staff_settings' %}">Settings</a> for the full table.</p>
+  <h3>Privacy</h3>
+  <p>Admins see aggregate analytics, not individual activity histories. University emails and matric numbers are shown only to roles that need them. Private messages are never shown in the dashboard.</p>
+  <h3>Making the first admin</h3>
+  <p>Run <code>python manage.py createsuperuser</code>: superusers are Super Admins. Then assign other roles in Settings.</p>
+</div></section>
+{% endblock %}

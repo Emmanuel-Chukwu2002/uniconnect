@@ -1,0 +1,17 @@
+{# One community in a list (Explore), X-style: banner, name, members, topic, description, Join. #}
+<article class="cm-card">
+  {% include 'communities/_banner.html' with cls='cm-card-thumb' %}
+  <div class="cm-card-body">
+    <a href="{% url 'community_detail' c.id %}" class="cm-card-name">{{ c.name }}{% if c.is_restricted %} <i class="bi bi-lock-fill cm-lock" title="Restricted: requests are approved by moderators" aria-label="Restricted"></i>{% endif %}</a>
+    <div class="cm-card-meta">
+      {% include 'communities/_faces.html' %}
+      <span><strong>{{ c.n_members }}</strong> member{{ c.n_members|pluralize }}</span>
+      <span class="cm-dot">&middot;</span>
+      <span><i class="bi {{ c.topic_icon }}"></i> {{ c.get_topic_display }}</span>
+      {% if c.university.short_name %}<span class="cm-dot">&middot;</span>
+      <span class="cm-card-uni" title="Started at {{ c.university.name }}"><i class="bi bi-mortarboard"></i> {{ c.university.short_name }}</span>{% endif %}
+    </div>
+    <p class="cm-card-desc">{{ c.description|truncatechars:160 }}</p>
+  </div>
+  <div class="cm-card-action">{% include 'communities/_join_button.html' %}</div>
+</article>

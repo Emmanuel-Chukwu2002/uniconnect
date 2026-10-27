@@ -1,0 +1,111 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Overview{% endblock %}
+{% block main_class %}{% endblock %}
+{% block content %}
+{% comment %}Overview (adminpanel/views.py overview, numbers from adminpanel/stats.py — all counted from the database).{% endcomment %}
+<div class="ad-head">
+  <div>
+    <h1>Overview</h1>
+    <p>Welcome back, {{ admin.user.first_name|default:admin.user.username }}. Here's what's happening on UniConnect{% if admin.university %} at {{ admin.university.short_name }}{% endif %} today.</p>
+  </div>
+  <form method="get" class="ad-period">
+    <i class="bi bi-calendar3"></i>
+    <select name="days" aria-label="Period" onchange="this.form.submit()">
+      {% for k, label in periods %}<option value="{{ k }}"{% if k == days_key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<section class="ad-cards" aria-label="Summary">
+  {% for c in cards %}
+    <div class="ad-card t-{{ c.tone }}">
+      <span class="ic"><i class="bi {{ c.icon }}"></i></span>
+      <div>
+        <div class="lb">{{ c.label }}</div>
+        <div class="vl"><b>{{ c.value }}</b>
+          {% if c.delta %}<span class="dl {% if c.good is None %}is-flat{% elif c.good %}is-good{% else %}is-bad{% endif %}" title="New in the last {{ days }} days compared with the {{ days }} days before">
+            <i class="bi {% if c.dir == 'up' %}bi-arrow-up{% elif c.dir == 'down' %}bi-arrow-down{% else %}bi-arrow-right{% endif %}"></i> {{ c.delta }}</span>
+          {% else %}<span class="dl is-flat"><i class="bi bi-arrow-right"></i></span>{% endif %}
+        </div>
+        <div class="sb">{{ c.sub }}</div>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<div class="ad-grid2">
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>User Registration Trend</h2><div class="ad-legend"><span><i class="k0"></i> New Registrations</span></div></div>
+    <div class="ad-panel-body">{{ reg_chart }}</div>
+  </section>
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>Platform Activity</h2>
+      <div class="ad-legend">{% for n in act_names %}<span><i class="s{{ forloop.counter0 }}"></i> {{ n }}</span>{% endfor %}</div></div>
+    <div class="ad-panel-body">{{ act_chart }}</div>
+  </section>
+</div>
+
+<div class="ad-grid2">
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>Most Active Universities</h2><a href="{% url 'staff_universities' %}">View All</a></div>
+    <div class="ad-table-wrap"><table class="ad-table">
+      <thead><tr><th>#</th><th>University</th><th>Registered Students</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for u in universities %}
+          <tr>
+            <td class="mut">{{ forloop.counter }}</td>
+            <td><a href="{% url 'staff_university' u.pk %}" class="ttl" style="color:inherit"><span class="ad-crest" style="background:hsl({% widthratio u.pk 1 67 %},62%,42%)"><i class="bi bi-shield-fill"></i></span>{{ u.name }}</a></td>
+            <td class="num">{{ u.n_students }}</td>
+            <td>{% if u.is_active %}<span class="pill green">Active</span>{% else %}<span class="pill grey">Inactive</span>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="4" class="ad-empty">No universities yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>Recent Reports</h2><a href="{% url 'staff_reports' %}?status=all">View All</a></div>
+    <div class="ad-table-wrap"><table class="ad-table">
+      <thead><tr><th>#</th><th>Type</th><th>Reason</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for r in reports %}
+          <tr>
+            <td><a href="{% url 'staff_report' r.pk %}">#{{ r.pk }}</a></td>
+            <td>{{ r.get_target_type_display }}</td>
+            <td>{{ r.get_reason_display }}</td>
+            <td>{% if r.status == 'open' %}<span class="pill amber">Pending</span>{% elif r.status == 'reviewing' %}<span class="pill blue">Under Review</span>{% elif r.status == 'dismissed' %}<span class="pill grey">Dismissed</span>{% else %}<span class="pill green">Resolved</span>{% endif %}</td>
+            <td class="mut">{{ r.created_at|timesince }} ago</td>
+          </tr>
+        {% empty %}<tr><td colspan="5" class="ad-empty">No reports yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+</div>
+{% endblock %}
+
+{% block rail %}
+<aside class="ad-rail">
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>Recent Activity</h2>{% if admin.perms and 'logs' in admin.perms %}<a href="{% url 'staff_logs' %}">View All</a>{% endif %}</div>
+    <ul class="ad-activity">
+      {% for a in activity %}
+        <li><span class="ic {{ a.tone }}"><i class="bi {{ a.icon }}"></i></span>
+          <div class="tx"><b>{{ a.title }}</b><small>{{ a.sub }}</small></div>
+          <time datetime="{{ a.when|date:'c' }}">{{ a.ago }}</time></li>
+      {% empty %}<li class="ad-empty">Nothing yet.</li>{% endfor %}
+    </ul>
+  </section>
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>Quick Actions</h2></div>
+    <div class="ad-qa">{% for label, icon, url in quick %}<a href="{{ url }}"><i class="bi {{ icon }}"></i> {{ label }} <i class="bi bi-chevron-right"></i></a>{% endfor %}</div>
+  </section>
+  <section class="ad-panel">
+    <div class="ad-panel-head"><h2>System Status</h2></div>
+    {% if issues %}
+      <div class="ad-status is-bad"><span class="dot"></span> {{ issues|length }} issue{{ issues|length|pluralize }} need attention</div>
+      <ul class="ad-status-list">{% for i in issues %}<li>{{ i }}</li>{% endfor %}</ul>
+    {% else %}
+      <div class="ad-status"><span class="dot"></span> All Systems Operational</div>
+    {% endif %}
+  </section>
+</aside>
+{% endblock %}

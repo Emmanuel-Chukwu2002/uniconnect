@@ -1,0 +1,23 @@
+{% url 'messages' as u_chats %}{% url 'chat_updates' as u_updates %}{% url 'chat_communities' as u_comm %}{% url 'chat_calls' as u_calls %}{% url 'chat_you' as u_you %}
+<a href="{{ u_chats }}" class="wa-nav-item js-wa-tab{% if tab == 'chats' %} is-active{% endif %}" data-tab="chats" data-wa-nav>
+  <span class="wa-nav-icon"><i class="bi bi-chat-square-text"></i><span class="wa-nav-badge js-wa-chats-badge" {% if not unread_chats %}hidden{% endif %}>{{ unread_chats }}</span></span>
+  <span class="wa-nav-label">Chats</span>
+</a>
+<a href="{{ u_comm }}" class="wa-nav-item js-wa-tab{% if tab == 'communities' %} is-active{% endif %}" data-tab="communities" data-wa-nav>
+  <span class="wa-nav-icon"><i class="bi bi-people"></i></span>
+  <span class="wa-nav-label">Communities</span>
+</a>
+<a href="{{ u_calls }}" class="wa-nav-item js-wa-tab{% if tab == 'calls' %} is-active{% endif %}" data-tab="calls" data-wa-nav>
+  <span class="wa-nav-icon"><i class="bi bi-telephone"></i></span>
+  <span class="wa-nav-label">Calls</span>
+</a>
+<a href="{{ u_you }}" class="wa-nav-item js-wa-tab wa-nav-you{% if tab == 'you' %} is-active{% endif %}" data-tab="you" data-wa-nav>
+  <span class="wa-nav-icon">{% include 'chat/_avatar.html' with p=me size=26 %}</span>
+  <span class="wa-nav-label">You</span>
+</a>
+{% if variant == 'tabs' %}
+<a href="{% url 'home' %}" class="wa-nav-item wa-nav-exit" title="Back to UniConnect" aria-label="Back to UniConnect">
+  <span class="wa-nav-icon"><i class="bi bi-house-door"></i></span>
+  <span class="wa-nav-label">UniConnect</span>
+</a>
+{% endif %}

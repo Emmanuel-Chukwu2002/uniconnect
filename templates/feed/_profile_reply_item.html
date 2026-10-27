@@ -1,0 +1,128 @@
+{% comment %}
+One of profile_user's replies, on the profile page's Replies tab —
+X/Twitter-style: a small "Replying to @..." line, then the reply
+itself (author, text, photo/video) in a compact post-card. A "reply"
+here is just a Comment — whether it was a top-level comment on a post
+or a reply to another comment, both show up here, same as X's own
+Replies tab. Clicking it opens the full thread on the original post
+(the same modal a post's own comment icon opens) and scrolls straight
+to this comment, auto-expanding any collapsed "View N replies" it's
+nested under along the way (see app.js).
+
+Carries the same action row a post card has (like/comment/repost/
+share/bookmark), styled identically (post-card-action-btn) but wired
+to the comment endpoints, since a reply is a Comment, not a Post:
+like toggles CommentLike, the comment icon opens this same thread
+(showing how many direct replies THIS reply has), repost is the same
+honest "coming soon" placeholder a post card uses, share copies a
+link to the underlying post, and bookmark links to Bookmarks the same
+way a post card's does. Those buttons live inside the whole-card
+click target above, so app.js stops their clicks from also
+re-triggering it (see the .post-card-actions click handler).
+
+Also carries the same 3-dot menu a comment gets in the full thread
+(_comment_item.html) — Edit/Delete only for the reply's own author
+(checked again server-side regardless), plus the same honest "Mute
+post" placeholder — but edits/deletes right here on the card instead
+of needing the full thread open, via its own endpoints
+(js-reply-edit-btn / js-reply-delete-btn in app.js) since this card's
+markup isn't the thread's .comment-item shape the existing
+js-edit-comment-btn/js-delete-comment-btn handlers expect.
+
+The comment icon doesn't just open the thread read-only — it opens it
+with this reply's own inline reply box already expanded and focused,
+so replying to it is a single click (js-reply-open-comments in
+app.js). When this reply has replies of its own, a "View N replies"
+row (same look as the thread's own collapsed-replies toggle,
+comment-view-replies) appears beneath the actions; clicking it opens
+the thread, scrolls to this comment and expands its children, instead
+of trying to render a second copy of the thread's nesting here.
+{% endcomment %}
+<div class="post-card profile-reply-card js-open-comments" data-post-id="{{ reply.post_id }}" data-comment-id="{{ reply.id }}" role="button" tabindex="0">
+  <div class="profile-reply-target">
+    Replying to
+    <span class="profile-reply-target-name">
+      @{% if reply.parent %}{{ reply.parent.author.username }}{% else %}{{ reply.post.author.username }}{% endif %}
+    </span>
+  </div>
+
+  <div class="post-card-head">
+    <span class="post-card-avatar" style="{% if reply.author.student_profile.profile_photo %}background-image:url({{ reply.author.student_profile.profile_photo.url }}){% endif %}">
+      {% if not reply.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </span>
+    <div class="post-card-info">
+      <span class="post-card-name">{{ reply.author.get_full_name|default:reply.author.username }}</span>
+      <div class="post-card-meta">
+        <span class="post-card-handle">@{{ reply.author.username }}</span>
+        <span class="post-card-dot">&middot;</span>
+        <span class="post-card-time">{{ reply.created_at|timesince }} ago</span>
+        {% if reply.is_edited %}
+          <span class="post-card-dot">&middot;</span>
+          <span class="post-card-edited js-reply-edited-label">Edited</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="post-card-menu comment-menu dropdown">
+      <button type="button" class="post-card-menu-btn comment-menu-btn" data-bs-toggle="dropdown" aria-label="More options">
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end post-card-dropdown">
+        {% if reply.author_id == request.user.id %}
+          <li>
+            <button type="button" class="dropdown-item js-reply-edit-btn" data-comment-id="{{ reply.id }}">
+              <i class="bi bi-pencil"></i> Edit
+            </button>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item post-card-delete-btn js-reply-delete-btn" data-comment-id="{{ reply.id }}">
+              <i class="bi bi-trash3"></i> Delete
+            </button>
+          </li>
+        {% endif %}
+        <li>
+          <button type="button" class="dropdown-item" disabled title="Muting a post's notifications is coming soon">
+            <i class="bi bi-bell-slash"></i> Mute post
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {% if reply.content %}<div class="post-card-text js-reply-text">{{ reply.content|linebreaksbr }}</div>{% else %}<div class="post-card-text js-reply-text" style="display:none;"></div>{% endif %}
+  <div class="reply-edit-form js-reply-edit-form">
+    <textarea class="comment-edit-textarea" maxlength="{{ reply.MAX_CONTENT_LENGTH|default:1000 }}">{{ reply.content }}</textarea>
+    <div class="comment-edit-actions">
+      <button type="button" class="btn-link-plain js-cancel-reply-edit">Cancel</button>
+      <button type="button" class="btn btn-sm btn-primary js-save-reply-edit" data-comment-id="{{ reply.id }}">Save</button>
+    </div>
+  </div>
+  {% if reply.video %}
+    <div class="post-card-photo"><video src="{{ reply.video.url }}" controls playsinline></video></div>
+  {% elif reply.image %}
+    <div class="post-card-photo"><img src="{{ reply.image.url }}" alt=""></div>
+  {% endif %}
+
+  <div class="post-card-actions">
+    <div class="post-card-actions-left">
+      <button type="button" class="post-card-action-btn js-like-comment-btn {% if reply.user_has_liked %}liked{% endif %}" data-comment-id="{{ reply.id }}" title="{% if reply.user_has_liked %}Unlike{% else %}Like{% endif %}">
+        <i class="bi {% if reply.user_has_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+      {% if reply.likes_count > 0 %}<span class="comment-like-count">{{ reply.likes_count }}</span>{% endif %}
+      <button type="button" class="post-card-action-btn js-reply-open-comments" data-post-id="{{ reply.post_id }}" data-comment-id="{{ reply.id }}" title="View in thread">
+        <i class="bi bi-chat"></i>{% if reply.replies_count %}<span class="post-card-action-count">{{ reply.replies_count }}</span>{% endif %}
+      </button>
+      <span class="post-card-action-btn post-card-action-disabled" title="Reposting is coming soon"><i class="bi bi-repeat"></i></span>
+      <button type="button" class="post-card-action-btn js-share-post" data-share-url="{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' reply.post_id %}" title="Copy link to this post">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+    <a href="{% url 'bookmarks' %}" class="post-card-action-btn" title="Bookmarks"><i class="bi bi-bookmark"></i></a>
+  </div>
+
+  {% if reply.replies_count %}
+    <button type="button" class="js-reply-view-children comment-view-replies" data-post-id="{{ reply.post_id }}" data-comment-id="{{ reply.id }}">
+      <i class="bi bi-chevron-down"></i>
+      <span>View {{ reply.replies_count }} repl{{ reply.replies_count|pluralize:"y,ies" }}</span>
+    </button>
+  {% endif %}
+</div>

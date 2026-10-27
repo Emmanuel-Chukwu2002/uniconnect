@@ -1,0 +1,57 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_title %}My books{% endblock %}
+{% block bs_content %}
+<div class="bs-subtabs">
+  <a href="?status=active" class="{% if status != 'sold' %}active{% endif %}">On sale <em>{{ counts.active }}</em></a>
+  <a href="?status=sold" class="{% if status == 'sold' %}active{% endif %}">Sold <em>{{ counts.sold }}</em></a>
+</div>
+
+{% if books %}
+  <ul class="bs-mylist">
+    {% for b in books %}
+      <li class="bs-myrow">
+        <a href="{% url 'bookshop_detail' b.pk %}" class="bs-myrow-cover">{% include 'bookshop/_cover.html' %}</a>
+        <div class="bs-myrow-info">
+          <a href="{% url 'bookshop_detail' b.pk %}" class="bs-myrow-title">{{ b.title }}</a>
+          <span class="bs-myrow-sub">{{ b.author }}{% if b.course_code %} · {{ b.course_code }}{% endif %}</span>
+          <span class="bs-myrow-meta">
+            <span class="bs-price">{{ b.price_display }}</span>
+            <span class="bs-status bs-status-{{ b.status }}">{{ b.get_status_display }}</span>
+            <span><i class="bi bi-eye"></i> {{ b.n_views }}</span>
+            <span><i class="bi bi-heart"></i> {{ b.n_saves }}</span>
+          </span>
+        </div>
+        <div class="bs-myrow-actions">
+          <a href="{% url 'bookshop_edit' b.pk %}" class="bs-btn bs-btn-ghost bs-btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+          <form method="post" action="{% url 'bookshop_status' b.pk %}" class="bs-inline-form">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {% if b.status == 'available' %}
+              <button name="status" value="reserved" class="bs-btn bs-btn-ghost bs-btn-sm"><i class="bi bi-clock"></i> Reserve</button>
+              <button name="status" value="sold" class="bs-btn bs-btn-success bs-btn-sm"><i class="bi bi-bag-check"></i> Sold</button>
+            {% elif b.status == 'reserved' %}
+              <button name="status" value="available" class="bs-btn bs-btn-ghost bs-btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Available</button>
+              <button name="status" value="sold" class="bs-btn bs-btn-success bs-btn-sm"><i class="bi bi-bag-check"></i> Sold</button>
+            {% else %}
+              <button name="status" value="available" class="bs-btn bs-btn-ghost bs-btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Sell again</button>
+            {% endif %}
+          </form>
+          <form method="post" action="{% url 'bookshop_delete' b.pk %}" class="bs-inline-form js-bs-confirm" data-confirm="Delete “{{ b.title }}” from the Bookshop? This can't be undone.">
+            {% csrf_token %}
+            <button class="bs-btn bs-btn-ghost bs-btn-sm bs-btn-danger-text" aria-label="Delete {{ b.title }}"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="bs-empty">
+    <div class="bs-empty-art"><i class="bi {% if status == 'sold' %}bi-bag-check{% else %}bi-shop{% endif %}"></i></div>
+    {% if status == 'sold' %}
+      <h3>Nothing sold yet</h3><p>Books you mark as sold will show up here.</p>
+    {% else %}
+      <h3>You're not selling any books</h3><p>Finished with last semester's textbooks? Someone needs them.</p>
+      <a href="{% url 'bookshop_sell' %}" class="bs-btn bs-btn-primary"><i class="bi bi-plus-lg"></i> Sell a book</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

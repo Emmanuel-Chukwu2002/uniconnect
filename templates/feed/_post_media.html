@@ -1,0 +1,53 @@
+{% comment %}
+  A post's photos/videos. Photos (.js-lightbox-img) open the full-screen
+  media viewer (static/js/media-viewer.js) at the photo that was
+  clicked; the viewer reads the post's photos straight from here, in
+  this order, so "2 of 3" always matches the grid.
+
+  Photos on ImageKit come with a srcset, so each screen downloads a sharp
+  copy at the size it shows (retina included); data-full is the largest,
+  for the photo viewer. Older photos stored on this server have one size.
+
+  Videos (.js-uc-video, static/js/video-player.js): an ImageKit video
+  streams adaptively (data-stream, HLS) and falls back to its plain MP4
+  (src); the poster is the chosen or auto-generated thumbnail. Playing
+  for a few seconds counts a view, shown as "N views" below.
+
+  embedded=True: the same media at the same size, inside a quote's copy
+  of the original post (_quoted_post.html). Its photos then open that
+  original post rather than the photo viewer (which would mix them up
+  with the quote's own photos), and there's no views line.
+{% endcomment %}
+{% with media_items=post.media_items.all %}
+  {% if media_items %}
+    <div class="post-card-media-grid count-{{ media_items|length }}">
+      {% for m in media_items %}
+        {% if not m.is_video and media_items|length == 1 and m.is_small or not m.is_video and media_items|length > 1 and m.is_small_tile %}
+          {# A small photo: shown at its true size, on a blurred copy of itself, instead of stretched (blurry) to fill the frame. #}
+          <div class="post-card-media-item is-small" style="--photo-bg:url('{{ m.photo_thumb }}')">
+            <img src="{{ m.photo_url }}" width="{{ m.width }}" height="{{ m.height }}" data-full="{{ m.photo_full }}" data-w="{{ m.width }}" data-h="{{ m.height }}" alt="Photo {{ forloop.counter }} of {{ media_items|length }}" decoding="async"{% if not embedded %} class="js-lightbox-img" tabindex="0" role="button"{% endif %}>
+          </div>
+        {% else %}
+        <div class="post-card-media-item">
+          {% if m.is_video %}
+            <video src="{{ m.video_url }}" class="js-uc-video" data-post-id="{{ post.id }}"{% if m.stream_url %} data-stream="{{ m.stream_url }}"{% endif %}{% if m.poster_url %} poster="{{ m.poster_url }}" preload="none"{% else %} preload="metadata"{% endif %} controls playsinline></video>
+          {% else %}
+            <img src="{{ m.photo_url }}"{% if m.photo_srcset %} srcset="{{ m.photo_srcset }}" sizes="{% if media_items|length == 1 %}(max-width: 640px) 100vw, 620px{% else %}(max-width: 640px) 50vw, 310px{% endif %}"{% endif %} data-full="{{ m.photo_full }}"{% if m.width %} data-w="{{ m.width }}" data-h="{{ m.height }}"{% endif %} alt="Photo {{ forloop.counter }} of {{ media_items|length }}" decoding="async"{% if not embedded %} class="js-lightbox-img" tabindex="0" role="button"{% endif %}>
+          {% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% elif post.image %}
+    <div class="post-card-photo">
+      <img src="{{ post.image.url }}" alt="Photo"{% if not embedded %} class="js-lightbox-img" tabindex="0" role="button"{% endif %}>
+    </div>
+  {% elif post.video %}
+    <div class="post-card-photo">
+      <video src="{{ post.video.url }}" class="js-uc-video" data-post-id="{{ post.id }}" preload="metadata" controls playsinline></video>
+    </div>
+  {% endif %}
+  {% if not embedded and post.video or not embedded and media_items.0.is_video %}
+    <div class="post-card-video-views"><i class="bi bi-eye"></i> <span class="js-video-views" data-post-id="{{ post.id }}">{{ post.video_views_count|default:0 }} view{{ post.video_views_count|default:0|pluralize }}</span></div>
+  {% endif %}
+{% endwith %}

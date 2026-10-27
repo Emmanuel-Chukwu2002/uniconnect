@@ -1,0 +1,281 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} — UniConnect{% endblock %}
+{% block shell_class %}profile-page{% endblock %}
+
+{% block feed_content %}
+{% with full_name=profile_user.get_full_name|default:profile_user.username %}
+
+<!-- ============ DESKTOP / LARGE-SCREEN LAYOUT ============ -->
+<div class="profile-desktop">
+  <div class="profile-topbar">
+    <a href="javascript:history.back()" class="profile-back-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <div class="profile-topbar-info">
+      <div class="profile-topbar-name">{{ full_name }}</div>
+      <div class="profile-topbar-sub">{{ posts_count }} Posts</div>
+    </div>
+    <a href="{% url 'search' %}" class="profile-topbar-icon"><i class="bi bi-search"></i></a>
+  </div>
+
+  <div class="profile-cover{% if student.cover_photo %} js-view-cover-photo has-photo{% endif %}" {% if student.cover_photo %}data-photo-url="{{ student.cover_photo.url }}"{% endif %} style="{% if student.cover_photo %}background-image:url({{ student.cover_photo.url }}){% else %}background-image:url('https://images.pexels.com/photos/2305098/pexels-photo-2305098.jpeg?auto=compress&cs=tinysrgb&w=1260&h=520&fit=crop'), linear-gradient(135deg, var(--accent), var(--surface-alt)){% endif %}"></div>
+
+  <div class="profile-header-row">
+    <div class="profile-avatar-lg{% if student.profile_photo %} js-view-profile-photo has-photo{% endif %}" {% if student.profile_photo %}data-photo-url="{{ student.profile_photo.url }}"{% endif %} style="{% if student.profile_photo %}background-image:url({{ student.profile_photo.url }}){% endif %}">
+      {% if not student.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </div>
+    <div class="profile-actions">
+      {% if is_own %}
+        <a href="{% url 'follow_requests' %}" class="btn btn-outline-secondary btn-sm profile-edit-btn">
+          Follow Requests{% if pending_follow_requests_count %} <span class="badge rounded-pill bg-primary">{{ pending_follow_requests_count }}</span>{% endif %}
+        </a>
+        <button type="button" class="btn btn-primary btn-sm profile-edit-btn" data-bs-toggle="modal" data-bs-target="#composePostModal"><i class="bi bi-pencil-square"></i> Make a Post</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm profile-edit-btn" data-bs-toggle="modal" data-bs-target="#editProfileModal">Edit Profile</button>
+      {% else %}
+        <form method="post" action="{% url 'chat_start' profile_user.id %}" class="profile-msg-form">{% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm" aria-label="Message {{ full_name }}"><i class="bi bi-chat-dots"></i> Message</button>
+        </form>
+        <button type="button"
+                class="btn btn-sm follow-btn {% if follow_status == 'accepted' %}btn-outline-secondary{% elif follow_status == 'pending' %}btn-outline-secondary follow-btn-pending{% else %}btn-primary{% endif %}"
+                data-user-id="{{ profile_user.id }}"
+                data-status="{{ follow_status }}">{% if follow_status == 'accepted' %}Following{% elif follow_status == 'pending' %}Requested{% else %}Follow{% endif %}</button>
+        {% include 'feed/_profile_more_menu.html' %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="profile-identity">
+    <div class="profile-name-row">
+      <span class="profile-name">{{ full_name }}</span>
+      {% if student.is_verified %}<i class="bi bi-patch-check-fill profile-verified-badge"></i>{% endif %}
+    </div>
+    <div class="profile-handle">@{{ profile_user.username }}</div>
+    {% if username_is_default %}<div class="profile-un-nudge"><i class="bi bi-at"></i><span>Your @handle shows your matric number.</span><a href="{% url 'account_settings' %}?s=account#st-username">Choose a username</a></div>{% endif %}
+
+    {% if student.bio %}
+      <div class="profile-bio">{{ student.bio }}</div>
+    {% elif is_own %}
+      <div class="profile-bio profile-bio-empty">Add a short bio to tell people about yourself.</div>
+    {% endif %}
+
+    <div class="profile-meta-row">
+      <span class="profile-meta-item"><i class="bi bi-building"></i> {{ student.university.short_name }}</span>
+      <span class="profile-meta-item"><i class="bi bi-journal-bookmark"></i> {{ student.department.name }}</span>
+      {% if student.show_date_of_birth and student.date_of_birth %}
+        <span class="profile-meta-item"><i class="bi bi-cake2"></i> Born {{ student.date_of_birth|date:"F j, Y" }}</span>
+      {% endif %}
+      <span class="profile-meta-item"><i class="bi bi-calendar3"></i> Joined {{ student.created_at|date:"F Y" }}</span>
+    </div>
+
+    <div class="profile-stats-row" data-profile-user-id="{{ profile_user.id }}">
+      <span><strong class="js-following-count">{{ following_count }}</strong> Following</span>
+      <span><strong class="js-followers-count">{{ followers_count }}</strong> Followers</span>
+    </div>
+    {% include 'feed/_profile_skills.html' %}
+  </div>
+
+  <div class="profile-tabs" data-soft-swap=".profile-tabs, .profile-empty-state">
+    <a href="?tab=posts" class="profile-tab {% if tab == 'posts' %}active{% endif %}">Posts</a>
+    <a href="?tab=media" class="profile-tab {% if tab == 'media' %}active{% endif %}">Media</a>
+    {% if is_own %}<a href="?tab=likes" class="profile-tab {% if tab == 'likes' %}active{% endif %}" title="Only you can see your likes"><i class="bi bi-lock-fill profile-tab-lock" aria-hidden="true"></i> Likes</a>{% endif %}
+    <a href="?tab=replies" class="profile-tab {% if tab == 'replies' %}active{% endif %}">Replies</a>
+    <a href="?tab=repost" class="profile-tab {% if tab == 'repost' %}active{% endif %}">Repost</a>
+  </div>
+
+  <div class="profile-empty-state">
+    {% if tab == 'replies' %}
+      {% for reply in replies %}
+        {% include 'feed/_profile_reply_item.html' %}
+      {% empty %}
+        <div class="center-card">
+          <h4><i class="bi bi-chat-left-text"></i> No replies yet</h4>
+          <p>{% if is_own %}You haven't replied to anything yet — join a conversation by commenting on a post.{% else %}{{ full_name }} hasn't replied to anything yet.{% endif %}</p>
+        </div>
+      {% endfor %}
+    {% elif tab_coming_soon_message %}
+      <div class="center-card">
+        <h4><i class="bi bi-hourglass-split"></i> Coming soon</h4>
+        <p>{{ tab_coming_soon_message }}</p>
+      </div>
+    {% else %}
+      {% if tab == 'likes' %}
+        <div class="profile-private-note"><i class="bi bi-lock-fill"></i> Only you can see your likes.</div>
+      {% endif %}
+      {% for post in posts %}
+        {% include 'feed/_post_card.html' %}
+      {% empty %}
+        <div class="center-card">
+            <h4><i class="bi bi-collection"></i> No {% if tab == 'media' %}videos{% elif tab == 'likes' %}liked posts{% elif tab == 'repost' %}reposts{% else %}posts{% endif %} yet</h4>
+            <p>
+              {% if tab == 'media' %}
+                {% if is_own %}You haven't posted any videos yet — attach one next time you post.{% else %}{{ full_name }} hasn't posted any videos yet.{% endif %}
+              {% elif tab == 'likes' %}
+                {% if is_own %}You haven't liked anything yet — tap the heart on a post to like it.{% else %}{{ full_name }} hasn't liked anything yet.{% endif %}
+              {% elif tab == 'repost' %}
+                {% if is_own %}Posts you repost or quote will show up here — tap <i class="bi bi-repeat"></i> on a post to share it.{% else %}{{ full_name }} hasn't reposted or quoted anything yet.{% endif %}
+              {% else %}
+                {% if is_own %}You haven't posted anything yet — use "Make a Post" above to share your first update.{% else %}{{ full_name }} hasn't posted anything yet.{% endif %}
+              {% endif %}
+            </p>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if is_own %}
+    {% include 'feed/_compose_modal.html' %}
+    {% include 'feed/_edit_profile_modal.html' %}
+  {% endif %}
+</div>
+
+<!-- ============ MOBILE / SMALL-SCREEN LAYOUT ============ -->
+<div class="profile-mobile">
+  <div class="profile-cover profile-cover-mobile{% if student.cover_photo %} js-view-cover-photo has-photo{% endif %}" {% if student.cover_photo %}data-photo-url="{{ student.cover_photo.url }}"{% endif %} style="{% if student.cover_photo %}background-image:url({{ student.cover_photo.url }}){% else %}background-image:url('https://images.pexels.com/photos/2305098/pexels-photo-2305098.jpeg?auto=compress&cs=tinysrgb&w=1260&h=520&fit=crop'), linear-gradient(135deg, var(--accent), var(--surface-alt)){% endif %}">
+    <a href="{% url 'home' %}" class="profile-back-btn profile-back-btn-overlay" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  </div>
+
+  <div class="profile-mobile-identity">
+    <div class="profile-avatar-md{% if student.profile_photo %} js-view-profile-photo has-photo{% endif %}" {% if student.profile_photo %}data-photo-url="{{ student.profile_photo.url }}"{% endif %} style="{% if student.profile_photo %}background-image:url({{ student.profile_photo.url }}){% endif %}">
+      {% if not student.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </div>
+
+    <div class="profile-name-row profile-name-row-centered">
+      <span class="profile-name">{{ full_name }}</span>
+      {% if student.is_verified %}<i class="bi bi-patch-check-fill profile-verified-badge"></i>{% endif %}
+    </div>
+    <div class="profile-handle">@{{ profile_user.username }}</div>
+    {% if username_is_default %}<div class="profile-un-nudge"><i class="bi bi-at"></i><span>Your @handle shows your matric number.</span><a href="{% url 'account_settings' %}?s=account#st-username">Choose a username</a></div>{% endif %}
+    {# Department, level and university, like the design: "Computer Science · 400 Level" / "University of Nigeria". #}
+    {% if student.department or student.level %}<div class="profile-academic"><i class="bi bi-mortarboard"></i> {{ student.department.name }}{% if student.department and student.level %} &middot; {% endif %}{{ student.level.name }}</div>{% endif %}
+    {% if student.university %}<div class="profile-academic"><i class="bi bi-bank"></i> {{ student.university.name }}</div>{% endif %}
+
+    <div class="profile-mobile-stats" data-profile-user-id="{{ profile_user.id }}">
+      <div class="profile-mobile-stat"><strong>{{ posts_count }}</strong><span>Posts</span></div>
+      <div class="profile-mobile-stat"><strong class="js-followers-count">{{ followers_count }}</strong><span>Followers</span></div>
+      <div class="profile-mobile-stat"><strong class="js-following-count">{{ following_count }}</strong><span>Following</span></div>
+    </div>
+
+    <div class="profile-mobile-actions">
+      {% if is_own %}
+        <a href="{% url 'compose_post' %}" class="btn btn-primary btn-sm profile-mobile-btn"><i class="bi bi-pencil-square"></i> Post</a>
+        <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary btn-sm profile-mobile-btn">Edit Profile</a>
+        <a href="{% url 'follow_requests' %}" class="btn btn-outline-secondary btn-sm profile-mobile-btn">
+          Requests{% if pending_follow_requests_count %} <span class="badge rounded-pill bg-primary">{{ pending_follow_requests_count }}</span>{% endif %}
+        </a>
+      {% else %}
+        <button type="button"
+                class="btn btn-sm profile-mobile-btn follow-btn {% if follow_status == 'accepted' %}btn-outline-secondary{% elif follow_status == 'pending' %}btn-outline-secondary follow-btn-pending{% else %}btn-primary{% endif %}"
+                data-user-id="{{ profile_user.id }}"
+                data-status="{{ follow_status }}">{% if follow_status == 'accepted' %}Following{% elif follow_status == 'pending' %}Requested{% else %}Follow{% endif %}</button>
+        <form method="post" action="{% url 'chat_start' profile_user.id %}" class="profile-msg-form">{% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm profile-mobile-btn" aria-label="Message {{ full_name }}"><i class="bi bi-chat-dots"></i> Message</button>
+        </form>
+        {% include 'feed/_profile_more_menu.html' with mobile=1 %}
+      {% endif %}
+    </div>
+
+    {% if student.bio %}
+      <div class="profile-bio profile-bio-centered">{{ student.bio }}</div>
+    {% elif is_own %}
+      <div class="profile-bio profile-bio-empty profile-bio-centered">Add a short bio to tell people about yourself.</div>
+    {% endif %}
+
+    {% if student.show_date_of_birth and student.date_of_birth %}
+      <div class="profile-meta-item profile-meta-item-centered"><i class="bi bi-cake2"></i> Born {{ student.date_of_birth|date:"F j, Y" }}</div>
+    {% endif %}
+    {% include 'feed/_profile_skills.html' %}
+  </div>
+
+  <div class="profile-tabs profile-tabs-mobile" data-soft-swap=".profile-tabs, .profile-empty-state">
+    <a href="?tab=posts" class="profile-tab {% if tab == 'posts' %}active{% endif %}">Posts</a>
+    <a href="?tab=media" class="profile-tab {% if tab == 'media' %}active{% endif %}">Media</a>
+    {% if is_own %}<a href="?tab=likes" class="profile-tab {% if tab == 'likes' %}active{% endif %}" title="Only you can see your likes"><i class="bi bi-lock-fill profile-tab-lock" aria-hidden="true"></i> Likes</a>{% endif %}
+    <a href="?tab=replies" class="profile-tab {% if tab == 'replies' %}active{% endif %}">Replies</a>
+    <a href="?tab=repost" class="profile-tab {% if tab == 'repost' %}active{% endif %}">Repost</a>
+  </div>
+
+  <div class="profile-empty-state">
+    {% if tab == 'replies' %}
+      {% for reply in replies %}
+        {% include 'feed/_profile_reply_item.html' %}
+      {% empty %}
+        <div class="center-card">
+          <h4><i class="bi bi-chat-left-text"></i> No replies yet</h4>
+          <p>{% if is_own %}You haven't replied to anything yet.{% else %}{{ full_name }} hasn't replied to anything yet.{% endif %}</p>
+        </div>
+      {% endfor %}
+    {% elif tab_coming_soon_message %}
+      <div class="center-card">
+        <h4><i class="bi bi-hourglass-split"></i> Coming soon</h4>
+        <p>{{ tab_coming_soon_message }}</p>
+      </div>
+    {% else %}
+      {% if tab == 'likes' %}
+        <div class="profile-private-note"><i class="bi bi-lock-fill"></i> Only you can see your likes.</div>
+      {% endif %}
+      {% for post in posts %}
+        {% include 'feed/_post_card.html' %}
+      {% empty %}
+        <div class="center-card">
+            <h4><i class="bi bi-collection"></i> No {% if tab == 'media' %}videos{% elif tab == 'likes' %}liked posts{% elif tab == 'repost' %}reposts{% else %}posts{% endif %} yet</h4>
+            <p>
+              {% if tab == 'media' %}
+                {% if is_own %}You haven't posted any videos yet.{% else %}{{ full_name }} hasn't posted any videos yet.{% endif %}
+              {% elif tab == 'likes' %}
+                {% if is_own %}You haven't liked anything yet.{% else %}{{ full_name }} hasn't liked anything yet.{% endif %}
+              {% elif tab == 'repost' %}
+                {% if is_own %}Posts you repost or quote will show up here — tap <i class="bi bi-repeat"></i> on a post to share it.{% else %}{{ full_name }} hasn't reposted or quoted anything yet.{% endif %}
+              {% else %}
+                {% if is_own %}You haven't posted anything yet.{% else %}{{ full_name }} hasn't posted anything yet.{% endif %}
+              {% endif %}
+            </p>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {# The bottom bar is the app's shared one (base_app.html), the same on every page. #}
+</div>
+
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}
+<script>
+  // Profile skills: add / remove (your profile) and endorse (someone else's), in place.
+  UC.onPage(function (doc, signal) {
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.classList) { return; }
+      var isForm = form.classList.contains('js-pk-form'), isEndorse = form.classList.contains('js-pk-endorse');
+      if (!isForm && !isEndorse) { return; }
+      e.preventDefault(); e.stopPropagation();
+      fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (isEndorse) {
+            // The same skill may be on the page twice (phone and desktop layouts).
+            document.querySelectorAll('form.js-pk-endorse[action="' + form.getAttribute('action') + '"] button').forEach(function (btn) {
+              btn.classList.toggle('is-on', res.endorsed);
+              btn.setAttribute('aria-pressed', res.endorsed ? 'true' : 'false');
+              btn.querySelector('i').className = 'bi ' + (res.endorsed ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up');
+              var n = btn.querySelector('.js-pk-n'); n.textContent = res.count; n.hidden = !res.count;
+            });
+            return;
+          }
+          document.querySelectorAll('.js-pk').forEach(function (box) {
+            var wrap = document.createElement('div'); wrap.innerHTML = res.html.trim();
+            box.replaceWith(wrap.firstElementChild);
+          });
+          if (res.error) {
+            document.querySelectorAll('.js-pk-error').forEach(function (p) { p.textContent = res.error; p.hidden = false; });
+          } else if (form.querySelector('input[name=name]')) {
+            var inputs = document.querySelectorAll('.pk-add input[name=name]');
+            var visible = Array.prototype.find.call(inputs, function (i) { return i.offsetParent; });
+            if (visible) { visible.focus(); }
+          }
+        })
+        .catch(function () { if (window.showToast) { showToast('Something went wrong — try again.'); } });
+    }, { capture: true, signal: signal });
+  });
+</script>
+{% endblock %}

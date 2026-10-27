@@ -1,0 +1,13 @@
+{% extends 'feed/base_app.html' %}
+{% comment %}One Campus Pulse update on its own page (feed/pulse.py pulse_detail): where a
+notification about it opens. On Home, the same update opens in the viewer instead.{% endcomment %}
+{% block title %}{{ name }}'s {{ s.get_kind_display }} update — UniConnect{% endblock %}
+
+{% block feed_content %}
+<div class="pulse-page">
+  <a href="{% url 'home' %}" class="pulse-page-back"><i class="bi bi-arrow-left"></i> Campus Pulse</a>
+  <div class="center-card pulse-page-card js-pulse-body">{% include 'feed/_pulse_viewer.html' %}</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}{% include 'feed/_pulse_js.html' %}{% endblock %}

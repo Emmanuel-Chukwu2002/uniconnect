@@ -1,0 +1,15 @@
+{% comment %}The "..." button next to Follow on someone else's profile: block or report them (feed/moderation.py).{% endcomment %}
+<div class="dropdown profile-more">
+  <button type="button" class="btn btn-outline-secondary btn-sm profile-more-btn{% if mobile %} profile-mobile-btn is-icon{% endif %}" data-bs-toggle="dropdown" aria-label="More options for @{{ profile_user.username }}">
+    <i class="bi bi-three-dots"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end post-card-dropdown">
+    <li>
+      <form method="post" action="{% url 'block_toggle' profile_user.username %}" class="js-block-form" data-name="{{ profile_user.get_full_name|default:profile_user.username }}">
+        {% csrf_token %}
+        <button type="submit" class="dropdown-item"><i class="bi bi-slash-circle"></i> Block @{{ profile_user.username }}</button>
+      </form>
+    </li>
+    <li><a href="{% url 'report_user' profile_user.username %}" class="dropdown-item is-danger"><i class="bi bi-flag"></i> Report account</a></li>
+  </ul>
+</div>

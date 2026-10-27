@@ -1,0 +1,59 @@
+{% extends 'accounts/auth_base.html' %}
+{% comment %}The About / Help / Privacy / Terms pages linked from the sign-in footer; page = which one (accounts/urls.py).{% endcomment %}
+{% block title %}{% if page == 'about' %}About{% elif page == 'help' %}Help{% elif page == 'privacy' %}Privacy{% else %}Terms{% endif %} — UniConnect{% endblock %}
+{% block auth_body %}
+{% include 'accounts/_solo_head.html' %}
+<main class="lp-solo">
+  <article class="lp-card lp-doc">
+    {% if page == 'about' %}
+      <h2>About UniConnect</h2>
+      <p class="lp-sub">A social network built for university students.</p>
+      <p>UniConnect brings everything on campus into one place. Every account belongs to a verified student, confirmed through their university email, so the people you meet here really are your schoolmates.</p>
+      <ul>
+        <li><b>Feed and Media</b> &mdash; share posts, photos and videos with your followers.</li>
+        <li><b>Communities</b> &mdash; join groups for your courses, department, clubs and interests.</li>
+        <li><b>Messages</b> &mdash; chat one-to-one with other students.</li>
+        <li><b>Events</b> &mdash; see what's happening on campus and who's going.</li>
+        <li><b>Marketplace and Bookshop</b> &mdash; buy, sell and swap with students near you.</li>
+      </ul>
+    {% elif page == 'help' %}
+      <h2>Help</h2>
+      <p class="lp-sub">Answers to the most common questions.</p>
+      <h3>How do I join?</h3>
+      <p>Choose <a href="{% url 'register' %}">Sign Up</a> and register with your matric number and university email. We send a link to that email; open it to switch your account on.</p>
+      <h3>How do I sign in?</h3>
+      <p>Type either your email address or your matric number in the first box, then your password.</p>
+      <h3>I didn't get the verification email</h3>
+      <p>Check your spam folder, and make sure you typed your university email correctly when you registered.</p>
+      <h3>I forgot my password</h3>
+      <p>Use <a href="{% url 'password_reset' %}">Forgot password?</a> on the sign-in page. We'll email you a link to choose a new one.</p>
+      <h3>What does "Remember me" do?</h3>
+      <p>When it's ticked you stay signed in on this device. Untick it on a shared computer and you'll be signed out when the browser closes.</p>
+    {% elif page == 'privacy' %}
+      <h2>Privacy</h2>
+      <p class="lp-sub">What UniConnect keeps about you, and why.</p>
+      <h3>What we store</h3>
+      <p>Your name, matric number, university email, university, faculty, department and level, plus anything you add yourself: your profile, posts, photos, videos, comments, messages, listings and community activity.</p>
+      <h3>Who can see it</h3>
+      <p>Your posts and profile are shown to other signed-in students according to your account settings. Messages are visible only to the people in the conversation. Your password is stored scrambled (hashed), so no one can read it.</p>
+      <h3>How it's used</h3>
+      <p>Only to run UniConnect: to show your content, confirm you're a student, and email you about your account (such as verification and password reset links). We don't sell your information.</p>
+      <h3>Removing your data</h3>
+      <p>You can delete your own posts at any time. To remove your whole account, contact the UniConnect administrators.</p>
+    {% else %}
+      <h2>Terms</h2>
+      <p class="lp-sub">The ground rules for using UniConnect.</p>
+      <h3>Your account</h3>
+      <p>UniConnect is for current students. Register only with your own matric number and university email, keep your password private, and don't let anyone else use your account.</p>
+      <h3>Be respectful</h3>
+      <p>Don't post anything that harasses, threatens or impersonates someone, that is hateful or sexually explicit, or that breaks your university's rules or the law.</p>
+      <h3>Your content</h3>
+      <p>What you post stays yours. By posting it you let UniConnect show it to other students on the platform. Only share things you have the right to share.</p>
+      <h3>Marketplace and Bookshop</h3>
+      <p>Sales are between students. UniConnect doesn't handle payments or guarantee items, so meet in safe, public places on campus.</p>
+      <h3>Breaking the rules</h3>
+      <p>Content that breaks these terms may be removed, and accounts that keep breaking them may be suspended.</p>
+    {% endif %}
+  </article>
+</main>
+{% endblock %}

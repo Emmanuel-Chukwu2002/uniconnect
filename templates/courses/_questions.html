@@ -1,0 +1,12 @@
+{% load group_tags %}{% comment %}A list of course questions (detail.html, section.html).{% endcomment %}
+{% for qn in questions %}
+  <a href="{{ qn.get_absolute_url }}" class="cc-q">
+    <span class="cc-q-count{% if qn.solved %} is-solved{% endif %}"><b>{{ qn.n_answers }}</b><small>answer{{ qn.n_answers|pluralize }}</small></span>
+    <span class="cc-q-text">
+      <b>{% if show_course %}<span class="cc-code-chip">{{ qn.course.code }}</span> {% endif %}{{ qn.title }}</b>
+      <small>{% if qn.solved %}<span class="cc-solved"><i class="bi bi-check-circle-fill"></i> Answered</span> · {% endif %}{{ qn.author.get_full_name|default:qn.author.username }} · {{ qn.created_at|ago }}</small>
+    </span>
+  </a>
+{% empty %}
+  <div class="sr-nothing sg-empty"><i class="bi bi-question-circle"></i><h2>No questions yet</h2><p>Stuck on something? Ask — classmates and seniors can answer.</p></div>
+{% endfor %}

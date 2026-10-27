@@ -1,0 +1,71 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if tab == 'drafts' %}Drafts{% else %}Scheduled posts{% endif %} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Your posts scheduled for later (feed/scheduling.py). Styles: restyle.css ("Composer tools").{% endcomment %}
+<div class="rp sc{% if tab == 'drafts' %} js-drafts-page{% endif %}">
+  <div class="st-top">
+    <a href="{% url 'home' %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>Unsent posts</h1>
+  </div>
+  <nav class="sc-tabs" aria-label="Unsent posts">
+    <a href="{% url 'post_drafts' %}" class="{% if tab == 'drafts' %}is-on{% endif %}">Drafts{% if drafts %} <b>{{ drafts|length }}</b>{% endif %}</a>
+    <a href="{% url 'scheduled_posts' %}" class="{% if tab != 'drafts' %}is-on{% endif %}">Scheduled{% if posts %} <b>{{ posts|length }}</b>{% endif %}</a>
+  </nav>
+
+  {% if tab == 'drafts' %}
+  <p class="rp-muted">Unfinished posts only you can see. Close the composer with something written to save one.</p>
+  {% for d in drafts %}
+    <article class="rp-card sc-item">
+      {{ d.data|json_script:d.json_id }}
+      <a href="{% url 'compose_post' %}?draft={{ d.id }}" class="sc-draft js-open-draft" data-draft-id="{{ d.id }}"{% if d.community_id %} data-community="{{ d.community_id }}"{% endif %}{% if d.thread_root_id %} data-full-page="1"{% endif %}>
+        <p class="sc-text" style="margin-top:0">{{ d.content|default:"(no text)"|truncatechars:280 }}</p>
+        <span class="sc-draft-meta">
+          <span><i class="bi bi-pencil"></i> Saved {{ d.saved_text }}</span>
+          {% if d.media_count %}<span><i class="bi {% if d.has_video %}bi-film{% else %}bi-image{% endif %}"></i> {% if d.has_video %}Video{% else %}{{ d.media_count }} photo{{ d.media_count|pluralize }}{% endif %}</span>{% endif %}
+          {% if d.data.schedule_at %}<span><i class="bi bi-clock-history"></i> To go out {{ d.schedule_at|date:"D j M, g:i A" }}</span>{% endif %}
+          {% if d.thread_size %}<span><i class="bi bi-list-nested"></i> Thread · {{ d.thread_size }} posts</span>{% endif %}
+          {% if d.thread_root_id %}<span><i class="bi bi-list-nested"></i> Adding to your thread</span>{% endif %}
+          {% if d.poll_options %}<span><i class="bi bi-bar-chart-steps"></i> Poll · {{ d.poll_options|length }} choices</span>{% endif %}
+          {% if d.location %}<span><i class="bi bi-geo-alt-fill"></i> {{ d.location }}</span>{% endif %}
+          {% if d.community %}<span><i class="bi bi-people-fill"></i> {{ d.community.name }}</span>{% endif %}
+        </span>
+      </a>
+      <div class="sc-actions">
+        <form method="post" action="{% url 'delete_draft' d.id %}">{% csrf_token %}<button type="submit" class="st-btn-ghost is-danger"><i class="bi bi-trash3"></i> Delete</button></form>
+        <a href="{% url 'compose_post' %}?draft={{ d.id }}" class="dt-btn is-sm js-open-draft" data-draft-id="{{ d.id }}"{% if d.community_id %} data-community="{{ d.community_id }}"{% endif %}{% if d.thread_root_id %} data-full-page="1"{% endif %}><i class="bi bi-pencil-square"></i> Continue writing</a>
+      </div>
+    </article>
+  {% empty %}
+    <div class="rp-card md-empty"><i class="bi bi-file-earmark-text"></i><p>No drafts. Close the composer with something written and choose <b>Save draft</b>.</p></div>
+  {% endfor %}
+  {% else %}
+  <p class="rp-muted">Only you can see these until they go out. Use the <i class="bi bi-clock-history"></i> button when writing a post to schedule one.</p>
+
+  {% for p in posts %}
+    <article class="rp-card sc-item">
+      <header class="sc-when"><i class="bi bi-clock-history"></i> <b>{{ p.created_at|date:"D j M" }} at {{ p.created_at|time:"g:i A" }}</b><span>· in {{ p.created_at|timeuntil }}</span></header>
+      {% if p.community %}<p class="sc-meta"><i class="bi bi-people-fill"></i> {{ p.community.name }}</p>{% endif %}
+      {% if p.thread_count %}<p class="sc-meta"><i class="bi bi-list-nested"></i> Thread · {{ p.thread_count|add:1 }} posts go out together</p>{% elif p.thread_root_id %}<p class="sc-meta"><i class="bi bi-list-nested"></i> Adds to your thread</p>{% endif %}
+      <p class="sc-text">{{ p.content|default:"(photo or video post)"|truncatechars:280 }}</p>
+      {% with media=p.media_items.all %}{% if media %}<p class="sc-meta"><i class="bi bi-image"></i> {{ media|length }} attachment{{ media|length|pluralize }}</p>{% endif %}{% endwith %}
+      {% if p.location %}<p class="sc-meta"><i class="bi bi-geo-alt-fill"></i> {{ p.location }}</p>{% endif %}
+      <details class="sc-change">
+        <summary class="st-btn-ghost"><i class="bi bi-calendar-event"></i> Change time</summary>
+        <form method="post" action="{% url 'scheduled_post_time' p.pk %}" class="sc-time-form">{% csrf_token %}
+          <input type="datetime-local" name="when" value="{{ p.created_at|date:'Y-m-d\TH:i' }}" min="{{ min_time }}" max="{{ max_time }}" step="60" required aria-label="New time">
+          <button type="submit" class="dt-btn is-sm">Save</button>
+        </form>
+      </details>
+      <div class="sc-actions">
+        <form method="post" action="{% url 'scheduled_post_delete' p.pk %}">{% csrf_token %}<button type="submit" class="st-btn-ghost is-danger"><i class="bi bi-trash3"></i> Delete</button></form>
+        <form method="post" action="{% url 'scheduled_post_now' p.pk %}">{% csrf_token %}<button type="submit" class="dt-btn is-sm"><i class="bi bi-send"></i> Post now</button></form>
+      </div>
+    </article>
+  {% empty %}
+    <div class="rp-card md-empty"><i class="bi bi-clock-history"></i><p>Nothing scheduled. When you write a post, tap <i class="bi bi-clock-history"></i> to choose when it goes out.</p></div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% if tab == 'drafts' %}{% include 'feed/_compose_modal.html' %}{% endif %}
+{% endblock %}

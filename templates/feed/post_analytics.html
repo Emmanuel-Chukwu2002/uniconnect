@@ -1,0 +1,53 @@
+{% extends 'feed/base_app.html' %}
+{% load post_extras %}
+{% block title %}Post activity — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}One post's activity, for its author (feed/analytics.py post_analytics). Styles: restyle.css ("Post analytics").{% endcomment %}
+<div class="an">
+  <div class="st-top">
+    <a href="{% url 'post_detail' post.id %}" class="st-back" aria-label="Back to the post"><i class="bi bi-arrow-left"></i></a>
+    <h1>Post activity</h1>
+    <a href="{% url 'analytics' %}" class="an-all">All your posts <i class="bi bi-chevron-right"></i></a>
+  </div>
+
+  <a href="{% url 'post_detail' post.id %}" class="an-post">
+    <span class="an-post-text">{{ post.content|default:"(photo or video post)"|truncatechars:160 }}</span>
+    <small>Posted {{ post.created_at|date:"j M Y" }} at {{ post.created_at|time:"g:i A" }}</small>
+  </a>
+
+  <section class="an-tiles" aria-label="Summary">
+    <div class="an-tile"><span>Impressions</span><b>{{ views.impressions }}</b><small>Times it was seen</small></div>
+    <div class="an-tile"><span>People reached</span><b>{{ views.reach }}</b><small>Different people</small></div>
+    <div class="an-tile"><span>Engagements</span><b>{{ eng.total }}</b><small>Likes, replies, reposts…</small></div>
+    <div class="an-tile"><span>Engagement rate</span><b>{{ rate }}</b><small>Engagements ÷ impressions</small></div>
+  </section>
+
+  {% include 'feed/_analytics_chart.html' with chart_title="Impressions per day" empty_what="this post" %}
+
+  <section class="rp-card an-card">
+    <h2>Engagements</h2>
+    <ul class="an-list">
+      {% for icon, label, n in breakdown %}
+        <li><i class="bi {{ icon }}"></i><span>{{ label }}</span><b>{{ n }}</b></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="rp-card an-card">
+    <h2>Who it reached</h2>
+    {% if reach_total %}
+      <ul class="an-meters">
+        {% for label, pct in audience %}
+          <li><span class="an-meter-label">{{ label }}</span><span class="an-meter" role="img" aria-label="{{ label }}: {{ pct }}%"><span style="width:{{ pct }}%"></span></span><b>{{ pct }}%</b></li>
+        {% endfor %}
+      </ul>
+      <p class="rp-muted an-foot">Of the {{ reach_total }} {% if reach_total == 1 %}person{% else %}people{% endif %} who saw this post.</p>
+    {% else %}
+      <p class="rp-muted">Nobody has seen it yet.</p>
+    {% endif %}
+  </section>
+
+  <p class="an-how"><i class="bi bi-info-circle"></i> A post is “seen” when at least half of it is on someone's screen for a second. Each person counts once a day, and your own views don't count. Only you can see this page.</p>
+</div>
+{% endblock %}

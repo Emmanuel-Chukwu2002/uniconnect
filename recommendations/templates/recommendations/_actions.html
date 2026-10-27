@@ -1,0 +1,18 @@
+{% comment %}Interested / Not interested for one recommended item (static/js/recommendations.js posts to
+recommendation_feedback). Works without JavaScript too: each button is a small form.{% endcomment %}
+<div class="rc-actions">
+  <form method="post" action="{% url 'recommendation_feedback' %}" class="js-rec-form">{% csrf_token %}
+    <input type="hidden" name="item_type" value="{{ item_type }}"><input type="hidden" name="item_id" value="{{ item_id }}">
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="value" value="{% if value == 'interested' %}{% else %}interested{% endif %}">
+    <button type="submit" class="rc-btn js-rec-interested{% if value == 'interested' %} is-on{% endif %}" aria-pressed="{% if value == 'interested' %}true{% else %}false{% endif %}">
+      <i class="bi {% if value == 'interested' %}bi-star-fill{% else %}bi-star{% endif %}"></i> <span>{% if value == 'interested' %}Interested{% else %}Interested?{% endif %}</span>
+    </button>
+  </form>
+  <form method="post" action="{% url 'recommendation_feedback' %}" class="js-rec-form">{% csrf_token %}
+    <input type="hidden" name="item_type" value="{{ item_type }}"><input type="hidden" name="item_id" value="{{ item_id }}">
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="value" value="not_interested">
+    <button type="submit" class="rc-btn rc-no js-rec-not" title="Not interested" aria-label="Not interested"><i class="bi bi-x-lg"></i></button>
+  </form>
+</div>

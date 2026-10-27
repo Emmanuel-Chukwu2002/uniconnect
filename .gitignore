@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local data
+db.sqlite3
+media/
+
+# Backups (python manage.py backup_db) and collected static files
+backups/
+staticfiles/

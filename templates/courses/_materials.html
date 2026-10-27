@@ -1,0 +1,37 @@
+{% load group_tags %}{% comment %}A list of course files (detail.html, section.html), styled as a "Shared Files" card. `show_course` adds the course code. Rows after the 5th stay hidden until "Show All".{% endcomment %}
+<div class="cf-head">
+  <h2>{% if kind == 'past_question' or section == 'past' %}Past Questions{% else %}Shared Files{% endif %}</h2>
+  {% if materials|length > 5 %}<button type="button" class="cf-all js-cf-all" aria-expanded="false">Show All</button>{% endif %}
+</div>
+<ul class="cf-list{% if materials|length > 5 %} is-clipped{% endif %}">
+{% for m in materials %}
+  <li class="cf-row">
+    <a href="{% url 'course_file' m.course_id m.pk %}" class="cf-tile is-{{ m.kind_class }}" data-no-soft target="_blank" rel="noopener" aria-hidden="true" tabindex="-1">
+      {% if m.badge.0 %}<b>{{ m.badge.0 }}</b>{% else %}<i class="bi {{ m.icon }}"></i>{% endif %}<small>{{ m.badge.1 }}</small>
+    </a>
+    <div class="cf-body">
+    <a href="{% url 'course_file' m.course_id m.pk %}" class="cf-text" data-no-soft target="_blank" rel="noopener" title="Shared by {{ m.uploaded_by.get_full_name|default:m.uploaded_by.username|default:'Someone' }}">
+      <b>{% if show_course %}<span class="cc-code-chip">{{ m.course.code }}</span> {% endif %}{{ m.title }}{% if m.year %} ({{ m.year }}){% endif %}</b>
+      <small>{{ m.size|size }}{% if m.downloads %} · {{ m.downloads }} download{{ m.downloads|pluralize }}{% endif %}</small>
+    </a>
+    <div class="cf-side">
+      <time datetime="{{ m.created_at|date:'c' }}">{{ m.created_at|date:'M j, Y' }}</time>
+      <div class="cf-actions">
+        {% if m.uploaded_by_id == request.user.id %}
+          <form method="post" action="{% url 'course_file_delete' m.course_id m.pk %}" onsubmit="return confirm('Delete this file?')">{% csrf_token %}<button type="submit" class="cf-btn is-del" title="Delete" aria-label="Delete {{ m.title }}"><i class="bi bi-trash3"></i></button></form>
+        {% endif %}
+        <a href="{% url 'course_file' m.course_id m.pk %}" class="cf-btn" data-no-soft download="{{ m.file_name }}" title="Download" aria-label="Download {{ m.title }}"><i class="bi bi-download"></i></a>
+      </div>
+    </div>
+    </div>
+  </li>
+{% empty %}
+  <li class="sr-nothing sg-empty"><i class="bi {% if kind == 'past_question' or section == 'past' %}bi-file-earmark-check{% else %}bi-journal-text{% endif %}"></i>
+    <h2>{% if kind == 'past_question' or section == 'past' %}No past questions yet{% else %}No notes yet{% endif %}</h2>
+    <p>Be the first to share — classmates will thank you before the exam.</p></li>
+{% endfor %}
+</ul>
+{% if materials|length > 5 %}<script>
+(function(){var s=document.currentScript.previousElementSibling,b=s.parentNode.querySelector('.js-cf-all');
+ b.addEventListener('click',function(){var o=s.classList.toggle('is-clipped');b.textContent=o?'Show All':'Show Less';b.setAttribute('aria-expanded',String(!o));});})();
+</script>{% endif %}

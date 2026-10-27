@@ -1,0 +1,31 @@
+{% comment %}
+  The notifications list on the Notifications page (notifications.html;
+  also returned as JSON by /notifications/?panel=1 for AJAX use).
+  Every entry's wording comes from the backend (feed/notifications.py -> entry.message); nothing is
+  hard-coded here.
+
+  "New" = unread when this list was built (highlighted, with a blue
+  dot), "Earlier" = already read. The view marks the New ones read in
+  the database right after building the list.
+{% endcomment %}
+<div class="notif-list js-notif-list">
+  {% if new_entries %}
+    <div class="notif-section-title">New</div>
+    {% for entry in new_entries %}{% include 'feed/_notification_item.html' %}{% endfor %}
+  {% endif %}
+
+  {% if earlier_entries %}
+    <div class="notif-section-title">Earlier</div>
+    {% for entry in earlier_entries %}{% include 'feed/_notification_item.html' %}{% endfor %}
+  {% endif %}
+
+  <div class="notif-empty {% if new_entries or earlier_entries %}d-none{% endif %} js-notif-empty">
+    <i class="bi bi-bell"></i>
+    {% if tab == 'mentions' %}<h4>No mentions yet</h4><p>When someone @mentions you or replies to your comment, it shows here.</p>
+    {% elif tab == 'activity' %}<h4>No activity yet</h4><p>Likes, comments, reposts and new followers show here.</p>
+    {% elif tab == 'groups' %}<h4>Nothing from groups or courses yet</h4><p>Group announcements, join requests and answers to your course questions show here.</p>
+    {% elif tab == 'market' %}<h4>Nothing from events or the marketplace yet</h4><p>Registrations for your events and carts with your listings show here.</p>
+    {% else %}<h4>No notifications yet</h4>
+    <p>When people like, comment on or share your posts, follow you or mention you, you'll see it here.</p>{% endif %}
+  </div>
+</div>

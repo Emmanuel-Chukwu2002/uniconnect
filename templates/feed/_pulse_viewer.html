@@ -1,0 +1,117 @@
+{% comment %}
+One Campus Pulse update (feed/pulse.py viewer_context): who posted it, its type, who can
+see it, how long it has left, the content, and only the actions that fit its type.
+Shown in the viewer on Home (filled by feed/_pulse_js.html) and on /pulse/<id>/.
+Buttons with data-pulse-post send a POST and the returned HTML replaces this article.
+{% endcomment %}
+<article class="pv pk-{{ kind.colour }}" data-id="{{ s.pk }}">
+  <header class="pv-head">
+    <a href="{% url 'user_profile' s.user.username %}" class="pv-avatar"{% if photo %} style="background-image:url('{{ photo }}')"{% endif %}>{% if not photo %}{{ initials }}{% endif %}</a>
+    <div class="pv-who">
+      <a href="{% url 'user_profile' s.user.username %}" class="pv-name">{% if mine %}You{% else %}{{ name }}{% endif %}</a>
+      {% if who %}<small>{{ who }}</small>{% endif %}
+    </div>
+    <span class="pv-kind"><i class="bi {{ kind.icon }}"></i> {{ s.get_kind_display }}</span>
+  </header>
+
+  <p class="pv-meta">
+    <span title="Who can see this"><i class="bi {{ audience_icon }}"></i> {{ audience_text }}</span>
+    <span>{% if ago == 'Now' %}Just now{% else %}{{ ago }} ago{% endif %}</span>
+    <span title="Disappears {{ s.expires_at|date:'D j M, g:i A' }}"><i class="bi bi-hourglass-split"></i> {{ left }}</span>
+  </p>
+
+  {% if s.kind == 'question' and s.is_answered %}
+    <p class="pv-answered"><i class="bi bi-check-circle-fill"></i> Answered</p>
+  {% endif %}
+
+  {% if s.kind == 'study' and s.course or s.kind == 'study' and s.topic %}
+    <div class="pv-box">
+      <i class="bi bi-book"></i>
+      <div><b>Studying{% if s.course %} {{ s.course.code }}{% endif %}</b>{% if s.topic %}<small>Topic: {{ s.topic }}</small>{% elif s.course %}<small>{{ s.course.title }}</small>{% endif %}</div>
+    </div>
+  {% elif s.kind == 'available' %}
+    <div class="pv-box is-live">
+      <span class="pv-dot"></span>
+      <div><b>Available for {{ activity_text|lower }}</b><small>{% if s.course %}{{ s.course.code }} · {% endif %}{% if s.topic %}{{ s.topic }} · {% endif %}until {{ until }}</small></div>
+    </div>
+  {% elif s.kind == 'event' %}
+    <div class="pv-box is-event">
+      <i class="bi bi-calendar-event"></i>
+      <div>
+        <b>{{ s.event_title }}</b>
+        {% if s.event_place %}<small><i class="bi bi-geo-alt"></i> {{ s.event_place }}</small>{% endif %}
+        {% if event_when %}<small><i class="bi bi-clock"></i> {{ event_when }}{% if event_past %} · <em>Started</em>{% endif %}</small>{% endif %}
+      </div>
+    </div>
+  {% elif s.kind == 'question' and s.course %}
+    <div class="pv-box"><i class="bi bi-journal-text"></i><div><b>{{ s.course.code }}</b><small>{{ s.course.title }}</small></div></div>
+  {% endif %}
+
+  {% if s.text %}<p class="pv-text">{{ s.text|urlize|linebreaksbr }}</p>{% endif %}
+  {% if s.image_url %}<img src="{{ s.image_url }}" alt="" class="pv-media" loading="lazy">{% endif %}
+  {% if s.video %}<video src="{{ s.video.url }}" class="pv-media" controls playsinline preload="metadata"></video>{% endif %}
+  {% if s.link %}<a href="{{ s.link }}" class="pv-link" target="_blank" rel="noopener noreferrer"><i class="bi bi-link-45deg"></i> {{ s.link|cut:"https://"|cut:"http://"|truncatechars:50 }}</a>{% endif %}
+
+  {% if s.kind == 'question' %}
+    <div class="pv-answers" role="group" aria-label="Quick answer">
+      {% for key, label, n in answers %}
+        <button type="button" class="pv-answer{% if my_answer == key %} is-on{% endif %}" data-pulse-post="{% url 'pulse_answer' s.pk %}" data-name="answer" data-value="{{ key }}" aria-pressed="{% if my_answer == key %}true{% else %}false{% endif %}"{% if mine %} disabled{% endif %}>
+          {{ label }}{% if n %} <span>{{ n }}</span>{% endif %}
+        </button>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="pv-actions">
+    {% if has_interest and not mine %}
+      <button type="button" class="pv-btn{% if interested %} is-on{% else %} is-primary{% endif %}" data-pulse-post="{% url 'pulse_interest' s.pk %}">
+        <i class="bi {% if interested %}bi-star-fill{% else %}bi-star{% endif %}"></i> {% if interested %}Interested{% else %}I'm interested{% endif %}
+      </button>
+    {% endif %}
+    {% if s.event_id %}
+      <a href="{% url 'event_detail' s.event_id %}" class="pv-btn"><i class="bi bi-box-arrow-up-right"></i> View event</a>
+    {% endif %}
+    {% if connect and not mine %}
+      <button type="button" class="pv-btn is-primary js-pulse-connect" data-url="{% url 'pulse_connect' s.pk %}" data-action="{% if s.kind == 'study' %}together{% elif s.kind == 'available' %}join{% else %}imin{% endif %}">
+        <i class="bi {{ connect.1 }}"></i> {{ connect.0 }}
+      </button>
+    {% endif %}
+    {% if can_message %}
+      <button type="button" class="pv-btn js-pulse-connect" data-url="{% url 'pulse_connect' s.pk %}" data-action="message"><i class="bi bi-chat-dots"></i> Message</button>
+    {% endif %}
+    {% if mine %}
+      {% if s.kind == 'question' %}
+        <button type="button" class="pv-btn{% if s.is_answered %} is-on{% else %} is-primary{% endif %}" data-pulse-post="{% url 'pulse_answered' s.pk %}">
+          <i class="bi {% if s.is_answered %}bi-arrow-counterclockwise{% else %}bi-check2-circle{% endif %}"></i> {% if s.is_answered %}Not answered yet{% else %}Mark answered{% endif %}
+        </button>
+      {% endif %}
+      <button type="button" class="pv-btn is-danger js-pulse-remove" data-url="{% url 'pulse_remove' s.pk %}" data-confirm="{% if s.kind == 'available' %}Turn off your availability?{% else %}Delete this update?{% endif %}">
+        <i class="bi {% if s.kind == 'available' %}bi-toggle-off{% else %}bi-trash3{% endif %}"></i> {% if s.kind == 'available' %}Turn off{% else %}Delete{% endif %}
+      </button>
+    {% endif %}
+  </div>
+
+  {% if mine %}
+    <p class="pv-stats">
+      <span><i class="bi bi-eye"></i> Seen by {{ views_count }}</span>
+      {% if has_interest %}<span><i class="bi bi-star"></i> {{ interest_count }} interested</span>{% endif %}
+      {% if s.kind == 'question' %}<span><i class="bi bi-ui-checks"></i> {{ answer_total }} quick answer{{ answer_total|pluralize }}</span>{% endif %}
+    </p>
+  {% elif has_interest and interest_count %}
+    <p class="pv-stats"><span><i class="bi bi-star"></i> {{ interest_count }} interested</span></p>
+  {% endif %}
+
+  {% if can_reply %}
+    {# A reply goes privately to the author's Messages (feed/pulse.py pulse_reply), like a reply to a story. #}
+    <section class="pv-replies" aria-label="Reply">
+      <form method="post" action="{% url 'pulse_reply' s.pk %}" class="pv-form js-pulse-reply" data-no-soft>{% csrf_token %}
+        <input type="text" name="text" maxlength="500" required autocomplete="off"
+          placeholder="{% if s.kind == 'question' %}Answer {{ s.user.first_name|default:name }} privately…{% else %}Reply to {{ s.user.first_name|default:name }}…{% endif %}" aria-label="Reply privately in Messages">
+        <button type="submit" aria-label="Send reply"><i class="bi bi-send-fill"></i></button>
+      </form>
+      <small class="pv-private"><i class="bi bi-lock"></i> Only {{ s.user.first_name|default:name }} sees your reply, in Messages.</small>
+    </section>
+  {% endif %}
+
+  {% if other_uni %}<p class="pv-note"><i class="bi bi-globe2"></i> From another university, shared with everyone.</p>{% endif %}
+</article>

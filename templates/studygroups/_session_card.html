@@ -1,0 +1,127 @@
+{# One study session (studygroups/_sessions.html). #}
+<article class="sr-card ss-card{% if s.is_cancelled %} is-cancelled{% endif %}{% if is_past %} is-past{% endif %}{% if s.is_now %} is-now{% endif %}" id="s{{ s.pk }}">
+  <div class="ss-date" aria-hidden="true">
+    <small>{{ s.starts_at|date:'M' }}</small><b>{{ s.starts_at|date:'j' }}</b><small>{{ s.starts_at|date:'D' }}</small>
+  </div>
+  <div class="ss-body">
+    <div class="ss-top">
+      <h3>{{ s.title }}</h3>
+      {% if s.is_cancelled %}<span class="ss-tag is-cancelled">Cancelled</span>{% elif s.is_now %}<span class="ss-tag is-now">Happening now</span>{% endif %}
+    </div>
+    <p class="ss-when"><i class="bi bi-clock"></i> {{ s.starts_at|date:'l j F' }}, {{ s.starts_at|time:'g:i A' }} – {{ s.ends_at|time:'g:i A' }}</p>
+    {% if s.place %}<p class="ss-when"><i class="bi bi-geo-alt"></i> {{ s.place }}</p>{% endif %}
+    {% if s.link %}<p class="ss-when"><i class="bi bi-camera-video"></i> <a href="{{ s.link }}" target="_blank" rel="noopener nofollow" data-no-soft>Join online</a></p>{% endif %}
+    {% if s.notes %}<p class="ss-notes">{{ s.notes|linebreaksbr }}</p>{% endif %}
+    <div class="ss-who">
+      {% if s.going %}
+        <span class="ss-faces">{% for u in s.going|slice:':5' %}{% with sp=u.student_profile %}<span class="ss-face" title="{{ u.get_full_name|default:u.username }}" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ u.first_name|default:u.username|slice:':1' }}{% endif %}</span>{% endwith %}{% endfor %}</span>
+      {% endif %}
+      <span>{{ s.going|length }} going{% if s.maybe_count %} · {{ s.maybe_count }} maybe{% endif %} · by {% if s.created_by_id == request.user.id %}you{% else %}{{ s.created_by.get_full_name|default:s.created_by.username }}{% endif %}</span>
+    </div>
+    {% if not is_past and not s.is_cancelled %}
+      <div class="ss-actions">
+        <form method="post" action="{% url 'group_session_rsvp' group.pk s.pk %}" class="ss-rsvp" role="group" aria-label="Are you coming?">
+          {% csrf_token %}
+          <button type="submit" name="status" value="going" class="{% if s.mine == 'going' %}is-on{% endif %}" aria-pressed="{% if s.mine == 'going' %}true{% else %}false{% endif %}"><i class="bi bi-check-circle"></i> Going</button>
+          <button type="submit" name="status" value="maybe" class="{% if s.mine == 'maybe' %}is-on{% endif %}" aria-pressed="{% if s.mine == 'maybe' %}true{% else %}false{% endif %}"><i class="bi bi-question-circle"></i> Maybe</button>
+          <button type="submit" name="status" value="no" class="{% if s.mine == 'no' %}is-on is-no{% endif %}" aria-pressed="{% if s.mine == 'no' %}true{% else %}false{% endif %}"><i class="bi bi-x-circle"></i> Can't go</button>
+        </form>
+        <a href="{% url 'group_session_ics' group.pk s.pk %}" class="ss-link" data-no-soft download><i class="bi bi-calendar-plus"></i> Add to calendar</a>
+        {% if s.can_cancel %}
+          <a href="?tab=sessions&amp;edit={{ s.pk }}#s{{ s.pk }}" class="ss-link js-ss-edit" data-target="ssEdit{{ s.pk }}"><i class="bi bi-pencil"></i> Edit</a>
+          <form method="post" action="{% url 'group_session_cancel' group.pk s.pk %}" onsubmit="return confirm('Cancel “{{ s.title|escapejs }}”? Everyone sees it was cancelled.')">
+            {% csrf_token %}<button type="submit" class="ss-link is-danger"><i class="bi bi-x-lg"></i> Cancel session</button>
+          </form>
+        {% endif %}
+      </div>
+      {% if s.can_cancel %}
+        {# Changing it (studygroups/sessions.py update): people coming are told what changed. #}
+        <form method="post" action="{% url 'group_session_edit' group.pk s.pk %}" class="ss-form ss-edit" id="ssEdit{{ s.pk }}"{% if request.GET.edit != s.pk|stringformat:'s' %} hidden{% endif %}>
+          {% csrf_token %}
+          <label class="ss-field ss-wide"><span>Title</span><input type="text" name="title" maxlength="100" required value="{{ s.title }}"></label>
+          <label class="ss-field"><span>Date</span><input type="date" name="date" min="{{ today }}" required value="{{ s.starts_at|date:'Y-m-d' }}"></label>
+          <label class="ss-field"><span>Time</span><input type="time" name="time" required value="{{ s.starts_at|time:'H:i' }}"></label>
+          <label class="ss-field"><span>How long</span>
+            <select name="duration">{% for v, l in durations %}<option value="{{ v }}"{% if v == s.duration %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+          <label class="ss-field"><span>Place <small>(optional)</small></span><input type="text" name="place" maxlength="120" value="{{ s.place }}"></label>
+          <label class="ss-field ss-wide"><span>Online link <small>(optional)</small></span><input type="url" name="link" value="{{ s.link }}" inputmode="url"></label>
+          <label class="ss-field ss-wide"><span>What to bring or prepare <small>(optional)</small></span><textarea name="notes" rows="2" maxlength="1000">{{ s.notes }}</textarea></label>
+          <div class="ss-form-foot">
+            <small>If the time or place changes, people who said Going or Maybe are told, and their reminder moves to the new time.</small>
+            <span class="ss-edit-btns">
+              <a href="?tab=sessions#s{{ s.pk }}" class="btn btn-light js-ss-edit" data-target="ssEdit{{ s.pk }}">Close</a>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save changes</button>
+            </span>
+          </div>
+        </form>
+      {% endif %}
+    {% endif %}
+    {% if s.followed %}
+      {# After it starts (studygroups/sessions.py follow_up): who came, and notes from it #}
+      <section class="ss-after" aria-label="After the session">
+        <div class="ss-came">
+          <span class="ss-came-count"><i class="bi bi-person-check-fill"></i> {{ s.came|length }} came</span>
+          {% if s.came %}<span class="ss-faces">{% for u in s.came|slice:':6' %}{% with sp=u.student_profile %}<span class="ss-face" title="{{ u.get_full_name|default:u.username }}" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ u.first_name|default:u.username|slice:':1' }}{% endif %}</span>{% endwith %}{% endfor %}</span>{% endif %}
+          {% if s.can_follow_up %}
+            <form method="post" action="{% url 'group_session_attended' group.pk s.pk %}">{% csrf_token %}
+              <input type="hidden" name="came" value="{% if s.i_came %}0{% else %}1{% endif %}">
+              <button type="submit" class="ss-chip{% if s.i_came %} is-on{% endif %}" aria-pressed="{% if s.i_came %}true{% else %}false{% endif %}">{% if s.i_came %}<i class="bi bi-check-lg"></i> You were there{% else %}<i class="bi bi-hand-thumbs-up"></i> I was there{% endif %}</button>
+            </form>
+          {% endif %}
+        </div>
+        {% if s.can_mark %}
+          <details class="ss-mark">
+            <summary><i class="bi bi-list-check"></i> Mark who came</summary>
+            <form method="post" action="{% url 'group_session_mark' group.pk s.pk %}">{% csrf_token %}
+              <div class="ss-checklist">
+                {% for row in s.checklist %}
+                  <label><input type="checkbox" name="came" value="{{ row.user.pk }}"{% if row.came %} checked{% endif %}>
+                    <span>{{ row.user.get_full_name|default:row.user.username }}</span>{% if row.said %}<small>said {{ row.said|lower }}</small>{% endif %}</label>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check2-all"></i> Save attendance</button>
+            </form>
+          </details>
+        {% endif %}
+
+        {% if s.notes_list %}
+          <h4 class="ss-notes-head"><i class="bi bi-journal-text"></i> Notes from this session</h4>
+          {% for n in s.notes_list %}
+            <div class="ss-note">
+              <div class="ss-note-head"><b>{{ n.author.get_full_name|default:n.author.username }}</b> <small>· {{ n.created_at|timesince }} ago</small>
+                {% if n.author_id == request.user.id or is_admin %}
+                  <form method="post" action="{% url 'group_session_note_delete' group.pk s.pk n.pk %}" onsubmit="return confirm('Delete these notes and their files?')">{% csrf_token %}<button type="submit" class="ss-icon" aria-label="Delete these notes"><i class="bi bi-trash3"></i></button></form>
+                {% endif %}
+              </div>
+              {% if n.body %}<p>{{ n.body|urlize|linebreaksbr }}</p>{% endif %}
+              {% if n.files.all %}
+                <div class="ss-files">
+                  {% for f in n.files.all %}
+                    {% if f.is_image %}<a href="{% url 'group_file' group.pk f.pk %}" class="ss-thumb" target="_blank" rel="noopener" data-no-soft style="background-image:url({{ f.file.url }})" aria-label="Open {{ f.name }}"></a>
+                    {% else %}<a href="{% url 'group_file' group.pk f.pk %}" class="ss-file" data-no-soft target="_blank" rel="noopener"><i class="bi {{ f.icon }}"></i> {{ f.name }} <small>{{ f.size|filesizeformat }}</small></a>{% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if s.can_follow_up %}
+          <details class="ss-addnote">
+            <summary><i class="bi bi-journal-plus"></i> Share notes from this session</summary>
+            <form method="post" action="{% url 'group_session_note' group.pk s.pk %}" enctype="multipart/form-data">{% csrf_token %}
+              <textarea name="body" rows="3" maxlength="3000" placeholder="What did you cover? Answers, key points, what to do next…"></textarea>
+              <div class="ss-addnote-foot">
+                <label class="ss-link"><i class="bi bi-paperclip"></i> Add photos or files <small>(up to 6)</small>
+                  <input type="file" name="files" multiple hidden accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip" onchange="this.closest('form').querySelector('.js-ss-picked').textContent = this.files.length ? this.files.length + ' chosen' : ''"></label>
+                <small class="js-ss-picked"></small>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-send"></i> Share</button>
+              </div>
+              <small class="ss-hint">Files also go in the group's Files tab, so they're easy to find later.</small>
+            </form>
+          </details>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+</article>

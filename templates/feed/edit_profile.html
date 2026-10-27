@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Edit profile — UniConnect{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/app.css' %}?v=95">{% endblock %}
+
+{% block body %}
+<div class="editprofile-page">
+  <form method="post" action="{% url 'edit_profile' %}" enctype="multipart/form-data" class="editprofile-form">
+    {% csrf_token %}
+    <div class="editprofile-header">
+      <a href="{% url 'profile' %}" class="editprofile-icon-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+      <span class="editprofile-title">Edit profile</span>
+      <button type="submit" class="editprofile-save-btn">Save</button>
+    </div>
+    {% include 'feed/_edit_profile_fields.html' %}
+  </form>
+</div>
+{% endblock %}

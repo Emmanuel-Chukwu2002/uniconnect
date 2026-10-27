@@ -1,0 +1,2 @@
+{# A small stack of member photos (c.faces, from communities.views._decorate). #}
+<span class="cm-faces" aria-hidden="true">{% for u in c.faces %}<span class="cm-face" style="{% if u.student_profile.profile_photo %}background-image:url('{{ u.student_profile.profile_photo.url }}'){% endif %}">{% if not u.student_profile.profile_photo %}{{ u.first_name|default:u.username|slice:":1"|upper }}{% endif %}</span>{% endfor %}</span>

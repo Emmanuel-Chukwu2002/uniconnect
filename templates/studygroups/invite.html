@@ -1,0 +1,26 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Join {{ group.title }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Opened from a group's invite link (studygroups/views.py invite).{% endcomment %}
+{% with info=group.type_info %}
+<div class="st-top">
+  <a href="{% url 'groups' %}" class="st-back" aria-label="Back to Groups"><i class="bi bi-arrow-left"></i></a>
+  <h1>Group invite</h1>
+</div>
+
+<article class="sr-card sg-invite-card">
+  {% if group.course_code %}<span class="sg-code is-lg is-{{ info.colour }}">{{ group.course_code }}</span>
+  {% else %}<span class="sg-tile is-xl is-{{ info.colour }}"><i class="bi {{ info.icon }}"></i></span>{% endif %}
+  <h2>{{ group.name }}</h2>
+  <p class="sg-invite-sub">{{ info.label }} group · {{ group.university.short_name|default:group.university.name }} · {{ group.n_members }} member{{ group.n_members|pluralize }}</p>
+  {% if group.description %}<p class="sg-invite-desc">{{ group.description|truncatechars:240 }}</p>{% endif %}
+  <p class="op-note">{{ group.created_by.get_full_name|default:group.created_by.username }} started this group. Joining adds you to its group chat in Messages.</p>
+  {% if full %}
+    <span class="st-btn is-disabled" aria-disabled="true"><i class="bi bi-people-fill"></i> This group is full</span>
+  {% else %}
+    <form method="post">{% csrf_token %}<button type="submit" class="st-btn"><i class="bi bi-person-plus"></i> Join group</button></form>
+  {% endif %}
+</article>
+{% endwith %}
+{% endblock %}

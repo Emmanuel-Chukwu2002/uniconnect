@@ -1,0 +1,96 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Home — UniConnect{% endblock %}
+{# Media tab with videos: on phones it becomes the full-screen video feed (app.css "Media feed on phones"). #}
+{% block shell_class %}{% if tab == 'media' and posts %}media-reels-page{% endif %}{% endblock %}
+
+{% block feed_content %}
+{# Campus Pulse, then Upcoming on phones (feed/_today_strip.html). #}
+{% if tab != 'media' %}{% include 'feed/_today_strip.html' %}{% endif %}
+
+<div class="center-card compose-prompt-card" id="composePromptCard" role="button" tabindex="0" data-compose-url="{% url 'compose_post' %}">
+  <div class="compose-prompt-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">
+    {% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+  </div>
+  <div class="compose-prompt-text">What's on your mind?</div>
+  <button type="button" class="btn btn-primary btn-sm compose-prompt-post-btn">Post</button>
+</div>
+
+{% if today_agenda %}
+  {% comment %}Today's classes and study sessions (courses/timetable.py today_agenda): one card each with
+  how far along it is — today, 1 hour to go, the 15-minute reminder, started, halfway — and a status.
+  Styles: restyle.css ("Today's classes cards").{% endcomment %}
+  <section class="tc" aria-label="Today's classes">
+    <header class="tc-head"><h2><i class="bi bi-calendar3-week"></i> Today's classes</h2><a href="{% url 'timetable' %}">Timetable</a></header>
+    {% for r in today_agenda %}
+      <a href="{{ r.url }}" class="tc-card is-{{ r.status_key }}">
+        <span class="tc-icon"><i class="bi {{ r.icon }}"></i><i class="bi bi-clock-fill tc-clock"></i></span>
+        <span class="tc-text">
+          <b>{{ r.label }}</b>
+          <small>{{ r.when }} <span aria-hidden="true">•</span> {{ r.start|time:"g:i A" }}{% if r.where %} <span aria-hidden="true">•</span> {{ r.where }}{% endif %}</small>
+        </span>
+        <span class="tc-steps" role="img" aria-label="{{ r.done }} of 5 steps">
+          {% for name, done in r.steps %}<span class="tc-step{% if done %} is-done{% endif %}" title="{{ name }}">{% if done %}<i class="bi bi-check-lg"></i>{% endif %}</span>{% endfor %}
+        </span>
+        <span class="tc-status"><i class="bi {% if r.status_key == 'live' %}bi-clock{% elif r.status_key == 'soon' %}bi-alarm{% else %}bi-calendar-event{% endif %}"></i> {{ r.status }}</span>
+        <i class="bi bi-chevron-right tc-go"></i>
+      </a>
+    {% endfor %}
+  </section>
+{% endif %}
+
+<div class="feed-tabs">
+  {% if tab == 'media' %}
+    {# Only seen on the phone video feed, where the app's top bar is hidden: the menu on the left, search on the right. #}
+    <button type="button" class="feed-tabs-icon feed-tabs-menu js-reels-menu" aria-label="Open menu"><i class="bi bi-list"></i><span class="nav-notif-dot js-notif-dot" {% if not notifications_unread %}hidden{% endif %}></span></button>
+  {% endif %}
+  <a href="?tab=following" class="{% if tab == 'following' %}active{% endif %}">Following</a>
+  <a href="?tab=foryou" class="{% if tab == 'foryou' %}active{% endif %}">For You</a>
+  <a href="?tab=trending" class="{% if tab == 'trending' %}active{% endif %}">Trending</a>
+  <a href="?tab=media" class="{% if tab == 'media' %}active{% endif %}">Media</a>
+  {% if tab == 'media' %}
+    <a href="{% url 'search' %}" class="feed-tabs-icon feed-tabs-search" aria-label="Search"><i class="bi bi-search"></i></a>
+  {% endif %}
+</div>
+
+{% if tab == 'media' and posts %}
+  {# Phones: one full-screen video at a time, swipe up / down (static/js/reels.js). Larger screens keep the post cards below. #}
+  <div class="reels" id="reels" aria-label="Videos">
+    {% for post in posts %}{% include 'feed/_reel_item.html' %}{% endfor %}
+  </div>
+{% endif %}
+
+{% for post in posts %}
+  {% include 'feed/_post_card.html' %}
+{% empty %}
+  <div class="center-card">
+    {% if not request.user.student_profile %}
+      {# Accounts made with createsuperuser belong to no university, so there is no feed to show. #}
+      <h4><i class="bi bi-shield-lock"></i> This is an admin account</h4>
+      <p>The feed shows posts from your own university, and this account isn't a student at one.
+        {% if staff_admin %}To see a university the way its students do, open it read-only from the dashboard.{% endif %}</p>
+      {% if staff_admin %}<p><a href="{% url 'staff_view' %}" data-no-soft>View a university</a> · <a href="{% url 'staff_overview' %}" data-no-soft>Admin dashboard</a></p>{% endif %}
+    {% elif tab == 'following' %}
+      <h4><i class="bi bi-people"></i> No posts yet</h4>
+      <p>Posts from people you follow will show up here — follow some {{ request.user.student_profile.university.short_name }} students, or check the <a href="?tab=foryou">For You</a> tab.</p>
+    {% elif tab == 'trending' %}
+      <h4><i class="bi bi-graph-up-arrow"></i> Nothing trending yet</h4>
+      <p>Posts that people at {{ request.user.student_profile.university.short_name }} are liking, commenting on and sharing this week will show up here.</p>
+    {% elif tab == 'media' %}
+      <h4><i class="bi bi-camera-video"></i> No videos yet</h4>
+      <p>No one at {{ request.user.student_profile.university.short_name }} has posted a video yet — be the first to share one.</p>
+    {% else %}
+      <h4><i class="bi bi-house-door"></i> Your feed</h4>
+      <p>No posts yet from {{ request.user.student_profile.university.short_name }} students — be the first to share something.</p>
+    {% endif %}
+  </div>
+{% endfor %}
+
+{# Phones: a floating + to write a post (restyle.css "floating +"). #}
+<a href="{% url 'compose_post' %}" class="feed-fab" aria-label="Write a post"><i class="bi bi-plus-lg"></i></a>
+{% include 'feed/_compose_modal.html' %}
+{% endblock %}
+
+{# Right sidebar: the Upcoming card (only its heading and View All). #}
+{% block right_upcoming %}{% if tab != 'media' %}{% include 'feed/_today_upcoming.html' with where='side' %}{% endif %}{% endblock %}
+
+{% block extra_js %}{{ block.super }}{% if tab != 'media' %}{% include 'feed/_today_strip_js.html' %}{% include 'feed/_pulse_js.html' %}{% endif %}{% endblock %}

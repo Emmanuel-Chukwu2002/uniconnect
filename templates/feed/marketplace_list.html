@@ -1,0 +1,275 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}Marketplace — UniConnect{% endblock %}
+
+{% block feed_content %}
+<div class="profile-topbar">
+  <a href="{% url 'home' %}" class="profile-back-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">Marketplace</div>
+    <div class="profile-topbar-sub">{{ listings_count }} available</div>
+  </div>
+  {% if tab == 'browse' %}
+    <button type="button" class="profile-topbar-icon js-toggle-marketplace-search" aria-label="Search listings" title="Search listings">
+      <i class="bi bi-search"></i>
+    </button>
+  {% endif %}
+</div>
+
+<div class="profile-tabs">
+  <a href="?tab=browse" class="profile-tab {% if tab == 'browse' %}active{% endif %}">Browse</a>
+  <a href="?tab=mine" class="profile-tab {% if tab == 'mine' %}active{% endif %}">Mine</a>
+  <a href="?tab=cart" class="profile-tab {% if tab == 'cart' %}active{% endif %}">
+    Cart{% if cart_count %} ({{ cart_count }}){% endif %}
+  </a>
+</div>
+
+{% if tab == 'browse' %}
+
+  <div class="events-search-bar" id="marketplaceSearchBar">
+    <i class="bi bi-search"></i>
+    <input type="text" id="marketplaceSearchInput" placeholder="Search listings by name, category or description…" autocomplete="off">
+    <button type="button" class="events-search-close" id="marketplaceSearchClose" aria-label="Close search"><i class="bi bi-x"></i></button>
+  </div>
+
+  {% include 'recommendations/_row.html' with recs=recommendations row_id='marketplaceRecs' %}
+
+  <div class="events-category-filters">
+    <a href="?tab=browse" class="events-category-filter {% if selected_category == 'all' %}active{% endif %}">
+      <i class="bi bi-grid"></i> All
+    </a>
+    {% for pill in category_pills %}
+      <a href="?tab=browse&category={{ pill.code }}" class="events-category-filter {% if selected_category == pill.code %}active{% endif %}">
+        <i class="bi {{ pill.icon }}"></i> {{ pill.label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  {# Two items per row on bigger screens, one on phones (restyle.css "Marketplace grid") #}
+  <div class="events-grid mkt-grid">
+    {% for listing in filtered_listings %}
+      <div class="events-card js-listing-card" style="--i:{{ forloop.counter0|stringformat:'d' }}"
+           data-event-title="{{ listing.title }}"
+           data-event-location="{{ listing.get_category_display }}"
+           data-event-description="{{ listing.description }}">
+        <a href="{% url 'listing_detail' listing.id %}" class="marketplace-card-link">
+          <div class="events-card-banner events-card-banner-{{ listing.category_color }}" {% if listing.cover_image %}style="background-image:url('{{ listing.cover_image.url }}');background-size:cover;background-position:center;background-repeat:no-repeat;"{% endif %}>
+            {% if not listing.cover_image %}<i class="bi {{ listing.category_icon }}"></i>{% endif %}
+          </div>
+          <div class="events-card-body">
+            <div class="events-card-top">
+              <h4 class="events-card-title">{{ listing.title }}</h4>
+              <span class="event-badge-{{ listing.condition_color }} events-card-category-pill">{{ listing.get_condition_display }}</span>
+            </div>
+            <div class="events-card-footer">
+              <span class="events-card-price">₦{{ listing.price|floatformat:"-2g" }}</span>
+              <span class="events-card-spots">{{ listing.quantity_available }} available</span>
+            </div>
+            <small class="mkt-ago">{{ listing.created_at|ago }}</small>
+          </div>
+        </a>
+        <form method="post" action="{% url 'add_to_cart' %}" class="marketplace-addcart-form">
+          {% csrf_token %}
+          <input type="hidden" name="listing_id" value="{{ listing.id }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <a href="{% url 'listing_detail' listing.id %}" class="mkt-details">Details</a>
+          <button type="submit" class="btn-events-attend"><i class="bi bi-cart-plus"></i> Add to cart</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="center-card text-center" style="padding:48px 24px;">
+        <i class="bi bi-shop" style="font-size:40px;color:var(--accent);margin-bottom:16px;display:block;"></i>
+        {% if selected_category == 'all' %}
+          <h4>Nothing for sale yet</h4>
+          <p>Items students list will show up here.</p>
+        {% else %}
+          <h4>No listings in this category</h4>
+          <p>Try a different category, or <a href="?tab=browse">view everything</a>.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <div class="center-card text-center" id="marketplaceSearchNoResults" style="padding:48px 24px;display:none;">
+      <i class="bi bi-search" style="font-size:40px;color:var(--accent);margin-bottom:16px;display:block;"></i>
+      <h4>No listings match your search</h4>
+      <p>Try a different name, category or keyword.</p>
+    </div>
+  </div>
+
+{% elif tab == 'mine' %}
+
+  <details class="events-form-card">
+    <summary><i class="bi bi-plus-circle"></i> Sell an item</summary>
+    <form method="post" action="{% url 'create_listing' %}" enctype="multipart/form-data" class="events-form">
+      {% csrf_token %}
+      <div class="events-form-row">
+        <div class="events-form-field">
+          <label for="{{ listing_form.title.id_for_label }}">Item name</label>
+          {{ listing_form.title }}
+        </div>
+        <div class="events-form-field">
+          <label for="{{ listing_form.category.id_for_label }}">Category</label>
+          {{ listing_form.category }}
+        </div>
+      </div>
+      <div class="events-form-row">
+        <div class="events-form-field">
+          <label for="{{ listing_form.condition.id_for_label }}">Condition</label>
+          {{ listing_form.condition }}
+        </div>
+        <div class="events-form-field">
+          <label for="{{ listing_form.price.id_for_label }}">Price (₦)</label>
+          {{ listing_form.price }}
+        </div>
+      </div>
+      <div class="events-form-row">
+        <div class="events-form-field">
+          <label for="{{ listing_form.quantity_available.id_for_label }}">Quantity available</label>
+          {{ listing_form.quantity_available }}
+        </div>
+        <div class="events-form-field">
+          <label for="{{ listing_form.location.id_for_label }}">Meetup location</label>
+          {{ listing_form.location }}
+        </div>
+      </div>
+      <div class="events-form-field">
+        <label for="{{ listing_form.images.id_for_label }}">Photos</label>
+        {{ listing_form.images }}
+        <small class="events-form-hint">For crisp photos, use images at least 800px wide. You can select several at once.</small>
+      </div>
+      <div class="events-form-field">
+        <label for="{{ listing_form.description.id_for_label }}">Description</label>
+        {{ listing_form.description }}
+      </div>
+      <button type="submit" class="btn-events-primary"><i class="bi bi-plus-circle"></i> List item</button>
+    </form>
+  </details>
+
+  <div class="events-grid">
+    {% for listing in my_listings %}
+      <div class="events-card {% if listing.is_sold %}marketplace-card-sold{% endif %}">
+        <div class="events-card-banner events-card-banner-{{ listing.category_color }}" {% if listing.cover_image %}style="background-image:url('{{ listing.cover_image.url }}');background-size:cover;background-position:center;background-repeat:no-repeat;"{% endif %}>
+          {% if not listing.cover_image %}<i class="bi {{ listing.category_icon }}"></i>{% endif %}
+          {% if listing.is_sold %}<span class="marketplace-sold-badge">Sold</span>{% endif %}
+
+          <form method="post" action="{% url 'delete_listing' listing.id %}" class="listing-delete-form" style="display:none;">
+            {% csrf_token %}
+          </form>
+          <form method="post" action="{% url 'toggle_listing_sold' listing.id %}" class="listing-toggle-sold-form" style="display:none;">
+            {% csrf_token %}
+          </form>
+          <div class="events-card-menu dropdown">
+            <button type="button" class="events-card-menu-btn" data-bs-toggle="dropdown" aria-label="Listing options">
+              <i class="bi bi-three-dots"></i>
+            </button>
+            <ul class="dropdown-menu post-card-dropdown">
+              <li>
+                <button type="button" class="dropdown-item js-open-edit-listing-modal"
+                        data-listing-id="{{ listing.id }}" data-listing-title="{{ listing.title }}"
+                        data-listing-category="{{ listing.category }}" data-listing-condition="{{ listing.condition }}"
+                        data-listing-price="{{ listing.price }}" data-listing-quantity="{{ listing.quantity_available }}"
+                        data-listing-location="{{ listing.location }}" data-listing-description="{{ listing.description }}">
+                  <i class="bi bi-pencil"></i> Edit listing
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item js-confirm-toggle-sold" data-listing-id="{{ listing.id }}">
+                  {% if listing.is_sold %}
+                    <i class="bi bi-arrow-counterclockwise"></i> Mark available
+                  {% else %}
+                    <i class="bi bi-check-circle"></i> Mark sold
+                  {% endif %}
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item post-card-delete-btn js-confirm-delete-listing" data-listing-id="{{ listing.id }}">
+                  <i class="bi bi-trash3"></i> Delete listing
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="events-card-body">
+          <div class="events-card-top">
+            <h4 class="events-card-title">{{ listing.title }}</h4>
+            <span class="event-badge-{{ listing.condition_color }} events-card-category-pill">{{ listing.get_condition_display }}</span>
+          </div>
+          <div class="events-card-meta">
+            <span><i class="bi {{ listing.category_icon }}"></i> {{ listing.get_category_display }}</span>
+            {% if listing.location %}<span><i class="bi bi-geo-alt"></i> {{ listing.location }}</span>{% endif %}
+          </div>
+          <div class="events-card-footer">
+            <span class="events-card-price">₦{{ listing.price|floatformat:"-2g" }}</span>
+            <span class="events-card-spots">{{ listing.quantity_available }} available</span>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="center-card text-center" style="padding:48px 24px;">
+        <i class="bi bi-shop" style="font-size:40px;color:var(--accent);margin-bottom:16px;display:block;"></i>
+        <h4>You're not selling anything yet</h4>
+        <p>List an item above and it'll show up here.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+{% elif tab == 'cart' %}
+
+  <div class="events-list-container">
+    {% for item in cart_items %}
+      <div class="events-list-item">
+        <div class="events-list-item-avatar" style="{% if item.listing.cover_image %}background-image:url({{ item.listing.cover_image.url }}){% endif %}">
+          {% if not item.listing.cover_image %}<i class="bi {{ item.listing.category_icon }}"></i>{% endif %}
+        </div>
+        <div class="events-list-item-info">
+          <div class="events-list-item-title">
+            <a href="{% url 'listing_detail' item.listing.id %}">{{ item.listing.title }}</a>
+          </div>
+          <div class="events-list-item-details">
+            <span>₦{{ item.listing.price|floatformat:"-2g" }} &times; {{ item.quantity }} = ₦{{ item.subtotal|floatformat:"-2g" }}</span>
+            <span><i class="bi bi-person"></i> {{ item.listing.seller.get_full_name|default:item.listing.seller.username }}</span>
+          </div>
+        </div>
+        <div class="cart-item-actions">
+          <form method="post" action="{% url 'update_cart_item' item.id %}" class="cart-quantity-form">
+            {% csrf_token %}
+            <button type="submit" name="quantity" value="{{ item.quantity|add:'-1' }}" class="cart-qty-btn" aria-label="Decrease quantity">−</button>
+            <span class="cart-qty-value">{{ item.quantity }}</span>
+            <button type="submit" name="quantity" value="{{ item.quantity|add:'1' }}" class="cart-qty-btn" aria-label="Increase quantity">+</button>
+          </form>
+          <a href="{% url 'user_profile' item.listing.seller.username %}" class="btn-events-attend" style="padding:6px 12px;font-size:12px;">
+            <i class="bi bi-chat-dots"></i> Contact seller
+          </a>
+          <form method="post" action="{% url 'remove_from_cart' item.id %}">
+            {% csrf_token %}
+            <button type="submit" title="Remove" class="cart-remove-btn"><i class="bi bi-trash3"></i></button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="center-card text-center" style="padding:48px 24px;">
+        <i class="bi bi-cart" style="font-size:40px;color:var(--accent);margin-bottom:16px;display:block;"></i>
+        <h4>Your cart is empty</h4>
+        <p>Browse the marketplace and add something you like.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if cart_items %}
+    <div class="events-stats-row">
+      <div class="events-stat-card">
+        <div class="events-stat-label">Items</div>
+        <div class="events-stat-value events-stat-accent">{{ cart_count }}</div>
+      </div>
+      <div class="events-stat-card">
+        <div class="events-stat-label">Total</div>
+        <div class="events-stat-value events-stat-success">₦{{ cart_total }}</div>
+      </div>
+    </div>
+    <p class="marketplace-cart-note">
+      <i class="bi bi-info-circle"></i> There's no checkout yet — reach out to each seller above to arrange payment and pickup.
+    </p>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}

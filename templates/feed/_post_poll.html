@@ -1,0 +1,16 @@
+{% comment %}A poll in a feed post (feed/polls.py). `pp` comes from {% post_poll post as pp %}.
+Choices are buttons until you vote; then (or once it closes) bars with percentages.{% endcomment %}
+<div class="pp js-pp" data-vote-url="{% url 'post_poll_vote' post.id %}">
+  {% for o in pp.options %}
+    {% if pp.can_vote %}
+      <button type="button" class="pp-choice js-pp-vote" data-option="{{ o.pk }}">{{ o.text }}</button>
+    {% else %}
+      <div class="pp-result{% if o.leading %} is-leading{% endif %}{% if o.mine %} is-mine{% endif %}">
+        <span class="pp-bar" style="width:{{ o.percent }}%"></span>
+        <span class="pp-text">{{ o.text }}{% if o.mine %} <i class="bi bi-check-circle-fill" aria-label="Your vote"></i>{% endif %}</span>
+        <span class="pp-pct">{{ o.percent }}%</span>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <p class="pp-meta">{{ pp.total }} vote{{ pp.total|pluralize }} · {{ pp.time_left }}{% if pp.is_author and not pp.closed %} · <span class="pp-own">Your poll — results update as people vote</span>{% endif %}</p>
+</div>

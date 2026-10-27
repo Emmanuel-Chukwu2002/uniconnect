@@ -1,0 +1,50 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Report {% if item %}{{ item.noun }}{% elif post %}post{% else %}account{% endif %} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Report a post or an account (feed/moderation.py). Styles: restyle.css ("Report / Block").{% endcomment %}
+<div class="rp">
+  <div class="st-top">
+    <a href="{% if item %}{{ item.url }}{% elif post %}{% url 'post_detail' post.id %}{% else %}{% url 'user_profile' target.username %}{% endif %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>Report {% if item %}{{ item.noun }}{% elif post %}post{% else %}@{{ target.username }}{% endif %}</h1>
+  </div>
+
+  {% if item %}
+    <div class="rp-card rp-preview">
+      <span class="rp-ava"><i class="bi bi-flag"></i></span>
+      <div><b>{{ item.title }}</b> <small>by {{ target.get_full_name|default:target.username }}</small></div>
+    </div>
+  {% elif post %}
+    <div class="rp-card rp-preview">
+      <span class="rp-ava" style="{% if target.student_profile.profile_photo %}background-image:url({{ target.student_profile.profile_photo.url }}){% endif %}">{% if not target.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+      <div><b>{{ target.get_full_name|default:target.username }}</b> <small>@{{ target.username }} · {{ post.created_at|timesince }} ago</small>
+        <p>{{ post.content|default:"(photo or video post)"|truncatechars:220 }}</p></div>
+    </div>
+  {% endif %}
+
+  <form method="post" class="rp-card rp-form">
+    {% csrf_token %}
+    <h2>Why are you reporting this {% if item %}{{ item.noun }}{% elif post %}post{% else %}account{% endif %}?</h2>
+    <p class="rp-muted">Reports are private — {{ target.first_name|default:target.username }} won't know who reported them. UniConnect staff review every report.</p>
+    <div class="rp-reasons" role="radiogroup">
+      {% for value, label, help in reasons %}
+        <label class="rp-reason">
+          <input type="radio" name="reason" value="{{ value }}" required>
+          <span><b>{{ label }}</b>{% if help %}<small>{{ help }}</small>{% endif %}</span>
+          <i class="bi bi-check-circle-fill"></i>
+        </label>
+      {% endfor %}
+    </div>
+    <label class="rp-details"><span>Anything else we should know? <em>(optional)</em></span>
+      <textarea name="details" rows="3" maxlength="1000" placeholder="e.g. They've posted this in five communities today"></textarea>
+    </label>
+    {% if not already_blocked %}
+      <label class="rp-block"><input type="checkbox" name="also_block" value="1"> <span>Also block @{{ target.username }}<small>You won't see each other's posts or profiles.</small></span></label>
+    {% endif %}
+    <div class="rp-actions">
+      <a href="{% if item %}{{ item.url }}{% elif post %}{% url 'post_detail' post.id %}{% else %}{% url 'user_profile' target.username %}{% endif %}" class="st-btn-ghost">Cancel</a>
+      <button type="submit" class="dt-btn is-sm rp-submit"><i class="bi bi-flag"></i> Send report</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

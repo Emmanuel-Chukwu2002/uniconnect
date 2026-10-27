@@ -1,0 +1,1 @@
+{% with sp=f.student_profile %}<span class="pc-face" title="{{ f.get_full_name|default:f.username }}" style="{% if sp.profile_photo %}background-image:url('{{ sp.profile_photo.url }}'){% endif %}">{% if not sp.profile_photo %}{{ f.first_name|default:f.username|slice:':1'|upper }}{% endif %}</span>{% endwith %}

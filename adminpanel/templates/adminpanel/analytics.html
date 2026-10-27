@@ -1,0 +1,41 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+{% comment %}Platform analytics (adminpanel/stats.py): aggregates only — no one student's activity history.{% endcomment %}
+<div class="ad-head"><div><h1>Analytics</h1><p>Platform-wide totals{% if admin.university %} for {{ admin.university.short_name }}{% endif %}. Active users count distinct students who posted, commented, liked, reposted, saved, viewed posts or sent a message.</p></div>
+  <form method="get" class="ad-period"><i class="bi bi-calendar3"></i><select name="days" aria-label="Period" onchange="this.form.submit()">{% for k, label in periods %}<option value="{{ k }}"{% if k == days_key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></form></div>
+
+<section class="ad-cards">
+  <div class="ad-card t-green"><span class="ic"><i class="bi bi-activity"></i></span><div><div class="lb">Daily active</div><div class="vl"><b>{{ active.daily }}</b></div><div class="sb">Last 24 hours</div></div></div>
+  <div class="ad-card t-blue"><span class="ic"><i class="bi bi-calendar-week"></i></span><div><div class="lb">Weekly active</div><div class="vl"><b>{{ active.weekly }}</b></div><div class="sb">Distinct, last 7 days</div></div></div>
+  <div class="ad-card t-purple"><span class="ic"><i class="bi bi-calendar-month"></i></span><div><div class="lb">Monthly active</div><div class="vl"><b>{{ active.monthly }}</b></div><div class="sb">Distinct, last 30 days</div></div></div>
+  <div class="ad-card t-red"><span class="ic"><i class="bi bi-flag-fill"></i></span><div><div class="lb">Reports received</div><div class="vl"><b>{{ moderation.reports }}</b></div><div class="sb">{{ moderation.suspensions }} suspension{{ moderation.suspensions|pluralize }} · {{ moderation.warnings }} warning{{ moderation.warnings|pluralize }}</div></div></div>
+</section>
+
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>New registrations</h2></div><div class="ad-panel-body">{{ reg_chart }}</div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Posts, comments and likes</h2><div class="ad-legend">{% for n in act_names %}<span><i class="s{{ forloop.counter0 }}"></i> {{ n }}</span>{% endfor %}</div></div><div class="ad-panel-body">{{ act_chart }}</div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Engagement</h2><div class="ad-legend">{% for n in eng_names %}<span><i class="s{{ forloop.counter0 }}"></i> {{ n }}</span>{% endfor %}</div></div><div class="ad-panel-body">{{ eng_chart }}</div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Reports received vs resolved</h2><div class="ad-legend">{% for n in rep_names %}<span><i class="s{{ forloop.counter0 }}"></i> {{ n }}</span>{% endfor %}</div></div><div class="ad-panel-body">{{ rep_chart }}</div></section>
+</div>
+
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Universities</h2></div>
+    <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>University</th><th>Students</th><th>New ({{ days }} days)</th><th>Posts ({{ days }} days)</th></tr></thead><tbody>
+    {% for u in unis %}<tr><td class="ttl">{{ u.name }}</td><td class="num">{{ u.n_students }}</td><td class="num">{{ u.n_new }}</td><td class="num">{{ u.n_posts }}</td></tr>{% empty %}<tr><td colspan="4" class="ad-empty">No data.</td></tr>{% endfor %}
+    </tbody></table></div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Most active groups &amp; communities</h2></div>
+    <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Name</th><th>Type</th><th>Posts ({{ days }} days)</th></tr></thead><tbody>
+    {% for g in top_groups %}<tr><td class="ttl">{{ g.name }}</td><td class="mut">{{ g.kind }}</td><td class="num">{{ g.n }}</td></tr>{% empty %}<tr><td colspan="3" class="ad-empty">No posts in groups or communities in this period.</td></tr>{% endfor %}
+    </tbody></table></div></section>
+</div>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Moderation in the last {{ days }} days</h2></div>
+  <div class="ad-panel-body"><div class="ad-stats">
+    <div><b>{{ moderation.reports }}</b><small>Reports</small></div><div><b>{{ moderation.removed }}</b><small>Content removed</small></div>
+    <div><b>{{ moderation.actioned }}</b><small>Action taken</small></div><div><b>{{ moderation.dismissed }}</b><small>Dismissed</small></div>
+    <div><b>{{ moderation.warnings }}</b><small>Warnings</small></div><div><b>{{ moderation.suspensions }}</b><small>Suspensions</small></div>
+  </div>
+  {% if moderation.by_reason %}<p class="mut" style="margin:14px 0 0">By reason: {% for r in moderation.by_reason %}{% for k, v in reason_labels.items %}{% if k == r.reason %}{{ v }}{% endif %}{% endfor %} ({{ r.n }}){% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  </div></section>
+{% endblock %}

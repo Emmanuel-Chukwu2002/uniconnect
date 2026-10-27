@@ -1,0 +1,32 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Reports & Complaints{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Reports &amp; Complaints</h1><p>Pending → Under review → Resolved (content removed, action taken) or Dismissed. A report never removes anything by itself.</p></div></div>
+<section class="ad-panel">
+  <nav class="ad-tabs">{% for k, label, n in tabs %}<a href="?status={{ k }}" class="{% if k == tab %}is-on{% endif %}">{{ label }} <em>{{ n }}</em></a>{% endfor %}</nav>
+  <form method="get" class="ad-toolbar"><input type="hidden" name="status" value="{{ tab }}">
+    <select name="type" aria-label="Type"><option value="">Every type</option>{% for v, l in types %}<option value="{{ v }}"{% if v == kind %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <select name="reason" aria-label="Reason"><option value="">Every reason</option>{% for v, l in reasons %}<option value="{{ v }}"{% if v == reason %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <button class="ad-btn" type="submit">Filter</button>
+  </form>
+  <div class="ad-table-wrap"><table class="ad-table">
+    <thead><tr><th>#</th><th>Type</th><th>Reported</th><th>Reason</th><th>Reported by</th><th>University</th><th>Status</th><th>Moderator</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for r in page %}
+      <tr>
+        <td><a href="{% url 'staff_report' r.pk %}">#{{ r.pk }}</a></td>
+        <td>{{ r.get_target_type_display }}</td>
+        <td><a href="{% url 'staff_report' r.pk %}" class="ttl" style="color:inherit">{{ r.target_label|default:r.reported_user.username|truncatechars:48 }}</a><br><small class="mut">by @{{ r.reported_user.username }}</small></td>
+        <td>{{ r.get_reason_display }}</td>
+        <td class="mut">@{{ r.reporter.username }}</td>
+        <td class="mut">{{ r.university.short_name|default:"—" }}</td>
+        <td>{% with p=r.status %}{% if p == 'open' %}<span class="pill amber">Pending</span>{% elif p == 'reviewing' %}<span class="pill blue">Under Review</span>{% elif p == 'dismissed' %}<span class="pill grey">Dismissed</span>{% elif p == 'removed' %}<span class="pill green">Content removed</span>{% else %}<span class="pill green">Action taken</span>{% endif %}{% endwith %}</td>
+        <td class="mut">{% if r.reviewed_by %}@{{ r.reviewed_by.username }}{% elif r.assigned_to %}@{{ r.assigned_to.username }}{% else %}—{% endif %}</td>
+        <td class="mut">{{ r.created_at|timesince }} ago</td>
+      </tr>
+    {% empty %}<tr><td colspan="9" class="ad-empty">No reports here.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'adminpanel/_pages.html' %}
+</section>
+{% endblock %}

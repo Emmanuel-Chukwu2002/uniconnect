@@ -1,0 +1,39 @@
+{% comment %}
+  A group's Sessions tab (studygroups/sessions.py): schedule a study
+  session or meetup, answer Going / Maybe / Can't go, add it to your
+  calendar. Included from detail.html.
+{% endcomment %}
+<details class="sr-card ss-new"{% if request.GET.new %} open{% endif %}>
+  <summary><span class="ss-new-plus"><i class="bi bi-calendar-plus"></i></span> Schedule a study session</summary>
+  <form method="post" action="{% url 'group_session_create' group.pk %}" class="ss-form">
+    {% csrf_token %}
+    <label class="ss-field ss-wide"><span>Title</span>
+      <input type="text" name="title" maxlength="100" required placeholder="e.g. STA 341 past questions — 2019 to 2023"></label>
+    <label class="ss-field"><span>Date</span><input type="date" name="date" min="{{ today }}" required></label>
+    <label class="ss-field"><span>Time</span><input type="time" name="time" required></label>
+    <label class="ss-field"><span>How long</span>
+      <select name="duration">{% for v, l in durations %}<option value="{{ v }}"{% if v == 60 %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+    <label class="ss-field"><span>Place <small>(optional)</small></span>
+      <input type="text" name="place" maxlength="120" placeholder="{{ group.place|default:'e.g. Faculty library, 2nd floor' }}"></label>
+    <label class="ss-field ss-wide"><span>Online link <small>(optional)</small></span>
+      <input type="url" name="link" placeholder="Google Meet or Zoom link" inputmode="url"></label>
+    <label class="ss-field ss-wide"><span>What to bring or prepare <small>(optional)</small></span>
+      <textarea name="notes" rows="2" maxlength="1000" placeholder="e.g. Attempt questions 1–5 before we meet"></textarea></label>
+    <div class="ss-form-foot">
+      <small>Everyone in the group gets a notification, and people coming are reminded 30 minutes before.</small>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check"></i> Schedule</button>
+    </div>
+  </form>
+</details>
+
+<h2 class="ss-heading">Coming up</h2>
+{% for s in upcoming %}
+  {% include 'studygroups/_session_card.html' %}
+{% empty %}
+  <div class="sr-card sr-nothing sg-empty"><i class="bi bi-calendar2-week"></i><h2>No sessions planned</h2><p>Schedule one above — a revision session before a test, a project meeting, or a quick catch-up. Members answer Going or Maybe and get a reminder.</p></div>
+{% endfor %}
+
+{% if past %}
+  <h2 class="ss-heading">Earlier</h2>
+  {% for s in past %}{% include 'studygroups/_session_card.html' with is_past=True %}{% endfor %}
+{% endif %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{{ step_title }} — UniConnect{% endblock %}
+
+{% block body %}
+<div class="portal">
+  <div class="portal-left">
+    <div class="crest">U</div>
+    <div>
+      <h1>{{ step_title }}</h1>
+      <p>{{ step_lede }}</p>
+    </div>
+    <div class="portal-foot">Step {{ step_number }} of {{ total_steps }} &middot; UniConnect Student Registration</div>
+  </div>
+
+  <div class="portal-right">
+    <div class="portal-card">
+
+      <div class="stepper">
+        {% for n in "123456" %}
+          {% if forloop.counter < step_number %}
+            <div class="step-dot done"><i class="bi bi-check-lg"></i></div>
+          {% elif forloop.counter == step_number %}
+            <div class="step-dot now">{{ forloop.counter }}</div>
+          {% else %}
+            <div class="step-dot">{{ forloop.counter }}</div>
+          {% endif %}
+          {% if not forloop.last %}
+            <div class="step-line {% if forloop.counter < step_number %}done{% endif %}"></div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <h2>{{ step_title }}</h2>
+      <div class="lede">{{ step_lede }}</div>
+
+      {% if review %}
+        <div class="review-box">
+          <div class="review-row"><span>University</span><span>{{ review.university }}</span></div>
+          <div class="review-row"><span>Name</span><span>{{ review.first_name }} {{ review.last_name }}</span></div>
+          <div class="review-row"><span>Matric number</span><span>{{ review.matric_number }}</span></div>
+          <div class="review-row"><span>University email</span><span>{{ review.university_email }}</span></div>
+          <div class="review-row"><span>Faculty</span><span>{{ review.faculty }}</span></div>
+          <div class="review-row"><span>Department</span><span>{{ review.department }}</span></div>
+          <div class="review-row"><span>Level</span><span>{{ review.level }}</span></div>
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {{ wizard.management_form }}
+        {{ wizard.form|crispy }}
+
+        <div class="d-flex gap-2 mt-3">
+          {% if wizard.steps.prev %}
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="btn btn-outline-secondary" style="width:auto;flex:0 0 auto;padding:12px 20px;">&larr; Back</button>
+          {% endif %}
+          <button type="submit" class="btn btn-primary btn-gold">
+            {% if step_number == total_steps %}Send verification email{% else %}Continue{% endif %}
+          </button>
+        </div>
+      </form>
+
+      {% if step_number == 1 %}
+        <div class="switch-line">Already have an account? <a href="{% url 'login' %}">Sign in</a></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

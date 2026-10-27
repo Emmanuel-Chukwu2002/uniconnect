@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+{% comment %}
+  Shared frame for the signed-out pages: sign-in, "Forgot password?" and the
+  About / Help / Privacy / Terms pages (static/css/login.css). White unless
+  the person switched the app to dark mode before signing out.
+{% endcomment %}
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="{% static 'css/login.css' %}?v=6">
+{% endblock %}
+
+{% block body %}
+<div class="lp" id="lp">
+  <script>try { if (localStorage.getItem('theme') === 'dark') { document.getElementById('lp').classList.add('lp-dark'); } } catch (e) {}</script>
+  {% block auth_body %}{% endblock %}
+  <footer class="lp-foot">
+    <a href="{% url 'login' %}" class="lp-foot-brand">UniConnect</a>
+    <nav class="lp-foot-links" aria-label="About UniConnect">
+      <a href="{% url 'about' %}">About</a>
+      <a href="{% url 'help' %}">Help</a>
+      <a href="{% url 'privacy' %}">Privacy</a>
+      <a href="{% url 'terms' %}">Terms</a>
+    </nav>
+    <span class="lp-foot-copy">&copy; {% now "Y" %} UniConnect. All rights reserved.</span>
+  </footer>
+</div>
+<script src="{% static 'js/auth.js' %}?v=3" defer></script>
+{% endblock %}

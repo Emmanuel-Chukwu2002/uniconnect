@@ -1,0 +1,5 @@
+{# Top of the small single-card pages (password reset, About/Help/...): logo left, Sign In / Sign Up right. #}
+<header class="lp-solo-head">
+  <a href="{% url 'login' %}" class="lp-brand lp-brand-sm" aria-label="UniConnect"><i class="bi bi-mortarboard-fill lp-cap"></i><span class="lp-name">Uni<b>Connect</b></span></a>
+  <div class="lp-topline"><a href="{% url 'login' %}">Sign In</a><span aria-hidden="true">&middot;</span><a href="{% url 'register' %}">Sign Up</a></div>
+</header>

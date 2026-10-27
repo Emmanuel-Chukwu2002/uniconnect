@@ -1,0 +1,11 @@
+{% comment %}
+Home's "Upcoming" card: just the heading and View All, which opens the list of
+everything due in the next 7 days (the tdAll sheet in feed/_today_strip.html).
+Shown in the right sidebar on Home (home.html, block right_upcoming) and, on
+phones where the right sidebar is hidden, under Quick access (where='main').
+Styles: restyle.css ("Upcoming card").
+{% endcomment %}
+<section class="right-card tdu{% if where == 'main' %} tdu-main{% else %} tdu-side{% endif %}" aria-label="Upcoming">
+  <h2 class="tdu-title"><i class="bi bi-clock"></i> Upcoming</h2>
+  <button type="button" class="tdu-all js-td-open" data-sheet="tdAll" aria-label="View all upcoming{% if today.upcoming %} ({{ today.upcoming|length }}){% endif %}">View All <i class="bi bi-arrow-right"></i></button>
+</section>

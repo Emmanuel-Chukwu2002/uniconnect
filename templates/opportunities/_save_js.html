@@ -1,0 +1,24 @@
+<script>
+  // Bookmark / Save on Opportunities (list and detail pages).
+  UC.onPage(function (doc, signal) {
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-op-save');
+      if (!btn) { return; }
+      e.preventDefault();
+      fetch(btn.getAttribute('data-url'), { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+        .then(function (res) {
+          btn.classList.toggle('is-on', res.saved);
+          btn.setAttribute('aria-pressed', res.saved ? 'true' : 'false');
+          btn.querySelector('i').className = 'bi ' + (res.saved ? 'bi-bookmark-fill' : 'bi-bookmark');
+          var label = btn.querySelector('.js-op-save-label');
+          if (label) { label.textContent = res.saved ? 'Saved' : 'Save'; }
+          var count = document.querySelector('.js-op-save-count');
+          if (count) { count.textContent = res.count; }
+          if (window.showToast) { showToast(res.saved ? 'Saved to your Bookmarks.' : 'Removed from your Bookmarks.'); }
+        })
+        .catch(function () { if (window.showToast) { showToast('Could not save — try again.'); } });
+    }, { signal: signal });
+  });
+</script>

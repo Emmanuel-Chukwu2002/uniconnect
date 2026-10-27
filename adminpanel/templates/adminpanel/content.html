@@ -1,0 +1,31 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% comment %}One moderation table for Content Moderation, Marketplace, Bookshop, Events and Groups & Communities
+(adminpanel/views.py content_page, adminpanel/content.py). Removing asks for a reason and is audited.{% endcomment %}
+<div class="ad-head"><div><h1>{{ title }}</h1><p>{{ sub }}{% if admin.university %} at {{ admin.university.short_name }}{% endif %}. Reported items show how many reports are still open.</p></div></div>
+<section class="ad-panel">
+  {% if tabs|length > 1 %}<nav class="ad-tabs">{% for k, label in tabs %}<a href="?tab={{ k }}" class="{% if k == tab %}is-on{% endif %}">{{ label }}</a>{% endfor %}</nav>{% endif %}
+  <form method="get" class="ad-toolbar"><input type="hidden" name="tab" value="{{ tab }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search {{ kind.label|lower }}" aria-label="Search">
+    <label class="ad-check" style="display:flex;font-size:13px"><input type="checkbox" name="reported" value="1"{% if only_reported %} checked{% endif %}> Only reported</label>
+    <button class="ad-btn primary" type="submit"><i class="bi bi-search"></i> Search</button>
+  </form>
+  <div class="ad-table-wrap"><table class="ad-table">
+    <thead><tr><th>{{ kind.noun|capfirst }}</th><th>Owner</th>{% for c in columns %}<th>{{ c }}</th>{% endfor %}<th>Created</th><th>Open reports</th><th></th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td><a href="{{ row.url }}" target="_blank" rel="noopener" class="ttl" style="color:inherit">{{ row.title|truncatechars:70 }}</a> <span class="mut">#{{ row.obj.pk }}</span></td>
+        <td>{% if row.owner %}<a href="{% url 'staff_user' row.owner.pk %}">@{{ row.owner.username }}</a>{% else %}<span class="mut">—</span>{% endif %}</td>
+        {% for label, value in row.details %}<td class="mut">{{ value }}</td>{% endfor %}
+        <td class="mut">{{ row.created|date:"d M Y" }}</td>
+        <td class="num">{% if row.reports %}<a href="{% url 'staff_reports' %}?status=all&amp;type={{ kind.report_type }}" class="pill red">{{ row.reports }}</a>{% else %}<span class="mut">0</span>{% endif %}</td>
+        <td>{% url 'staff_content_remove' kind.key row.obj.pk as rm_url %}{% include 'adminpanel/_reason_form.html' with url=rm_url action='remove' label='Remove' icon='bi-trash3' cls='danger sm' next=request.get_full_path help='Deletes it for everyone. Its text is kept in the audit log; open reports about it are resolved.' %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="9" class="ad-empty">Nothing here.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'adminpanel/_pages.html' %}
+</section>
+{% endblock %}

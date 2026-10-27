@@ -1,0 +1,173 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Timetable — Course Companion — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Your weekly timetable (courses/timetable.py). Styles: restyle.css ("Timetable").{% endcomment %}
+<div class="cc tt">
+  <div class="st-top">
+    <a href="{% url 'courses' %}" class="st-back" aria-label="Back to Course Companion"><i class="bi bi-arrow-left"></i></a>
+    <h1>Timetable</h1>
+  </div>
+
+  <nav class="tt-week" aria-label="Days of the week">
+    {% for d in week %}
+      <a href="?day={{ d.n }}" class="tt-day{% if d.n == day %} is-on{% endif %}{% if d.is_today %} is-today{% endif %}" aria-current="{% if d.n == day %}date{% else %}false{% endif %}">
+        <small>{{ d.short }}</small>
+        <b>{% if d.count %}{{ d.count }}{% else %}–{% endif %}</b>
+        <i class="tt-daynum">{{ d.date|date:'j' }}</i>
+        {% if d.is_today %}<em>Today</em>{% endif %}
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if total %}
+    <p class="tt-remind"><i class="bi bi-alarm"></i><span>{% if reminders_on %}You'll get a reminder 15 minutes before each class while UniConnect is open. For reminders on your phone even when it's closed, <a href="#tt-calendar">add your timetable to your calendar</a>.{% else %}Class reminders are off. <a href="{% url 'account_settings' %}?s=notifications">Turn them on</a>{% endif %}</span></p>
+  {% endif %}
+
+  <section class="cc-card tt-dayview">
+    <header class="cc-head"><h2>{% if day == today %}Today · {% endif %}{{ day_name }} <small class="tt-date">{{ day_date|date:'j M' }}</small></h2>{% if items %}<span class="cc-count">{% if class_count %}{{ class_count }} class{{ class_count|pluralize:"es" }}{% endif %}{% if class_count and day_sessions %} · {% endif %}{% if day_sessions %}{{ day_sessions|length }} session{{ day_sessions|length|pluralize }}{% endif %}</span>{% endif %}</header>
+    {% for item in items %}
+      {% if item.session %}{% with s=item.session %}
+        {# A study session you're going to (studygroups/sessions.py) #}
+        <article class="tt-slot is-session{% if s.is_now %} is-now{% elif s.is_past %} is-past{% endif %}">
+          <div class="tt-time"><b>{{ s.local_start|time:"g:i" }}</b><small>{{ s.local_start|time:"A" }}</small><span>{{ s.local_end|time:"g:i A" }}</span></div>
+          <span class="tt-line is-session"></span>
+          <div class="tt-body">
+            <b><a href="{{ s.url }}">{{ s.title }}</a></b>
+            <small><span class="tt-kind"><i class="bi bi-people-fill"></i> Study session</span> · {{ s.group.title }}{% if s.place %} · <i class="bi bi-geo-alt"></i> {{ s.place }}{% endif %}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener nofollow" data-no-soft><i class="bi bi-camera-video"></i> Online</a>{% endif %}{% if s.mine == 'maybe' %} · <span class="tt-maybe">You said maybe</span>{% endif %}{% if s.is_now %} · <span class="tt-live">On now</span>{% endif %}</small>
+            {% if s.clash_with %}<small class="tt-clash"><i class="bi bi-exclamation-triangle-fill"></i> Overlaps your {{ s.clash_with.short }} {{ s.clash_with.get_kind_display|lower }}</small>{% endif %}
+          </div>
+          <a href="{{ s.url }}" class="tt-open" aria-label="Open {{ s.title }} in {{ s.group.title }}"><i class="bi bi-chevron-right"></i></a>
+        </article>
+      {% endwith %}{% else %}{% with s=item.slot %}
+      {# One class on this date (courses/schedule.py Occurrence): s.state is normal, moved, moved_in, cancelled or moved_away. #}
+      <article class="tt-slot{% if not s.active %} is-off{% elif day == today and now_time and s.start <= now_time and s.end > now_time %} is-now{% elif day == today and now_time and s.end <= now_time %} is-past{% endif %}">
+        <div class="tt-time"><b>{{ s.start|time:"g:i" }}</b><small>{{ s.start|time:"A" }}</small><span>{{ s.end|time:"g:i A" }}</span></div>
+        <span class="tt-line is-{{ s.colour }}"></span>
+        <div class="tt-body">
+          <b>{% if s.course_id %}<a href="{{ s.course.get_absolute_url }}">{{ s.name }}</a>{% else %}{{ s.name }}{% endif %}</b>
+          <small><span class="tt-kind">{{ s.get_kind_display }}</span>{% if s.venue %} · <i class="bi bi-geo-alt"></i> {{ s.venue }}{% endif %}{% if s.official_id %} · <span class="tt-official" title="From your department's official timetable"><i class="bi bi-patch-check-fill"></i> Official</span>{% endif %}{% if s.active and day == today and now_time and s.start <= now_time and s.end > now_time %} · <span class="tt-live">On now</span>{% endif %}</small>
+          {% if s.state == 'cancelled' %}<small class="tt-change is-cancel"><i class="bi bi-x-circle-fill"></i> Cancelled this week{% if s.change.by_department %} by your department{% endif %}{% if s.change.note %} · {{ s.change.note }}{% endif %}</small>
+          {% elif s.state == 'moved_away' %}<small class="tt-change is-move"><i class="bi bi-arrow-right-circle-fill"></i> Moved to {{ s.change.new_date|date:"D j M" }}, {{ s.change.new_start|time:"g:i A" }}{% if s.change.by_department %} by your department{% endif %}{% if s.change.note %} · {{ s.change.note }}{% endif %}</small>
+          {% elif s.state == 'moved_in' %}<small class="tt-change is-move"><i class="bi bi-arrow-left-circle-fill"></i> Moved here from {{ s.change.date|date:"D j M" }}{% if s.change.by_department %} by your department{% endif %}{% if s.change.note %} · {{ s.change.note }}{% endif %}</small>
+          {% elif s.state == 'moved' %}<small class="tt-change is-move"><i class="bi bi-clock-history"></i> New time this week (usually {{ s.slot.start|time:"g:i A" }}{% if s.slot.venue and s.slot.venue != s.venue %}, {{ s.slot.venue }}{% endif %}){% if s.change.by_department %} · set by your department{% endif %}{% if s.change.note %} · {{ s.change.note }}{% endif %}</small>{% endif %}
+          {% if s.clash %}<small class="tt-clash"><i class="bi bi-exclamation-triangle-fill"></i> Overlaps another class</small>{% endif %}
+        </div>
+        <details class="sg-menu">
+          <summary aria-label="Options for {{ s.short }}"><i class="bi bi-three-dots"></i></summary>
+          <div class="sg-menu-list">
+            {% if s.state == 'normal' and not day_is_past %}
+              <form method="post" action="{% url 'timetable_change' s.pk %}">{% csrf_token %}<input type="hidden" name="date" value="{{ day_date|date:'Y-m-d' }}"><button type="submit" name="action" value="cancel"><i class="bi bi-x-circle"></i> No class on {{ day_date|date:"D j M" }}</button></form>
+              <a href="?day={{ day }}&amp;move={{ s.pk }}#tt-form" class="tt-menu-link"><i class="bi bi-arrow-right-circle"></i> Move this week</a>
+            {% elif s.change and not s.change.by_department and s.change.date >= today_date %}
+              <form method="post" action="{% url 'timetable_change' s.pk %}">{% csrf_token %}<input type="hidden" name="date" value="{{ s.change.date|date:'Y-m-d' }}"><button type="submit" name="action" value="clear"><i class="bi bi-arrow-counterclockwise"></i> Undo this week's change</button></form>
+            {% endif %}
+            {% if not s.official_id %}<a href="?day={{ s.slot.day }}&amp;edit={{ s.pk }}#tt-form" class="tt-menu-link"><i class="bi bi-pencil"></i> Edit every week</a>{% endif %}
+            <form method="post" action="{% url 'timetable_delete' s.pk %}">{% csrf_token %}<button type="submit" class="is-danger"><i class="bi bi-trash3"></i> Remove from my timetable</button></form>
+          </div>
+        </details>
+      </article>
+      {% endwith %}{% endif %}
+    {% empty %}
+      <div class="cc-empty"><i class="bi bi-cup-hot"></i><p>No classes on {{ day_name }}{% if not total %} yet — add your first class below{% endif %}.</p></div>
+    {% endfor %}
+  </section>
+
+  {% if moving %}
+    {# Move one week's class (courses/timetable.py change_slot). #}
+    <section class="cc-card cc-compose is-open" id="tt-form">
+      <header class="cc-head"><h2>Move {{ moving.short }} on {{ day_date|date:"l j M" }}</h2></header>
+      <p class="cc-muted">Only this week changes. Your usual {{ moving.slot.get_day_display }} class stays as it is.</p>
+      <form method="post" action="{% url 'timetable_change' moving.pk %}" class="cc-form tt-form">{% csrf_token %}
+        <input type="hidden" name="date" value="{{ day_date|date:'Y-m-d' }}"><input type="hidden" name="action" value="move">
+        <label class="tt-field is-wide"><span>New date</span><input type="date" name="new_date" value="{% if moving.change.new_date %}{{ moving.change.new_date|date:'Y-m-d' }}{% else %}{{ day_date|date:'Y-m-d' }}{% endif %}" required></label>
+        <label class="tt-field"><span>Starts</span><input type="time" name="new_start" value="{{ moving.start|time:'H:i' }}" required></label>
+        <label class="tt-field"><span>Ends</span><input type="time" name="new_end" value="{{ moving.end|time:'H:i' }}" required></label>
+        <label class="tt-field is-wide"><span>Venue</span><input type="text" name="new_venue" maxlength="80" value="{{ moving.venue }}"></label>
+        <label class="tt-field is-wide"><span>Note <small>optional</small></span><input type="text" name="note" maxlength="140" placeholder="e.g. Lecturer moved it to Thursday"></label>
+        <div class="tt-actions"><a href="?day={{ day }}" class="st-btn-ghost">Cancel</a><button type="submit" class="dt-btn is-sm">Move this week</button></div>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if tt_suggestions and not editing %}
+    <section class="cc-card">
+      <header class="cc-head"><h2>From your classmates</h2></header>
+      <p class="cc-muted">Classes others added for your courses — tap Add to copy one.</p>
+      {% for g in tt_suggestions %}
+        <div class="tt-suggest">
+          <span class="cc-tile is-{{ g.course.colour }}"><i class="bi {{ g.course.icon }}"></i></span>
+          <span class="ex-text"><b>{{ g.course.code }} {{ g.kind_label|lower }}</b><small>{{ g.day_name }} · {{ g.start|time:"g:i A" }}–{{ g.end|time:"g:i A" }}{% if g.venue %} · {{ g.venue }}{% endif %} · {{ g.n }} classmate{{ g.n|pluralize }}</small></span>
+          <form method="post" action="{% url 'timetable_add' %}">{% csrf_token %}
+            <input type="hidden" name="course" value="{{ g.course_id }}"><input type="hidden" name="kind" value="{{ g.kind }}">
+            <input type="hidden" name="day" value="{{ g.day }}"><input type="hidden" name="start" value="{{ g.start|time:'H:i' }}">
+            <input type="hidden" name="end" value="{{ g.end|time:'H:i' }}"><input type="hidden" name="venue" value="{{ g.venue }}">
+            <button type="submit" class="ex-btn">Add</button>
+          </form>
+        </div>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <details class="cc-card cc-compose"{% if not moving %} id="tt-form"{% endif %}{% if editing or not total %} open{% endif %}>
+    <summary><span class="cc-compose-ico"><i class="bi {% if editing %}bi-pencil{% else %}bi-plus-lg{% endif %}"></i></span>{% if editing %}Edit {{ editing.short }}{% else %}Add a class{% endif %}<i class="bi bi-chevron-down cc-chev"></i></summary>
+    <form method="post" action="{% if editing %}{% url 'timetable_edit' editing.pk %}{% else %}{% url 'timetable_add' %}{% endif %}" class="cc-form tt-form">{% csrf_token %}
+      {% if not has_courses %}<p class="cc-muted"><a href="{% url 'courses' %}">Add your courses</a> first to pick them here — or type a title.</p>{% endif %}
+      <label class="tt-field is-wide"><span>Course</span>{{ form.course }}</label>
+      <label class="tt-field is-wide js-tt-title"><span>Title</span>{{ form.title }}</label>
+      <label class="tt-field"><span>Type</span>{{ form.kind }}</label>
+      <label class="tt-field"><span>Day</span>{{ form.day }}</label>
+      <label class="tt-field"><span>Starts</span>{{ form.start }}</label>
+      <label class="tt-field"><span>Ends</span>{{ form.end }}</label>
+      <label class="tt-field is-wide"><span>Venue</span>{{ form.venue }}</label>
+      <div class="tt-actions">
+        {% if editing %}<a href="?day={{ day }}" class="st-btn-ghost">Cancel</a>{% endif %}
+        <button type="submit" class="dt-btn is-sm">{% if editing %}Save changes{% else %}Add to timetable{% endif %}</button>
+      </div>
+    </form>
+  </details>
+
+  {% if total %}
+  {# Calendar export (courses/calendar_feed.py): subscribe in a calendar app for reminders even when UniConnect is closed. #}
+  <section class="cc-card tt-cal" id="tt-calendar">
+    <header class="cc-head"><h2><i class="bi bi-calendar-plus"></i> Add to your calendar</h2></header>
+    <p class="cc-muted">Your classes show up in Google Calendar, your iPhone or Outlook, with a reminder 15 minutes before each one, even when UniConnect is closed. New classes, cancelled weeks and moved classes update on their own (calendar apps check every few hours).</p>
+    <div class="tt-cal-btns">
+      <a class="tt-cal-btn" href="https://calendar.google.com/calendar/r?cid={{ feed_url|urlencode:'' }}" target="_blank" rel="noopener" data-no-soft><i class="bi bi-google"></i> Google Calendar</a>
+      <a class="tt-cal-btn" href="webcal://{{ feed_url|cut:'https://'|cut:'http://' }}" data-no-soft><i class="bi bi-apple"></i> iPhone / Mac / Outlook</a>
+      <a class="tt-cal-btn is-ghost" href="{% url 'timetable_calendar' %}" data-no-soft><i class="bi bi-download"></i> Download .ics file</a>
+    </div>
+    <details class="tt-cal-more">
+      <summary>Copy the private link</summary>
+      <div class="tt-cal-link"><input type="text" readonly value="{{ feed_url }}" class="js-tt-cal-url" aria-label="Your private calendar link"><button type="button" class="ex-btn js-tt-cal-copy">Copy</button></div>
+      <p class="cc-muted">In any calendar app, choose "Add calendar from URL" (or "Subscribe") and paste it. Anyone with this link can see your timetable, so keep it to yourself.</p>
+      <form method="post" action="{% url 'timetable_calendar_reset' %}">{% csrf_token %}<button type="submit" class="st-btn-ghost is-danger"><i class="bi bi-arrow-repeat"></i> Make a new link</button></form>
+    </details>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // The Title box is only needed when the class isn't one of your courses.
+  UC.onPage(function (doc, signal) {
+    function sync() {
+      var sel = document.querySelector('.tt-form select[name=course]'), title = document.querySelector('.js-tt-title');
+      if (sel && title) { title.hidden = !!sel.value; }
+    }
+    document.addEventListener('change', function (e) { if (e.target.name === 'course') { sync(); } }, { signal: signal });
+    sync();
+    // Copy the private calendar link.
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-tt-cal-copy');
+      if (!btn) { return; }
+      var input = document.querySelector('.js-tt-cal-url');
+      input.select();
+      (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject()).catch(function () { document.execCommand('copy'); });
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1800);
+    }, { signal: signal });
+  });
+</script>
+{% endblock %}

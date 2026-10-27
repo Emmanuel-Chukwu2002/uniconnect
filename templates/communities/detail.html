@@ -1,0 +1,260 @@
+{% extends 'feed/base_app.html' %}
+{% load static %}
+{% comment %}
+  One community (communities/views.py: detail): the banner (back, search,
+  share), the icon, name, numbers, description and tags, Join and a menu —
+  then Posts / Members / About / Events / Resources. Posts in it use the
+  feed's card with cm_card=True (role and university under the name, #tags
+  as chips; feed/_post_card.html).
+  Switching tabs swaps only the tab bar and the list below it
+  (data-soft-swap, static/js/nav.js), like the profile page.
+{% endcomment %}
+{% block title %}{{ community.name }} — UniConnect{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/communities.css' %}?v=4">{% endblock %}
+
+{% block feed_content %}
+{% load post_extras %}
+{% with c=community %}
+<div class="cm cm-detail">
+  {# Banner, with back / search / more on it #}
+  <div class="cm-hero cm-c-{{ c.colour }}" style="background-image:url('{% if c.banner %}{{ c.banner.url }}{% else %}{{ c.topic_photo_url }}{% endif %}')">
+    <a href="{% url 'communities' %}?tab=explore" class="cm-hero-btn" aria-label="Back to Communities"><i class="bi bi-arrow-left"></i></a>
+    <div class="cm-hero-right">
+      <button type="button" class="cm-hero-btn js-cm-search-toggle" aria-label="Search posts in {{ c.name }}" aria-expanded="{% if q %}true{% else %}false{% endif %}" aria-controls="cmPostSearch"><i class="bi bi-search"></i></button>
+      <div class="dropdown">
+        <button type="button" class="cm-hero-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Share {{ c.name }}"><i class="bi bi-three-dots"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button type="button" class="dropdown-item js-cm-copy-link" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'community_detail' c.id %}"><i class="bi bi-link-45deg"></i> Copy link</button></li>
+          <li><a class="dropdown-item" href="?tab=about"><i class="bi bi-info-circle"></i> About &amp; rules</a></li>
+          <li><a class="dropdown-item" href="?tab=members"><i class="bi bi-people"></i> Members</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="cm-head">
+    <div class="cm-head-top">
+      {% include 'communities/_icon.html' with cls='cm-icon-hero' %}
+      <div class="cm-head-actions">
+        {% include 'communities/_join_button.html' with big=True %}
+        <div class="dropdown">
+          <button type="button" class="cm-square-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More options for {{ c.name }}"><i class="bi bi-three-dots"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% if c.my_role == 'admin' %}<li class="dropdown-header">You're an admin</li>{% elif c.my_role == 'moderator' %}<li class="dropdown-header">You're a moderator</li>{% endif %}
+            {% if is_admin %}<li><a class="dropdown-item" href="{% url 'community_edit' c.id %}"><i class="bi bi-pencil"></i> Edit community</a></li>{% endif %}
+            {% if is_member %}<li><a class="dropdown-item" href="?tab=events#cmAddEvent"><i class="bi bi-calendar-plus"></i> Add an event</a></li>{% endif %}
+            {% if can_moderate and pending_count %}<li><a class="dropdown-item" href="?tab=members"><i class="bi bi-person-check"></i> Join requests ({{ pending_count }})</a></li>{% endif %}
+            <li><button type="button" class="dropdown-item js-cm-copy-link" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'community_detail' c.id %}"><i class="bi bi-link-45deg"></i> Copy link</button></li>
+            {% if c.created_by_id != request.user.id %}<li><a class="dropdown-item" href="{% url 'report_item' 'community' c.id %}"><i class="bi bi-flag"></i> Report community</a></li>{% endif %}
+            {% if c.my_state != 'none' %}
+              <li><hr class="dropdown-divider"></li>
+              <li><button type="button" class="dropdown-item is-danger js-cm-leave" data-community-id="{{ c.id }}"><i class="bi bi-box-arrow-right"></i> {% if c.my_state == 'joined' %}Leave community{% else %}Cancel join request{% endif %}</button></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h1 class="cm-name">{{ c.name }}{% if c.is_verified %} <i class="bi bi-patch-check-fill cm-verified" title="Official community" aria-label="Verified"></i>{% endif %}</h1>
+    <div class="cm-meta-line">
+      <span><span class="js-cm-count" data-community-id="{{ c.id }}">{{ c.n_members|compact_count }}</span> <span class="js-cm-count-word" data-community-id="{{ c.id }}">member{{ c.n_members|pluralize }}</span></span>
+      <span aria-hidden="true">&middot;</span>
+      <span>{{ universities_count }} universit{{ universities_count|pluralize:"y,ies" }}</span>
+      <span aria-hidden="true">&middot;</span>
+      <span>{% if c.is_restricted %}<i class="bi bi-lock-fill"></i> Restricted{% else %}Public{% endif %}</span>
+    </div>
+
+    <p class="cm-desc">{{ c.description|linebreaksbr }}</p>
+    {% if c.tag_list %}
+      {% include 'communities/_tags.html' with show=5 rest="5:" %}
+    {% else %}
+      <div class="cm-tags"><a href="{% url 'communities' %}?tab=explore&amp;topic={{ c.topic }}" class="cm-tag"><i class="bi {{ c.topic_icon }}"></i> {{ c.get_topic_display }}</a></div>
+    {% endif %}
+  </div>
+
+  {# The banner's search button: posts in this community with these words #}
+  <form method="get" class="cm-psearch" id="cmPostSearch" role="search"{% if not q %} hidden{% endif %}>
+    <input type="hidden" name="tab" value="posts">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search posts in {{ c.name }}" aria-label="Search posts in {{ c.name }}" autocomplete="off">
+    {% if q %}<a href="?tab=posts" class="cm-psearch-clear">Clear</a>{% endif %}
+  </form>
+
+  <nav class="cm-tabs cm-detailtabs" data-soft-swap=".cm-detailtabs, .cm-tabbody" aria-label="{{ c.name }}">
+    <a href="?tab=posts" class="cm-tab {% if tab == 'posts' %}active{% endif %}">Posts</a>
+    <a href="?tab=members" class="cm-tab {% if tab == 'members' %}active{% endif %}">Members{% if pending_count %} <span class="cm-tab-badge" aria-label="{{ pending_count }} join request{{ pending_count|pluralize }}">{{ pending_count }}</span>{% endif %}</a>
+    <a href="?tab=about" class="cm-tab {% if tab == 'about' %}active{% endif %}">About</a>
+    <a href="?tab=events" class="cm-tab {% if tab == 'events' %}active{% endif %}">Events</a>
+    <a href="?tab=resources" class="cm-tab {% if tab == 'resources' %}active{% endif %}">Resources</a>
+  </nav>
+
+  <div class="cm-tabbody">
+    {% if tab == 'posts' or tab == 'resources' %}
+      {% if tab == 'posts' %}
+        {% if is_member %}
+          {# The composer card: opens the pop-up composer, already on the right tool (static/js/communities.js) #}
+          <div class="cm-composer">
+            <div class="cm-composer-top">
+              <span class="cm-composer-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">{% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+              <button type="button" class="cm-composer-input js-cm-compose" data-tool="text" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}">Share something in this community...</button>
+            </div>
+            <div class="cm-composer-tools">
+              <button type="button" class="cm-composer-tool js-cm-compose" data-tool="photo" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}"><i class="bi bi-image"></i> <span>Photo</span></button>
+              <button type="button" class="cm-composer-tool js-cm-compose" data-tool="video" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}"><i class="bi bi-play-circle"></i> <span>Video</span></button>
+              <button type="button" class="cm-composer-tool js-cm-compose" data-tool="link" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}"><i class="bi bi-link-45deg"></i> <span>Link</span></button>
+              <button type="button" class="cm-composer-tool js-cm-compose" data-tool="poll" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}"><i class="bi bi-bar-chart-steps"></i> <span>Poll</span></button>
+              <button type="button" class="cm-composer-post js-cm-compose" data-tool="text" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}">Post</button>
+            </div>
+          </div>
+        {% elif c.my_state == 'requested' %}
+          <div class="cm-note"><i class="bi bi-hourglass-split"></i> Your request to join is waiting for a moderator. You can post once you're in.</div>
+        {% else %}
+          <div class="cm-note"><i class="bi bi-info-circle"></i> {% if c.is_restricted %}Ask to join{% else %}Join{% endif %} {{ c.name }} to post here and see its posts on your Home feed.</div>
+        {% endif %}
+
+        {% if q %}
+          <div class="cm-list-head"><span>Posts with &ldquo;{{ q }}&rdquo;</span><a href="?tab=posts">Clear search</a></div>
+        {% elif posts %}
+          <div class="cm-list-head">
+            <span class="cm-sortpill" role="group" aria-label="Order of posts">
+              <a href="?tab=posts" class="{% if sort == 'latest' %}active{% endif %}">Latest</a>
+              <a href="?tab=posts&amp;sort=top" class="{% if sort == 'top' %}active{% endif %}">Top</a>
+            </span>
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="cm-tab-intro"><i class="bi bi-folder2-open"></i> Links, photos and videos shared in {{ c.name }}.</p>
+      {% endif %}
+
+      {% for post in posts %}
+        {% include 'feed/_post_card.html' with cm_card=True %}
+      {% empty %}
+        <div class="cm-empty">
+          <span class="cm-empty-icon"><i class="bi {% if tab == 'resources' %}bi-folder2-open{% elif q %}bi-search{% else %}bi-chat-square-text{% endif %}"></i></span>
+          <h3>{% if tab == 'resources' %}No resources yet{% elif q %}No posts found{% else %}No posts yet{% endif %}</h3>
+          <p>{% if tab == 'resources' %}When someone shares a link, a photo or a video here, it's collected in this tab.{% elif q %}Try other words.{% elif is_member %}Start the conversation — share a question, a resource or an update with everyone here.{% else %}When members post, you'll see it here.{% endif %}</p>
+        </div>
+      {% endfor %}
+
+    {% elif tab == 'events' %}
+      {% for e in events %}
+        <a href="{% url 'event_detail' e.id %}" class="cm-event">
+          <span class="cm-event-date"><small>{{ e.date|date:"M"|upper }}</small><b>{{ e.date|date:"j" }}</b></span>
+          <span class="cm-event-body">
+            <strong>{{ e.title }}</strong>
+            <small><i class="bi bi-clock"></i> {{ e.date|date:"D j M" }}{% if e.time %}, {{ e.time|time:"g:i A" }}{% endif %} &middot; <i class="bi bi-geo-alt"></i> {{ e.location }}</small>
+            {% if e.organizer %}<small>Added by {{ e.organizer.get_full_name|default:e.organizer.username }}</small>{% endif %}
+          </span>
+          <i class="bi bi-chevron-right cm-event-go"></i>
+        </a>
+      {% empty %}
+        <div class="cm-empty">
+          <span class="cm-empty-icon"><i class="bi bi-calendar-event"></i></span>
+          <h3>No upcoming events</h3>
+          <p>{% if is_member %}Planning a meetup, a study session or a match? Add it below and everyone here will see it.{% else %}Events the members add will show up here.{% endif %}</p>
+        </div>
+      {% endfor %}
+      {% if past_events %}
+        <h2 class="cm-subtitle">Past events</h2>
+        {% for e in past_events %}<a href="{% url 'event_detail' e.id %}" class="cm-event is-past"><span class="cm-event-date"><small>{{ e.date|date:"M"|upper }}</small><b>{{ e.date|date:"j" }}</b></span><span class="cm-event-body"><strong>{{ e.title }}</strong><small>{{ e.location }}</small></span></a>{% endfor %}
+      {% endif %}
+      {% if event_form %}
+        <details class="cm-panel cm-addevent" id="cmAddEvent">
+          <summary><i class="bi bi-calendar-plus"></i> Add an event to {{ c.name }}</summary>
+          <form method="post" action="{% url 'create_event' %}" enctype="multipart/form-data" class="cm-event-form">
+            {% csrf_token %}
+            <input type="hidden" name="community" value="{{ c.id }}">
+            <label>Event name {{ event_form.title }}</label>
+            <div class="cm-event-form-row">
+              <label>Date {{ event_form.date }}</label>
+              <label>Time {{ event_form.time }}</label>
+            </div>
+            <label>Where {{ event_form.location }}</label>
+            <div class="cm-event-form-row">
+              <label>Type {{ event_form.category }}</label>
+              <label>Entry fee (₦) {{ event_form.price }}</label>
+            </div>
+            <label>About it {{ event_form.description }}</label>
+            <label>Picture <small>optional</small> {{ event_form.image }}</label>
+            <input type="hidden" name="capacity" value="">
+            <button type="submit" class="cm-btn cm-btn-primary"><i class="bi bi-plus-lg"></i> Add event</button>
+          </form>
+        </details>
+      {% endif %}
+
+    {% elif tab == 'about' %}
+      <section class="cm-panel">
+        <h2 class="cm-panel-title">About</h2>
+        <p class="cm-about-text">{{ c.description|linebreaksbr }}</p>
+        <ul class="cm-facts">
+          <li><i class="bi {{ c.topic_icon }}"></i> <span>Topic: <strong>{{ c.get_topic_display }}</strong></span></li>
+          {% if c.is_restricted %}
+            <li><i class="bi bi-lock"></i> <span><strong>Restricted</strong> — any student on UniConnect can read it; admins and moderators approve who joins.</span></li>
+          {% else %}
+            <li><i class="bi bi-globe2"></i> <span><strong>Open</strong> — students from any university can join and post.</span></li>
+          {% endif %}
+          <li><i class="bi bi-mortarboard"></i> <span>Members from <strong>{{ universities_count }}</strong> universit{{ universities_count|pluralize:"y,ies" }} &middot; started at {{ c.university.short_name }}</span></li>
+          <li><i class="bi bi-calendar3"></i> <span>Created {{ c.created_at|date:"F j, Y" }}{% if c.created_by %} by <a href="{% url 'user_profile' c.created_by.username %}">{{ c.created_by.get_full_name|default:c.created_by.username }}</a>{% endif %}</span></li>
+          <li><i class="bi bi-people"></i> <span><strong>{{ c.n_members }}</strong> member{{ c.n_members|pluralize }} &middot; <strong>{{ posts_count }}</strong> post{{ posts_count|pluralize }}</span></li>
+        </ul>
+      </section>
+
+      <section class="cm-panel">
+        <h2 class="cm-panel-title">Rules</h2>
+        {% if rules %}
+          <ol class="cm-rules">
+            {% for r in rules %}<li><span class="cm-rule-num">{{ forloop.counter }}</span><span>{{ r.text }}</span></li>{% endfor %}
+          </ol>
+        {% else %}
+          <p class="cm-muted">No rules yet{% if is_admin %} — <a href="{% url 'community_edit' c.id %}">add some</a> so everyone knows what belongs here{% endif %}. Be kind, and keep it on topic.</p>
+        {% endif %}
+      </section>
+
+      <section class="cm-panel">
+        <h2 class="cm-panel-title">Moderators</h2>
+        {% for m in moderators %}
+          {% include 'communities/_member_row.html' %}
+        {% endfor %}
+      </section>
+
+    {% else %}
+      {% if requests %}
+        <section class="cm-panel cm-requests">
+          <h2 class="cm-panel-title">Requests to join <span class="cm-count-pill">{{ requests|length }}</span></h2>
+          {% for m in requests %}
+            <div class="cm-member">
+              <a href="{% url 'user_profile' m.user.username %}" class="cm-member-avatar" style="{% if m.user.student_profile.profile_photo %}background-image:url('{{ m.user.student_profile.profile_photo.url }}'){% endif %}">{% if not m.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+              <a href="{% url 'user_profile' m.user.username %}" class="cm-member-info">
+                <span class="cm-member-name">{{ m.user.get_full_name|default:m.user.username }}</span>
+                <span class="cm-member-sub">{% if m.user.student_profile %}{{ m.user.student_profile.department.name }} &middot; {{ m.user.student_profile.level.name }} &middot; {% endif %}asked {{ m.created_at|timesince }} ago</span>
+              </a>
+              <div class="cm-member-actions">
+                <form method="post" action="{% url 'community_member_action' c.id m.id 'approve' %}">{% csrf_token %}<button type="submit" class="cm-btn cm-btn-primary cm-btn-sm">Approve</button></form>
+                <form method="post" action="{% url 'community_member_action' c.id m.id 'decline' %}">{% csrf_token %}<button type="submit" class="cm-btn cm-btn-ghost cm-btn-sm">Decline</button></form>
+              </div>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      <section class="cm-panel">
+        <h2 class="cm-panel-title">Members <span class="cm-count-pill">{{ members|length }}</span></h2>
+        {% for m in members %}
+          {% include 'communities/_member_row.html' with manage=can_moderate %}
+        {% empty %}
+          <p class="cm-muted">No members yet.</p>
+        {% endfor %}
+      </section>
+    {% endif %}
+  </div>
+
+  {% if is_member %}
+    {% include 'feed/_compose_modal.html' with community=c %}
+    {# Phones: the + button (the composer card scrolls away) #}
+    <button type="button" class="cm-fab js-cm-compose" data-tool="text" data-compose-url="{% url 'compose_post' %}?community={{ c.id }}" aria-label="Write a post in {{ c.name }}"><i class="bi bi-plus-lg"></i></button>
+  {% endif %}
+</div>
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% static 'js/communities.js' %}?v=2"></script>{% endblock %}

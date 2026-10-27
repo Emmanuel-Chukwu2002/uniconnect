@@ -1,0 +1,224 @@
+{% comment %}Script for Campus Pulse (feed/_pulse_bar.html, feed/_pulse_viewer.html). Included in
+home.html's and pulse_detail.html's extra_js. The sideways scrolling of the circles comes from
+feed/_today_strip_js.html (.js-td-scroll).{% endcomment %}
+<script>
+  UC.onPage(function (doc, signal) {
+    var bar = doc.querySelector('.js-pulse');
+    var viewer = doc.getElementById('pulseViewer');
+    var compose = doc.getElementById('pulseCompose');
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    function toast(text, tag) { if (window.showToast) { showToast(text, tag || 'error'); } }
+    function post(url, data) {
+      return fetch(url, { method: 'POST', body: data || new FormData(), credentials: 'same-origin',
+        headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { throw new Error(j.error || ''); } return j; }); });
+    }
+    var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+    // ---------- Filters: type chips + My University / My Communities / Everyone ----------
+    var state = { kind: 'all', scope: store.get('ucPulseScope') || 'uni' };
+    // Arrived from Quick Actions on another page (/home/?pulse=question): open the composer with that type.
+    var askFor = new URLSearchParams(location.search).get('pulse');
+    if (askFor && compose) {
+      var pick = compose.querySelector('input[name="kind"][value="' + askFor.replace(/[^a-z]/g, '') + '"]');
+      if (pick) { pick.checked = true; pick.dispatchEvent(new Event('change', { bubbles: true })); }
+      bootstrap.Modal.getOrCreateInstance(compose).show();
+      history.replaceState(history.state, '', location.pathname + location.hash);
+    }
+    function circles() { return bar ? [].slice.call(bar.querySelectorAll('.js-pulse-open')) : []; }
+    function shown() { return circles().filter(function (c) { return !c.hidden; }); }
+    function apply() {
+      if (!bar) { return; }
+      var any = false;
+      circles().forEach(function (c) {
+        var ok = (state.kind === 'all' || c.dataset.kind === state.kind) && (' ' + c.dataset.scopes + ' ').indexOf(' ' + state.scope + ' ') !== -1;
+        c.hidden = !ok; any = any || ok;
+      });
+      bar.querySelector('.js-pulse-empty').hidden = any;
+      bar.querySelectorAll('.js-pulse-chip').forEach(function (b) {
+        var on = b.dataset.kind === state.kind; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on);
+      });
+      var opt = bar.querySelector('.js-pulse-scope[data-scope="' + state.scope + '"]');
+      if (opt) {
+        bar.querySelectorAll('.js-pulse-scope').forEach(function (b) { b.classList.toggle('is-on', b === opt); });
+        bar.querySelector('.js-pulse-scope-label').textContent = opt.dataset.label;
+        bar.querySelector('.js-pulse-scope-icon').className = 'bi ' + opt.dataset.icon + ' js-pulse-scope-icon';
+      }
+      var row = bar.querySelector('.pulse-row');
+      row.scrollLeft = 0; row.dispatchEvent(new Event('scroll'));
+    }
+    if (bar) {
+      bar.addEventListener('click', function (e) {
+        var chip = e.target.closest('.js-pulse-chip');
+        if (chip) { state.kind = chip.dataset.kind; apply(); return; }
+        var sc = e.target.closest('.js-pulse-scope');
+        if (sc) { state.scope = sc.dataset.scope; store.set('ucPulseScope', state.scope); apply(); }
+      }, { signal: signal });
+      apply();
+    }
+
+    // ---------- Viewer ----------
+    var list = [], at = -1;
+    function body() { return viewer ? viewer.querySelector('.js-pulse-body') : doc.querySelector('.js-pulse-body'); }
+    function show(i) {
+      if (i < 0 || i >= list.length) { return; }
+      at = i;
+      var c = list[i], b = body();
+      b.innerHTML = '<div class="pv-loading"><span class="spinner-border spinner-border-sm"></span></div>';
+      viewer.querySelector('.js-pulse-pos').textContent = list.length > 1 ? (i + 1) + ' / ' + list.length : '';
+      viewer.querySelector('.js-pulse-prev').disabled = i === 0;
+      viewer.querySelector('.js-pulse-next').disabled = i === list.length - 1;
+      fetch('/pulse/' + c.dataset.id + '/', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+        .then(function (j) { if (at === i) { b.innerHTML = j.html; } })
+        .catch(function () { if (at === i) { b.innerHTML = '<p class="pv-gone">This update is no longer available.</p>'; } });
+      if (!c.classList.contains('is-mine') && !c.classList.contains('is-seen')) {
+        c.classList.add('is-seen');
+        post('/pulse/' + c.dataset.id + '/seen/').catch(function () {});
+      }
+    }
+    document.addEventListener('click', function (e) {
+      var open = e.target.closest('.js-pulse-open');
+      if (open && viewer) {
+        list = shown(); show(list.indexOf(open));
+        bootstrap.Modal.getOrCreateInstance(viewer).show();
+        return;
+      }
+      if (e.target.closest('.js-pulse-prev')) { show(at - 1); return; }
+      if (e.target.closest('.js-pulse-next')) { show(at + 1); return; }
+      var opener = e.target.closest('.js-pulse-compose');
+      if (opener && compose) {
+        // Quick Actions > Ask a Question is a link (it works from any page); on Home it opens the composer here.
+        if (opener.tagName === 'A') { e.preventDefault(); }
+        var want = opener.dataset.pulseKind || state.kind;
+        if (want !== 'all') {
+          var r = compose.querySelector('input[name="kind"][value="' + want + '"]');
+          if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
+        bootstrap.Modal.getOrCreateInstance(compose).show();
+        return;
+      }
+
+      // Actions inside an update: quick answers, interested, mark answered.
+      var act = e.target.closest('[data-pulse-post]');
+      if (act) {
+        var art = act.closest('.pv'), data = new FormData();
+        if (act.dataset.name) { data.append(act.dataset.name, act.dataset.value); }
+        act.disabled = true;
+        post(act.dataset.pulsePost, data)
+          .then(function (j) { replace(art, j.html); })
+          .catch(function (err) { act.disabled = false; toast(err.message || 'Something went wrong — try again.'); });
+        return;
+      }
+      // Study together / Join / I'm in / Message: a chat with the author (Messages is its own page).
+      var con = e.target.closest('.js-pulse-connect');
+      if (con) {
+        var d = new FormData(); d.append('action', con.dataset.action);
+        con.disabled = true;
+        post(con.dataset.url, d)
+          .then(function (j) { location.assign(j.url); })
+          .catch(function (err) { con.disabled = false; toast(err.message || 'Could not open the chat — try again.'); });
+        return;
+      }
+      var rm = e.target.closest('.js-pulse-remove');
+      if (rm) {
+        if (!window.confirm(rm.dataset.confirm)) { return; }
+        var id = rm.closest('.pv').dataset.id;
+        post(rm.dataset.url)
+          .then(function () {
+            var c = bar && bar.querySelector('.js-pulse-open[data-id="' + id + '"]');
+            if (c) { c.remove(); apply(); }
+            if (viewer && viewer.classList.contains('show')) { bootstrap.Modal.getOrCreateInstance(viewer).hide(); }
+            else if (window.UC && UC.navigate) { UC.navigate('/home/'); }
+            toast('Removed from Campus Pulse.', 'success');
+          })
+          .catch(function () { toast('Could not remove it — try again.'); });
+      }
+    }, { signal: signal });
+
+    function replace(art, html) {
+      var wrap = document.createElement('div'); wrap.innerHTML = (html || '').trim();
+      if (art && wrap.firstElementChild) { art.replaceWith(wrap.firstElementChild); }
+    }
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.classList || !form.classList.contains('js-pulse-reply')) { return; }
+      e.preventDefault(); e.stopPropagation();
+      var btn = form.querySelector('button'); btn.disabled = true;
+      post(form.action, new FormData(form))
+        .then(function (j) {
+          // Sent to the author's Messages: clear the box and say where it went.
+          var input = form.querySelector('input[name="text"]'); if (input) { input.value = ''; input.blur(); }
+          btn.disabled = false;
+          toast('Reply sent to ' + (j.name || 'them') + ' in Messages', 'success');
+        })
+        .catch(function (err) { btn.disabled = false; toast(err.message || 'Could not send — try again.'); });
+    }, { capture: true, signal: signal });
+    document.addEventListener('keydown', function (e) {
+      if (!viewer || !viewer.classList.contains('show')) { return; }
+      // After an action the update is redrawn and focus can drop out of the viewer, so Esc is handled here too.
+      if (e.key === 'Escape') { bootstrap.Modal.getOrCreateInstance(viewer).hide(); return; }
+      if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) { return; }
+      if (e.key === 'ArrowLeft') { show(at - 1); } else if (e.key === 'ArrowRight') { show(at + 1); }
+    }, { signal: signal });
+    if (viewer) {
+      viewer.addEventListener('hidden.bs.modal', function () {
+        var v = viewer.querySelector('video'); if (v) { v.pause(); }
+        viewer.querySelector('.js-pulse-body').innerHTML = '';
+      }, { signal: signal });
+    }
+
+    // ---------- Composer: show only the fields the chosen type needs ----------
+    if (compose) {
+      var form = compose.querySelector('.js-pulse-form');
+      var text = form.querySelector('.js-pf-text'), count = form.querySelector('.js-pf-count');
+      var holders = {}; try { holders = JSON.parse(doc.getElementById('pulsePlaceholders').textContent); } catch (err) {}
+      var notes = { study: '24 hours', campus: '24 hours', people: '24 hours', opportunity: '24 hours',
+        question: '48 hours, or a few hours after you mark it answered', event: 'when the event is over' };
+      function kind() { var r = form.querySelector('input[name="kind"]:checked'); return r ? r.value : 'study'; }
+      function sync() {
+        var k = kind();
+        form.querySelectorAll('.pf-part').forEach(function (part) {
+          var on = (' ' + part.dataset.for + ' ').indexOf(' ' + k + ' ') !== -1;
+          part.hidden = !on;
+          if (part.tagName === 'FIELDSET') { part.disabled = !on; }
+          else { part.querySelectorAll('input, select, textarea').forEach(function (x) { x.disabled = !on; }); }
+        });
+        text.placeholder = holders[k] || '';
+        text.required = k === 'question';
+        var aud = form.querySelector('.js-pf-audience'), com = form.querySelector('.js-pf-community');
+        if (com) { com.hidden = com.disabled = aud.value !== 'communities'; }
+        var who = aud.value === 'everyone' ? 'Every UniConnect student can see this.' :
+          (aud.value === 'communities' ? 'Only members of that community can see this.' : 'Only students at your university can see this.');
+        var hours = form.querySelector('select[name="hours"]');
+        var life = k === 'available' ? 'until you turn it off (at most ' + hours.options[hours.selectedIndex].text + ')' : 'after ' + (notes[k] || '24 hours');
+        if (k === 'event') { life = notes.event; }
+        form.querySelector('.js-pf-note').textContent = who + ' It disappears ' + life + '.';
+      }
+      form.addEventListener('change', function (e) {
+        if (e.target.classList.contains('js-pf-event')) {
+          var o = e.target.options[e.target.selectedIndex];
+          if (o.value) {
+            form.querySelector('[name="event_title"]').value = o.dataset.title || '';
+            form.querySelector('[name="event_place"]').value = o.dataset.place || '';
+            form.querySelector('[name="event_date"]').value = o.dataset.date || '';
+            if (o.dataset.time) { form.querySelector('[name="event_time"]').value = o.dataset.time; }
+          }
+        }
+        if (e.target.classList.contains('js-pf-media')) {
+          var f = e.target.files && e.target.files[0];
+          form.querySelector('.js-pf-file').textContent = f ? f.name : 'Photo / video';
+        }
+        sync();
+      }, { signal: signal });
+      text.addEventListener('input', function () { count.textContent = text.value.length + '/280'; }, { signal: signal });
+      form.addEventListener('submit', function () {
+        var b = form.querySelector('button[type="submit"]');
+        setTimeout(function () { b.disabled = true; b.textContent = 'Sharing…'; }, 0);
+        bootstrap.Modal.getOrCreateInstance(compose).hide();
+      }, { signal: signal });
+      sync();
+    }
+  });
+</script>

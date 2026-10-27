@@ -1,0 +1,19 @@
+{% comment %}
+  The composer's toolbar (pop-up composer and the full-page one).
+  Photo/video, camera and GIF all add to the same media box; poll is
+  static/js/polls.js; emoji, schedule, location and + (another post: a thread) are static/js/compose-tools.js
+  (the panels they open are _compose_extras.html).
+{% endcomment %}
+<div class="compose-toolbar">
+  <label class="compose-tool-btn" title="Add up to 4 photos, or a video">
+    <i class="bi bi-image"></i>
+    <input type="file" accept="image/*,video/*" class="compose-media-input" name="media" multiple hidden>
+  </label>
+  <button type="button" class="compose-tool-btn js-compose-camera" title="Take a photo" aria-label="Take a photo"><i class="bi bi-camera"></i></button>
+  <button type="button" class="compose-tool-btn js-compose-gif" title="Add a GIF from your device" aria-label="Add a GIF"><i class="bi bi-filetype-gif"></i></button>
+  <button type="button" class="compose-tool-btn js-compose-poll" title="Add a poll" aria-label="Add a poll" aria-pressed="false"><i class="bi bi-bar-chart-steps"></i></button>
+  <button type="button" class="compose-tool-btn js-emoji-btn" title="Emoji" aria-label="Add an emoji" aria-haspopup="true"><i class="bi bi-emoji-smile"></i></button>
+  <button type="button" class="compose-tool-btn js-compose-schedule" title="Schedule for later" aria-label="Schedule for later" aria-pressed="false"><i class="bi bi-clock-history"></i></button>
+  <button type="button" class="compose-tool-btn js-compose-location" title="Add a location" aria-label="Add a location" aria-pressed="false"><i class="bi bi-geo-alt"></i></button>
+  <button type="button" class="compose-tool-btn compose-thread-btn js-compose-thread" title="Add another post — make a thread" aria-label="Add another post (make a thread)"><i class="bi bi-plus-circle"></i></button>
+</div>

@@ -1,0 +1,36 @@
+{% extends 'chat/base.html' %}
+{% block wa_title %}Communities{% endblock %}
+{% block list_pane %}
+<header class="wa-pane-header">
+  <h1 class="wa-pane-title is-visible">Communities</h1>
+  <div class="wa-header-actions">
+    <div class="dropdown">
+      <button type="button" class="wa-icon-btn" data-bs-toggle="dropdown" aria-label="More options"><i class="bi bi-three-dots-vertical"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end wa-menu">
+        <li><button type="button" class="dropdown-item js-wa-new-community">New community</button></li>
+        <li><a class="dropdown-item" href="{% url 'home' %}">Back to UniConnect</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+<div class="wa-pane-scroll wa-communities">
+  <button type="button" class="wa-new-community js-wa-new-community">
+    <span class="wa-community-avatar is-new"><i class="bi bi-people-fill"></i><span class="wa-plus-badge"><i class="bi bi-plus"></i></span></span>
+    <span class="wa-community-name">New community</span>
+  </button>
+  {% for card in cards %}
+    {% include 'chat/_community_card.html' %}
+  {% empty %}
+    <div class="wa-empty"><i class="bi bi-people"></i>
+      <p>Communities bring related groups together, with an Announcements group for everyone. Create one for your class, department or club.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block main_pane %}
+<div class="wa-placeholder">
+  <div class="wa-placeholder-icon"><i class="bi bi-people"></i></div>
+  <h2>Communities</h2>
+  <p>Keep a class, department or club organised: one Announcements group for everyone, plus topic groups people can join.</p>
+</div>
+{% endblock %}

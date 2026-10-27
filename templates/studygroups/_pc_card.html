@@ -1,0 +1,33 @@
+{% comment %}One group as a card (index.html via feed/_pc_sections.html): its photo, a tile with the
+course code or type, name, what it is, people you follow in it, and Join (feed/_pc_act_js.html).{% endcomment %}
+{% with g=item info=item.type_info %}
+<article class="pc-card{% if not g.is_open or g.is_full %} is-muted{% endif %}" style="--i:{{ i|default:0 }};--hue:{{ g.cover_hue }}">
+  <a href="{{ g.get_absolute_url }}" class="pc-cover" style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.25)),url('{{ g.banner_url }}')" tabindex="-1" aria-hidden="true">
+    <span class="pc-badge"><i class="bi {{ g.privacy_icon }}"></i> {{ g.get_privacy_display }}</span>
+  </a>
+  <a href="{{ g.get_absolute_url }}" class="pc-avatar{% if g.course_code %} is-code{% endif %}" tabindex="-1" aria-hidden="true">{% if g.course_code %}{{ g.course_code }}{% else %}<i class="bi {{ info.icon }}"></i>{% endif %}</a>
+  <div class="pc-body">
+    <a href="{{ g.get_absolute_url }}" class="pc-name">{{ g.name }}</a>
+    <p class="pc-sub">{{ info.label }}{% if g.department %} · {{ g.department.name }}{% endif %}{% if g.level %} · {{ g.level.name }}{% endif %}</p>
+    <div class="pc-mutual">
+      {% if g.known %}
+        <span class="pc-faces">{% for f in g.faces %}{% include 'feed/_pc_face.html' %}{% endfor %}</span>
+        <span>{{ g.known }} you follow · {{ g.n_members }} member{{ g.n_members|pluralize }}</span>
+      {% else %}
+        <span class="pc-where"><i class="bi bi-people"></i> {{ g.n_members }}{% if g.max_members %}/{{ g.max_members }}{% endif %} member{{ g.n_members|pluralize }}{% if g.schedule %} · {{ g.schedule }}{% endif %}</span>
+      {% endif %}
+    </div>
+    {% if g.my_state == 'joined' %}
+      <a href="{{ g.get_absolute_url }}" class="pc-follow" data-state="done"><i class="bi bi-box-arrow-in-right"></i> Open</a>
+    {% elif g.my_state == 'requested' %}
+      <button type="button" class="pc-follow" data-state="wait" disabled><i class="bi bi-hourglass-split"></i> Requested</button>
+    {% elif g.is_full %}
+      <button type="button" class="pc-follow" disabled>Full</button>
+    {% elif not g.is_open %}
+      <button type="button" class="pc-follow" disabled>Not taking members</button>
+    {% else %}
+      <button type="button" class="pc-follow js-pc-act" data-kind="group" data-url="{% url 'group_join' g.pk %}">{% if g.privacy == 'private' %}Ask to join{% else %}Join{% endif %}</button>
+    {% endif %}
+  </div>
+</article>
+{% endwith %}

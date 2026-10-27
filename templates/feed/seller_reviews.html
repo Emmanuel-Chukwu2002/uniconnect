@@ -1,0 +1,86 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}Reviews of {{ seller.get_full_name|default:seller.username }} — Marketplace — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}A seller's reviews (feed/details.py seller_reviews). Styles: restyle.css ("Detail pages").{% endcomment %}
+{% with sp=seller.student_profile %}
+<div class="dt">
+  <div class="dt-topbar">
+    <a href="{% if back %}{% url 'listing_detail' back %}{% else %}{% url 'marketplace' %}{% endif %}" class="dt-icon-btn" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>Seller reviews</h1>
+  </div>
+
+  <div class="dt-body rv-head">
+    <a href="{% url 'user_profile' seller.username %}" class="dt-seller-avatar is-lg" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+    <div class="rv-who">
+      <a href="{% url 'user_profile' seller.username %}"><h2 class="dt-title">{{ seller.get_full_name|default:seller.username }}</h2></a>
+      <p class="dt-muted"><i class="bi bi-patch-check-fill rv-check"></i> Verified student{% if sp.university %} · {{ sp.university.short_name }}{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="dt-body rv-summary">
+    <div class="rv-score">
+      <b>{% if rating.count %}{{ rating.avg }}{% else %}–{% endif %}</b>
+      <span class="rv-stars" aria-label="{{ rating.avg|default:0 }} out of 5 stars">{% for i in '12345' %}<i class="bi {% if forloop.counter <= rating.full %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}</span>
+      <small>{{ rating.count }} review{{ rating.count|pluralize }}</small>
+    </div>
+    <div class="rv-bars">
+      {% for b in bars %}
+        <div class="rv-bar"><span>{{ b.stars }}</span><i class="bi bi-star-fill"></i><span class="rv-track"><span style="width:{{ b.percent }}%"></span></span><small>{{ b.n }}</small></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if not is_me %}
+    <div class="dt-body rv-form-wrap">
+      {% if can_review %}
+        <form method="post" class="rv-form">{% csrf_token %}
+          <h3 class="dt-sub">{% if mine %}Update your review{% else %}Rate this seller{% endif %}</h3>
+          <div class="rv-pick" role="radiogroup" aria-label="Your rating">
+            {% for n in '54321' %}
+              <input type="radio" name="rating" value="{{ n }}" id="rv{{ n }}" {% if mine and mine.rating|stringformat:'s' == n %}checked{% endif %} required>
+              <label for="rv{{ n }}" title="{{ n }} star{{ n|pluralize }}"><i class="bi bi-star-fill"></i></label>
+            {% endfor %}
+          </div>
+          {% if listings %}
+            <label class="rv-label" for="rvListing">What did you buy? <small>optional</small></label>
+            <select name="listing" id="rvListing" class="rv-input">
+              <option value="">—</option>
+              {% for l in listings %}<option value="{{ l.id }}" {% if mine.listing_id == l.id or not mine and back|add:'0' == l.id %}selected{% endif %}>{{ l.title }}</option>{% endfor %}
+            </select>
+          {% endif %}
+          <label class="rv-label" for="rvComment">Comment <small>optional</small></label>
+          <textarea name="comment" id="rvComment" rows="3" maxlength="600" class="rv-input" placeholder="How was the item and the meetup?">{{ mine.comment|default:'' }}</textarea>
+          <div class="dt-actions">
+            <button type="submit" class="dt-btn">{% if mine %}Update review{% else %}Post review{% endif %}</button>
+          </div>
+        </form>
+        {% if mine %}
+          <form method="post" class="rv-delete">{% csrf_token %}<input type="hidden" name="action" value="delete"><button type="submit" class="dt-link"><i class="bi bi-trash3"></i> Remove my review</button></form>
+        {% endif %}
+      {% else %}
+        <p class="dt-note"><i class="bi bi-chat-dots"></i> <span>You can rate {{ seller.first_name|default:'this seller' }} after you've chatted about an item — tap <b>Chat Seller</b> on one of their listings. This keeps reviews from real buyers only.</span></p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="dt-body rv-list">
+    <h3 class="dt-sub">Reviews</h3>
+    {% for r in reviews %}{% with rp=r.reviewer.student_profile %}
+      <article class="rv-item">
+        <span class="dt-face is-sm" style="{% if rp.profile_photo %}background-image:url({{ rp.profile_photo.url }}){% endif %}">{% if not rp.profile_photo %}{{ r.reviewer.first_name|default:r.reviewer.username|first|upper }}{% endif %}</span>
+        <div class="rv-item-body">
+          <div class="rv-item-top"><b>{{ r.reviewer.get_full_name|default:r.reviewer.username }}</b><small>{{ r.updated_at|ago }}</small></div>
+          <span class="rv-stars is-sm">{% for i in '12345' %}<i class="bi {% if forloop.counter <= r.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}</span>
+          {% if r.listing %}<small class="rv-bought">Bought: <a href="{% url 'listing_detail' r.listing_id %}">{{ r.listing.title }}</a></small>{% endif %}
+          {% if r.comment %}<p>{{ r.comment|linebreaksbr }}</p>{% endif %}
+        </div>
+      </article>
+    {% endwith %}{% empty %}
+      <p class="dt-muted">No reviews yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

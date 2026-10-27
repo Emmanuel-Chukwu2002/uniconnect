@@ -1,0 +1,33 @@
+{% load chat_tags %}
+{% comment %}
+  One row of the chat list. chatlist.js keeps it live (preview, time,
+  unread badge, ticks, order) from WebSocket events; the data-*
+  attributes drive the filter chips and search.
+{% endcomment %}
+<a href="{% url 'chat_conversation' row.id %}" class="wa-row js-wa-row{% if row.unread or row.marked_unread %} is-unread{% endif %}" data-wa-nav
+   data-conversation="{{ row.id }}" data-name="{{ row.title|lower }}" data-group="{{ row.is_group|yesno:'1,0' }}"
+   data-favourite="{{ row.favourite|yesno:'1,0' }}" data-pinned="{{ row.pinned|yesno:'1,0' }}" data-muted="{{ row.muted|yesno:'1,0' }}"{% if row.muted_until %} data-muted-until="{{ row.muted_until|date:'c' }}"{% endif %}
+   data-archived="{{ row.archived|yesno:'1,0' }}" data-request="{{ row.request|yesno:'1,0' }}" data-ts="{{ row.time|date:'c' }}" data-last-id="{{ row.last_id }}"{% if row.other and not row.is_self %} data-user="{{ row.other.id }}"{% endif %}{% if row.is_self %} data-self="1"{% endif %}>
+  <span class="wa-row-avatar">
+    {% include 'chat/_avatar.html' with p=row size=49 %}
+    <span class="wa-online-dot" {% if not row.online %}hidden{% endif %} title="Online"></span>
+  </span>
+  <span class="wa-row-body">
+    <span class="wa-row-top">
+      <span class="wa-row-name">{{ row.title }}</span>
+      <time class="wa-row-time js-wa-time" data-ts="{{ row.time|date:'c' }}" data-format="list">{{ row.time|wa_time }}</time>
+    </span>
+    <span class="wa-row-bottom">
+      <span class="wa-row-preview js-wa-preview">
+        <span class="wa-typing-text">typing…</span>
+        <span class="wa-preview-content">{% if row.preview.mine %}<i class="bi {% if row.preview.status == 'sent' %}bi-check2{% else %}bi-check2-all{% endif %} wa-tick wa-tick-{{ row.preview.status }}" data-message-status></i>{% endif %}{% if row.preview.prefix %}<span class="wa-preview-prefix">~ {{ row.preview.prefix }}</span>{% endif %}{% if row.preview.icon %}<i class="bi {{ row.preview.icon }} wa-preview-icon"></i>{% endif %}<span class="wa-preview-text">{{ row.preview.text }}</span></span>
+      </span>
+      <span class="wa-row-meta">
+        <span class="wa-mention-flag js-wa-flag-mention" title="You were mentioned" {% if not row.mention %}hidden{% endif %}>@</span>
+        <i class="bi bi-bell-slash-fill wa-row-flag js-wa-flag-muted" title="{% if row.muted_until %}Muted until {{ row.muted_until|date:'D j M, g:i a' }}{% else %}Muted{% endif %}" {% if not row.muted %}hidden{% endif %}></i>
+        <i class="bi bi-pin-angle-fill wa-row-flag js-wa-flag-pinned" title="Pinned" {% if not row.pinned %}hidden{% endif %}></i>
+        <span class="wa-unread-badge js-wa-unread{% if row.muted %} is-muted{% endif %}" data-count="{{ row.unread }}" {% if not row.unread and not row.marked_unread %}hidden{% endif %}>{% if row.unread %}{{ row.unread }}{% endif %}</span>
+      </span>
+    </span>
+  </span>
+</a>

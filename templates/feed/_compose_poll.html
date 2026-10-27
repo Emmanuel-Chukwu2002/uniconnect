@@ -1,0 +1,18 @@
+{% comment %}The composer's poll (feed/forms.py PostForm poll_*; static/js/polls.js shows it).{% endcomment %}
+<div class="cp-poll js-cp-poll" hidden>
+  <input type="hidden" name="poll" value="" class="js-cp-poll-on">
+  <div class="cp-poll-options">
+    {% for i in '1234' %}
+      <input type="text" name="poll_option_{{ i }}" maxlength="25" placeholder="Choice {{ i }}{% if i == '3' or i == '4' %} (optional){% endif %}" class="cp-poll-input"{% if i == '3' or i == '4' %} hidden{% endif %} autocomplete="off">
+    {% endfor %}
+  </div>
+  <button type="button" class="cp-poll-add js-cp-poll-add"><i class="bi bi-plus-lg"></i> Add a choice</button>
+  <div class="cp-poll-foot">
+    <label>Poll length
+      <select name="poll_days" class="cp-poll-days">
+        <option value="1">1 day</option><option value="3">3 days</option><option value="7">1 week</option>
+      </select>
+    </label>
+    <button type="button" class="cp-poll-remove js-cp-poll-remove">Remove poll</button>
+  </div>
+</div>

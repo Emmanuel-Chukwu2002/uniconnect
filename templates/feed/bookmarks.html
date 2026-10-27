@@ -1,0 +1,147 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Bookmarks — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  The Bookmarks page (views.bookmarks_page), two tabs:
+  Posts — each saved post uses the same _post_card.html as the feed;
+  un-bookmarking a post here removes the card straight away (app.js does
+  that for any card inside .js-bookmarks-tab).
+  Opportunities — saved with the bookmark on the Opportunities board;
+  un-saving one here removes it too (script below).
+{% endcomment %}
+<div class="profile-topbar">
+  <a href="{% url 'home' %}" class="profile-back-btn" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">Bookmarks</div>
+    {% if tab == 'groups' %}
+      <div class="profile-topbar-sub">{{ saved_group_posts|length }} saved group post{{ saved_group_posts|length|pluralize }}</div>
+    {% elif tab == 'events' %}
+      <div class="profile-topbar-sub">{{ saved_events|length }} saved event{{ saved_events|length|pluralize }}</div>
+    {% elif tab == 'opportunities' %}
+      <div class="profile-topbar-sub js-opp-bookmarks-count">{{ saved_opps|length }} saved opportunit{{ saved_opps|length|pluralize:"y,ies" }}</div>
+    {% else %}
+      <div class="profile-topbar-sub js-bookmarks-count" data-count="{{ posts|length }}">{{ posts|length }} saved post{{ posts|length|pluralize }}{% if folder %} in {{ folder.name }}{% endif %}</div>
+    {% endif %}
+  </div>
+</div>
+
+<nav class="sr-tabs bm-tabs" aria-label="Bookmark types">
+  <a href="{% url 'bookmarks' %}" class="{% if tab == 'posts' %}is-on{% endif %}">Posts <span class="bm-count">{{ all_count }}</span></a>
+  <a href="{% url 'bookmarks' %}?tab=opportunities" class="{% if tab == 'opportunities' %}is-on{% endif %}">Opportunities <span class="bm-count">{{ saved_opps|length }}</span></a>
+  <a href="{% url 'bookmarks' %}?tab=events" class="{% if tab == 'events' %}is-on{% endif %}">Events <span class="bm-count">{{ saved_events|length }}</span></a>
+  <a href="{% url 'bookmarks' %}?tab=groups" class="{% if tab == 'groups' %}is-on{% endif %}">Groups <span class="bm-count">{{ saved_group_posts|length }}</span></a>
+</nav>
+
+{% if tab == 'groups' %}
+  <section class="sr-card">
+    {% for p in saved_group_posts %}
+      <a href="{% url 'group_detail' p.group.pk %}?tab=posts#p{{ p.pk }}" class="sr-item">
+        <span class="sg-tile is-{{ p.group.type_info.colour }}"><i class="bi {% if p.is_announcement %}bi-megaphone{% else %}bi-file-text{% endif %}"></i></span>
+        <span class="sr-item-text"><b>{{ p.heading }}</b><small>{{ p.group.title }} · {{ p.author.get_full_name|default:p.author.username }} · {{ p.created_at|date:"j M" }}</small></span>
+      </a>
+    {% empty %}
+      <div class="sr-nothing sg-empty"><i class="bi bi-collection"></i><h2>No saved group posts yet.</h2><p>Tap the bookmark on a post in any of your <a href="{% url 'groups' %}">groups</a> to keep it here.</p></div>
+    {% endfor %}
+  </section>
+{% elif tab == 'events' %}
+  <section class="sr-card">
+    {% for event in saved_events %}
+      <div class="sr-item bm-event">
+        <a href="{% url 'event_detail' event.id %}" class="bm-event-date"><small>{{ event.date|date:"M"|upper }}</small><b>{{ event.date|date:"j" }}</b></a>
+        <a href="{% url 'event_detail' event.id %}" class="sr-item-text"><b>{{ event.title }}</b><small><i class="bi bi-geo-alt"></i> {{ event.location }}{% if event.time %} · {{ event.time|time:"g:i A" }}{% endif %}</small></a>
+        <form method="post" action="{% url 'event_save' event.id %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'bookmarks' %}?tab=events"><button type="submit" class="st-btn-ghost sg-icon-btn is-on" title="Remove from Bookmarks" aria-label="Remove {{ event.title }} from Bookmarks"><i class="bi bi-bookmark-fill"></i></button></form>
+      </div>
+    {% empty %}
+      <div class="sr-nothing sg-empty"><i class="bi bi-calendar-event"></i><h2>No saved events yet.</h2><p>Tap <b>Save Event</b> on any <a href="{% url 'events' %}">event</a> to keep it here.</p></div>
+    {% endfor %}
+  </section>
+{% elif tab == 'opportunities' %}
+  <div class="op-list js-opp-bookmarks">
+    {% for opp in saved_opps %}
+      {% include 'opportunities/_card.html' %}
+    {% endfor %}
+    <div class="center-card bookmarks-empty js-opp-bookmarks-empty"{% if saved_opps %} hidden{% endif %}>
+      <i class="bi bi-briefcase"></i>
+      <h4>No saved opportunities yet.</h4>
+      <p>Tap the bookmark on any <a href="{% url 'opportunities' %}">opportunity</a> to keep it here.</p>
+    </div>
+  </div>
+{% else %}
+  {# Folders (feed/bookmark_folders.py, static/js/bookmark-folders.js) #}
+  <div class="bf-chips" role="tablist" aria-label="Bookmark folders">
+    <a href="{% url 'bookmarks' %}" class="bf-chip{% if not folder %} is-on{% endif %}"><i class="bi bi-bookmarks"></i> All <span>{{ all_count }}</span></a>
+    {% for f in folders %}
+      <a href="{% url 'bookmarks' %}?folder={{ f.id }}" class="bf-chip{% if folder.id == f.id %} is-on{% endif %}"><i class="bi bi-folder{% if folder.id == f.id %}2-open{% endif %}"></i> {{ f.name }} <span>{{ f.n }}</span></a>
+    {% endfor %}
+    <button type="button" class="bf-chip is-new js-bf-new-folder"><i class="bi bi-folder-plus"></i> New folder</button>
+  </div>
+  {% if folder %}
+    <div class="bf-manage">
+      <details class="bf-manage-item">
+        <summary class="st-btn-ghost"><i class="bi bi-pencil"></i> Rename</summary>
+        <form method="post" action="{% url 'bookmark_folder_rename' folder.id %}" class="bf-manage-form">{% csrf_token %}
+          <input type="text" name="name" value="{{ folder.name }}" maxlength="30" required aria-label="Folder name">
+          <button type="submit" class="dt-btn is-sm">Save</button>
+        </form>
+      </details>
+      <details class="bf-manage-item">
+        <summary class="st-btn-ghost is-danger"><i class="bi bi-trash3"></i> Delete folder</summary>
+        <form method="post" action="{% url 'bookmark_folder_delete' folder.id %}" class="bf-manage-form">{% csrf_token %}
+          <span>Delete “{{ folder.name }}”? The posts in it stay in your bookmarks.</span>
+          <button type="submit" class="dt-btn is-sm is-danger">Delete</button>
+        </form>
+      </details>
+    </div>
+  {% endif %}
+  <div class="bookmarks-list js-bookmarks-tab"{% if folder %} data-folder="{{ folder.id }}"{% endif %}>
+    {% for post in posts %}
+      {% include 'feed/_post_card.html' %}
+    {% empty %}
+      <div class="center-card bookmarks-empty">
+        {% if folder %}
+          <i class="bi bi-folder2-open"></i>
+          <h4>Nothing in {{ folder.name }} yet.</h4>
+          <p>Open a post's <i class="bi bi-three-dots-vertical"></i> menu and choose <b>Save to folder</b>.</p>
+        {% else %}
+          <i class="bi bi-bookmark"></i>
+          <h4>No bookmarks yet.</h4>
+          <p>Posts you save will appear here.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if tab == 'opportunities' %}
+<script>
+  // Un-saving an opportunity here removes its card (the save itself is
+  // done by the shared Opportunities script below).
+  UC.onPage(function (doc, signal) {
+    var list = document.querySelector('.js-opp-bookmarks');
+    if (!list) { return; }
+    list.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-op-save');
+      if (!btn) { return; }
+      setTimeout(function () {
+        if (btn.classList.contains('is-on')) { return; }
+        var card = btn.closest('.op-card');
+        card.classList.add('is-leaving');
+        setTimeout(function () {
+          card.remove();
+          var left = list.querySelectorAll('.op-card').length;
+          var c = document.querySelector('.js-opp-bookmarks-count');
+          if (c) { c.textContent = left + ' saved opportunit' + (left === 1 ? 'y' : 'ies'); }
+          var tabCount = document.querySelectorAll('.bm-tabs .bm-count')[1];
+          if (tabCount) { tabCount.textContent = left; }
+          if (!left) { list.querySelector('.js-opp-bookmarks-empty').hidden = false; }
+        }, 250);
+      }, 500);
+    }, { signal: signal });
+  });
+</script>
+{% endif %}
+{% include 'opportunities/_save_js.html' %}
+{% endblock %}

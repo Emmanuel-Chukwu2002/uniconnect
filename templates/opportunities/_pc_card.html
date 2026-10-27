@@ -1,0 +1,25 @@
+{% comment %}One opportunity as a card (list.html via feed/_pc_sections.html): photo for its kind, the
+organisation's initials, title, organisation and place, deadline, who shared or saved it, and Save.{% endcomment %}
+{% with o=item %}
+<article class="pc-card{% if not o.is_open %} is-muted{% endif %}" style="--i:{{ i|default:0 }};--hue:{{ o.cover_hue }}">
+  <a href="{{ o.get_absolute_url }}" class="pc-cover" style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.25)),url('{{ o.banner_url }}')" tabindex="-1" aria-hidden="true">
+    <span class="pc-badge"><i class="bi {{ o.icon }}"></i> {{ o.get_kind_display }}</span>
+  </a>
+  <a href="{{ o.get_absolute_url }}" class="pc-avatar" tabindex="-1" aria-hidden="true">{{ o.initials }}</a>
+  <div class="pc-body">
+    <a href="{{ o.get_absolute_url }}" class="pc-name" title="{{ o.title }}">{{ o.title }}</a>
+    <p class="pc-sub">{{ o.organization }}{% if o.location %} · {{ o.location }}{% endif %}{% if o.is_remote %} · Remote{% endif %}</p>
+    <div class="pc-tags">{% include 'opportunities/_deadline.html' with opp=o %}{% if o.reward %}<span class="op-tag"><i class="bi bi-cash-coin"></i> {{ o.reward }}</span>{% endif %}</div>
+    <div class="pc-mutual">
+      {% if o.known %}
+        <span class="pc-faces">{% for f in o.faces %}{% include 'feed/_pc_face.html' %}{% endfor %}</span>
+        <span>{{ o.known }} you follow saved this</span>
+      {% else %}
+        {% with f=o.posted_by %}<span class="pc-faces">{% include 'feed/_pc_face.html' %}</span>
+        <span class="pc-where">Shared by {% if f.pk == request.user.pk %}you{% else %}{{ f.first_name|default:f.username }}{% endif %}</span>{% endwith %}
+      {% endif %}
+    </div>
+    <button type="button" class="pc-follow js-pc-act" data-kind="opportunity" data-url="{% url 'opportunity_save' o.pk %}" data-state="{% if o.saved %}done{% endif %}" aria-pressed="{% if o.saved %}true{% else %}false{% endif %}">{% if o.saved %}<i class="bi bi-bookmark-fill"></i> Saved{% else %}<i class="bi bi-bookmark"></i> Save{% endif %}</button>
+  </div>
+</article>
+{% endwith %}

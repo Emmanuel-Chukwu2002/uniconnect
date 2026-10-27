@@ -1,0 +1,11 @@
+{% comment %}A dropdown action that asks for a reason first. Needs: url, action, label, icon, cls, help, days (optional).{% endcomment %}
+<details class="ad-act">
+  <summary class="ad-btn {{ cls }}"><i class="bi {{ icon }}"></i> {{ label }}</summary>
+  <form method="post" action="{{ url }}" class="ad-act-box">{% csrf_token %}
+    <input type="hidden" name="action" value="{{ action }}">{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if help %}<p>{{ help }}</p>{% endif %}
+    <textarea name="reason" class="ad-textarea" rows="3" maxlength="1000" required placeholder="Reason (kept in the audit log)"></textarea>
+    {% if days %}<select name="days" class="ad-select" aria-label="How long"><option value="">Until reactivated</option><option value="1">1 day</option><option value="3">3 days</option><option value="7">7 days</option><option value="30">30 days</option></select>{% endif %}
+    <button type="submit" class="ad-btn {% if 'danger' in cls %}danger-solid{% else %}primary{% endif %}">{{ label }}</button>
+  </form>
+</details>

@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app.css' %}?v=95">
+{% endblock %}
+
+{% block body %}
+<div class="app-shell {% block shell_class %}{% endblock %}">
+
+  <!-- ============ SMALL-SCREEN TOP BAR ============
+       Logo + hamburger. Hidden on the Profile page, which has its
+       own mobile header (see profile.html). -->
+  <div class="app-mobile-topbar">
+    <div class="app-mobile-logo"><i class="bi bi-mortarboard-fill"></i> UniConnect</div>
+    <div class="app-mobile-topbar-actions">
+    <a href="{% url 'search' %}" class="app-mobile-topbar-icon" aria-label="Search"><i class="bi bi-search"></i></a>
+    <button type="button" class="app-mobile-hamburger-btn" id="appDrawerOpenBtn" aria-label="Open menu"><i class="bi bi-list"></i><span class="nav-notif-dot js-notif-dot" {% if not notifications_unread %}hidden{% endif %}></span></button>
+    </div>
+  </div>
+
+  <!-- ============ SMALL-SCREEN NAV DRAWER ============
+       Opened by the hamburger above. Mirrors the desktop left
+       sidebar's nav links, settings, theme toggle, profile row and
+       logout, so nothing from the sidebar is unreachable on a phone. -->
+  <div class="app-mobile-drawer-backdrop" id="appDrawerBackdrop"></div>
+  <div class="app-mobile-drawer" id="appDrawer">
+    <div class="app-mobile-drawer-head">
+      <div class="app-logo"><i class="bi bi-mortarboard-fill"></i> UniConnect</div>
+      <button type="button" class="app-mobile-drawer-close-btn" id="appDrawerCloseBtn" aria-label="Close menu"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <nav class="app-mobile-drawer-nav">
+      <a href="{% url 'home' %}" class="app-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="bi bi-house-door{% if request.resolver_match.url_name == 'home' %}-fill{% endif %}"></i> <span>Home</span>
+      </a>
+      <a href="{% url 'explore' %}" class="app-nav-link {% if request.resolver_match.url_name == 'explore' %}active{% endif %}">
+        <i class="bi bi-compass{% if request.resolver_match.url_name == 'explore' %}-fill{% endif %}"></i> <span>Explore</span>
+      </a>
+      <a href="{% url 'search' %}" class="app-nav-link {% if request.resolver_match.url_name == 'search' %}active{% endif %}">
+        <i class="bi bi-search"></i> <span>Search</span>
+      </a>
+      <a href="{% url 'communities' %}" class="app-nav-link {% if request.path|slice:':13' == '/communities/' %}active{% endif %}">
+        <i class="bi bi-people{% if request.path|slice:':13' == '/communities/' %}-fill{% endif %}"></i> <span>Communities</span>
+      </a>
+      <a href="{% url 'bookmarks' %}" class="app-nav-link {% if request.resolver_match.url_name == 'bookmarks' %}active{% endif %}">
+        <i class="bi bi-bookmark{% if request.resolver_match.url_name == 'bookmarks' %}-fill{% endif %}"></i> <span>Bookmarks</span>
+      </a>
+      <a href="{% url 'profile' %}" class="app-nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <i class="bi bi-person{% if request.resolver_match.url_name == 'profile' %}-fill{% endif %}"></i> <span>Profile</span>
+      </a>
+      <a href="{% url 'messages' %}" class="app-nav-link {% if request.resolver_match.url_name == 'messages' or 'chat_' in request.resolver_match.url_name %}active{% endif %}">
+        <span class="nav-bell"><i class="bi bi-chat-dots{% if request.resolver_match.url_name == 'messages' or 'chat_' in request.resolver_match.url_name %}-fill{% endif %}"></i><span class="nav-notif-badge js-chat-sidebar-badge" {% if not chat_unread %}hidden{% endif %} aria-label="{{ chat_unread }} unread chats">{% if chat_unread > 99 %}99+{% else %}{{ chat_unread }}{% endif %}</span></span> <span>Messages</span>
+      </a>
+      <a href="{% url 'notifications' %}" class="app-nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+        <span class="nav-bell"><i class="bi bi-bell{% if request.resolver_match.url_name == 'notifications' %}-fill{% endif %}"></i><span class="nav-notif-badge js-notif-badge" {% if not notifications_unread %}hidden{% endif %} aria-label="{{ notifications_unread }} unread notifications">{{ notifications_badge }}</span></span> <span>Notifications</span>
+      </a>
+    </nav>
+
+    <div class="app-mobile-drawer-bottom">
+      <a href="{% url 'account_settings' %}" class="app-nav-link {% if request.resolver_match.url_name == 'account_settings' %}active{% endif %}">
+        <i class="bi bi-gear"></i> <span>Settings</span>
+      </a>
+      <a href="{% url 'analytics' %}" class="app-nav-link {% if request.resolver_match.url_name == 'analytics' or request.resolver_match.url_name == 'post_analytics' %}active{% endif %}">
+        <i class="bi bi-bar-chart-line"></i> <span>Analytics</span>
+      </a>
+      <a href="{% url 'post_drafts' %}" class="app-nav-link {% if request.resolver_match.url_name == 'post_drafts' or request.resolver_match.url_name == 'scheduled_posts' %}active{% endif %}">
+        <i class="bi bi-file-earmark-text"></i> <span>Unsent posts</span>
+      </a>
+      {% if staff_admin %}
+      <a href="{% url 'staff_overview' %}" class="app-nav-link" data-no-soft>
+        <i class="bi bi-shield-check"></i> <span>Admin dashboard</span>
+      </a>
+      {% endif %}
+
+      <div class="theme-toggle-row">
+        <span style="position:relative;width:18px;height:18px;flex:0 0 18px;">
+          <i class="bi bi-moon theme-icon theme-icon-moon"></i>
+          <i class="bi bi-sun theme-icon theme-icon-sun"></i>
+        </span>
+        <span class="theme-toggle-label js-theme-toggle-label">Light Mode</span>
+        <button type="button" class="theme-toggle-switch js-theme-toggle-switch" aria-label="Toggle light/dark mode">
+          <span class="theme-toggle-thumb"></span>
+        </button>
+      </div>
+
+      <a href="{% url 'profile' %}" class="sidebar-profile-row">
+        <div class="sidebar-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}"></div>
+        <span class="sidebar-profile-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+      </a>
+
+      <a href="{% url 'logout' %}" class="app-nav-link">
+        <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ============ LEFT SIDEBAR ============ -->
+  <aside class="app-sidebar">
+    <div class="sidebar-main-card">
+      <div class="app-logo"><i class="bi bi-mortarboard-fill"></i> UniConnect</div>
+
+      <nav>
+        <a href="{% url 'home' %}" title="Home" class="app-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+          <i class="bi bi-house-door{% if request.resolver_match.url_name == 'home' %}-fill{% endif %}"></i> <span>Home</span>
+        </a>
+        <a href="{% url 'explore' %}" title="Explore" class="app-nav-link {% if request.resolver_match.url_name == 'explore' %}active{% endif %}">
+          <i class="bi bi-compass{% if request.resolver_match.url_name == 'explore' %}-fill{% endif %}"></i> <span>Explore</span>
+        </a>
+        <a href="{% url 'communities' %}" title="Communities" class="app-nav-link {% if request.path|slice:':13' == '/communities/' %}active{% endif %}">
+          <i class="bi bi-people{% if request.path|slice:':13' == '/communities/' %}-fill{% endif %}"></i> <span>Communities</span>
+        </a>
+        <a href="{% url 'bookmarks' %}" title="Bookmarks" class="app-nav-link {% if request.resolver_match.url_name == 'bookmarks' %}active{% endif %}">
+          <i class="bi bi-bookmark{% if request.resolver_match.url_name == 'bookmarks' %}-fill{% endif %}"></i> <span>Bookmarks</span>
+        </a>
+        <a href="{% url 'profile' %}" title="Profile" class="app-nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+          <i class="bi bi-person{% if request.resolver_match.url_name == 'profile' %}-fill{% endif %}"></i> <span>Profile</span>
+        </a>
+        <a href="{% url 'messages' %}" title="Messages" class="app-nav-link {% if request.resolver_match.url_name == 'messages' or 'chat_' in request.resolver_match.url_name %}active{% endif %}">
+          <span class="nav-bell"><i class="bi bi-chat-dots{% if request.resolver_match.url_name == 'messages' or 'chat_' in request.resolver_match.url_name %}-fill{% endif %}"></i><span class="nav-notif-badge js-chat-sidebar-badge" {% if not chat_unread %}hidden{% endif %} aria-label="{{ chat_unread }} unread chats">{% if chat_unread > 99 %}99+{% else %}{{ chat_unread }}{% endif %}</span></span> <span>Messages</span>
+        </a>
+        <a href="{% url 'notifications' %}" title="Notifications" class="app-nav-link js-notif-bell {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" aria-describedby="notifPopup">
+          <span class="nav-bell"><i class="bi bi-bell{% if request.resolver_match.url_name == 'notifications' %}-fill{% endif %}"></i><span class="nav-notif-badge js-notif-badge" {% if not notifications_unread %}hidden{% endif %} aria-label="{{ notifications_unread }} unread notifications">{{ notifications_badge }}</span></span> <span>Notifications</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="sidebar-bottom-card">
+      <a href="{% url 'account_settings' %}" title="Settings" class="app-nav-link {% if request.resolver_match.url_name == 'account_settings' %}active{% endif %}">
+        <i class="bi bi-gear"></i> <span>Settings</span>
+      </a>
+      <a href="{% url 'analytics' %}" title="Analytics" class="app-nav-link {% if request.resolver_match.url_name == 'analytics' or request.resolver_match.url_name == 'post_analytics' %}active{% endif %}">
+        <i class="bi bi-bar-chart-line"></i> <span>Analytics</span>
+      </a>
+      <a href="{% url 'post_drafts' %}" title="Unsent posts" class="app-nav-link {% if request.resolver_match.url_name == 'post_drafts' or request.resolver_match.url_name == 'scheduled_posts' %}active{% endif %}">
+        <i class="bi bi-file-earmark-text"></i> <span>Unsent posts</span>
+      </a>
+      {% if staff_admin %}
+      <a href="{% url 'staff_overview' %}" title="Admin dashboard" class="app-nav-link" data-no-soft>
+        <i class="bi bi-shield-check"></i> <span>Admin dashboard</span>
+      </a>
+      {% endif %}
+
+      <div class="theme-toggle-row">
+        <span style="position:relative;width:18px;height:18px;flex:0 0 18px;">
+          <i class="bi bi-moon theme-icon theme-icon-moon"></i>
+          <i class="bi bi-sun theme-icon theme-icon-sun"></i>
+        </span>
+        <span class="theme-toggle-label js-theme-toggle-label" id="modeText">Light Mode</span>
+        <button type="button" class="theme-toggle-switch js-theme-toggle-switch" id="modeToggle" aria-label="Toggle light/dark mode">
+          <span class="theme-toggle-thumb"></span>
+        </button>
+      </div>
+
+      <a href="{% url 'profile' %}" class="sidebar-profile-row" title="{{ request.user.get_full_name|default:request.user.username }}">
+        <div class="sidebar-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}"></div>
+        <span class="sidebar-profile-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+      </a>
+
+      <a href="{% url 'logout' %}" title="Logout" class="app-nav-link">
+        <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============ CENTER CONTENT ============ -->
+  <main class="app-main">
+    {# An admin who isn't a student, looking at a university read-only (adminpanel/viewing.py). #}
+    {% if request.staff_view %}
+      <div class="uc-notice is-viewing" role="status">
+        <i class="bi bi-eye-fill"></i>
+        <div><b>Viewing {{ request.staff_view.name }} as an admin</b><p>Read-only: you see what its students see, but you can't post, like, comment, follow or message.</p></div>
+        <div class="uc-notice-links">{% if not staff_admin.university %}<a href="{% url 'staff_view' %}" data-no-soft>Switch university</a>{% endif %}<a href="{% url 'staff_view_stop' %}" data-no-soft>Back to dashboard</a></div>
+      </div>
+    {% endif %}
+    {# Staff notices (adminpanel/context_processors.py): warnings to acknowledge, live announcements. #}
+    {% for w in my_warnings %}
+      <div class="uc-notice is-warning" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div><b>A warning from UniConnect staff</b><p>{{ w.reason }}</p><small>Please follow the community rules. Repeated problems can lead to a suspension.</small></div>
+        <form method="post" action="{% url 'staff_ack_warning' w.pk %}" data-no-soft>{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit">I understand</button></form>
+      </div>
+    {% endfor %}
+    {% for a in live_announcements %}
+      <div class="uc-notice is-{{ a.kind }} js-uc-announce" data-id="{{ a.pk }}">
+        <i class="bi {% if a.kind == 'maintenance' %}bi-tools{% elif a.kind == 'feature' %}bi-stars{% elif a.kind == 'policy' %}bi-file-earmark-text{% elif a.kind == 'outage' %}bi-exclamation-octagon{% else %}bi-megaphone{% endif %}"></i>
+        <div><b>{{ a.title }}</b><p>{{ a.body|linebreaksbr }}</p></div>
+        <button type="button" class="uc-notice-x js-uc-announce-x" aria-label="Hide this announcement"><i class="bi bi-x-lg"></i></button>
+      </div>
+    {% endfor %}
+    {% if live_announcements %}<script>
+      (function () {
+        var hidden = []; try { hidden = JSON.parse(localStorage.getItem('ucHiddenAnnouncements') || '[]'); } catch (e) {}
+        document.querySelectorAll('.js-uc-announce').forEach(function (el) { if (hidden.indexOf(el.dataset.id) !== -1) { el.hidden = true; } });
+        document.addEventListener('click', function (e) {
+          var x = e.target.closest('.js-uc-announce-x'); if (!x) { return; }
+          var box = x.closest('.js-uc-announce'); box.hidden = true;
+          try { hidden.push(box.dataset.id); localStorage.setItem('ucHiddenAnnouncements', JSON.stringify(hidden.slice(-50))); } catch (err) {}
+        });
+      })();
+    </script>{% endif %}
+    {% block feed_content %}{% endblock %}
+  </main>
+
+  <!-- ============ RIGHT SIDEBAR ============ -->
+  <aside class="app-right-sidebar">
+    <form class="right-card search-card" method="get" action="{% url 'search' %}" role="search">
+      <button type="submit" class="sr-go" aria-label="Search" title="Search"><i class="bi bi-search"></i></button>
+      <input type="search" name="q" placeholder="Search UniConnect..." aria-label="Search UniConnect"{% if request.resolver_match.url_name == 'search' %} value="{{ request.GET.q }}"{% endif %}>
+    </form>
+
+    {# Home only: the Upcoming card (feed/_today_upcoming.html). nav.js copies this slot when pages switch in place. #}
+    <div class="right-upcoming-slot js-upcoming-slot">{% block right_upcoming %}{% endblock %}</div>
+
+    <div class="right-card">
+      <div class="right-card-head">
+        <h6>Events</h6>
+        <a href="{% url 'events' %}">See all</a>
+      </div>
+      {% for event in events %}
+        <div class="event-row">
+          <div class="event-date-badge event-badge-{{ event.category_color }}">{{ event.date|date:"d" }}</div>
+          <div class="event-info">
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</div>
+          </div>
+          <a href="{% url 'event_detail' event.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+        </div>
+      {% empty %}
+        <div class="empty-state-small">No upcoming events yet.</div>
+      {% endfor %}
+    </div>
+
+    {% include 'feed/_top_stories_card.html' %}
+
+    <div class="right-card quicklinks-card">
+      <a href="{% url 'marketplace' %}" class="quicklinks-link-with-badge">
+        <i class="bi bi-shop"></i> Marketplace
+        {% if cart_count %}<span class="nav-cart-badge">{{ cart_count }}</span>{% endif %}
+      </a>
+      <a href="{% url 'bookshop' %}"><i class="bi bi-book"></i> Bookshop</a>
+      <a href="{% url 'events' %}"><i class="bi bi-calendar-event"></i> Events</a>
+      <a href="{% url 'opportunities' %}"><i class="bi bi-briefcase"></i> Opportunities</a>
+      <a href="{% url 'groups' %}"><i class="bi bi-collection"></i> Groups</a>
+      <a href="{% url 'courses' %}"><i class="bi bi-mortarboard"></i> Course Companion</a>
+    </div>
+
+    {% comment %}Quick Actions: shortcuts to meeting people and asking for help. "Ask a Question" opens the
+       Campus Pulse composer on Home with Question picked (feed/_pulse_js.html).{% endcomment %}
+    <div class="right-card qa-card">
+      <div class="right-card-head">
+        <h6 class="rc-title"><i class="bi bi-lightning-charge-fill"></i> Quick Actions</h6>
+      </div>
+      <a href="{% url 'who_to_follow' %}?section=coursemates" class="qa-row">
+        <span class="qa-ic is-blue"><i class="bi bi-people-fill"></i></span>
+        <span class="qa-text"><b>Find Study Partners</b><small>Connect with classmates</small></span>
+        <i class="bi bi-chevron-right qa-go"></i>
+      </a>
+      <a href="{% url 'home' %}?pulse=question" class="qa-row js-pulse-compose" data-pulse-kind="question">
+        <span class="qa-ic is-orange"><i class="bi bi-question-lg"></i></span>
+        <span class="qa-text"><b>Ask a Question</b><small>Get help from the community</small></span>
+        <i class="bi bi-chevron-right qa-go"></i>
+      </a>
+      <a href="{% url 'groups' %}" class="qa-row">
+        <span class="qa-ic is-green"><i class="bi bi-person-plus-fill"></i></span>
+        <span class="qa-text"><b>Join a Group</b><small>Find your tribe or interest group</small></span>
+        <i class="bi bi-chevron-right qa-go"></i>
+      </a>
+      <a href="{% url 'communities' %}" class="qa-row">
+        <span class="qa-ic is-purple"><i class="bi bi-compass-fill"></i></span>
+        <span class="qa-text"><b>Explore Communities</b><small>Discover people and ideas</small></span>
+        <i class="bi bi-chevron-right qa-go"></i>
+      </a>
+    </div>
+
+    <div class="right-card">
+      <div class="right-card-head">
+        <h6 class="rc-title"><i class="bi bi-people-fill"></i> <a href="{% url 'who_to_follow' %}" class="right-card-title-link">People You May Know</a></h6>
+        <a href="{% url 'who_to_follow' %}" class="right-card-see-all">See All</a>
+      </div>
+      {% for s in suggestions %}
+        <div class="wtf-row js-rec-card" data-rec-type="user" data-rec-id="{{ s.user.id }}">
+          <a href="{% url 'user_profile' s.user.username %}" class="wtf-avatar" style="{% if s.profile_photo %}background-image:url({{ s.profile_photo.url }}){% endif %}"></a>
+          <a href="{% url 'user_profile' s.user.username %}" class="wtf-info">
+            <div class="wtf-name">{{ s.user.get_full_name|default:s.user.username }}</div>
+            <div class="wtf-handle">{% if s.pymk_reason %}{{ s.pymk_reason }}{% else %}{{ s.department.name }} &middot; {{ s.level.name }}{% endif %}</div>
+          </a>
+          <button type="button" class="btn btn-sm btn-primary follow-btn" data-user-id="{{ s.user.id }}" data-status="none">Follow</button>
+          {% include 'recommendations/_dismiss.html' with user_id=s.user.id %}
+        </div>
+      {% empty %}
+        <div class="empty-state-small">No suggestions yet. People in your faculty and department will show up here.</div>
+      {% endfor %}
+      {% if suggestions_more %}
+        <a href="{% url 'who_to_follow' %}" class="show-more-link">Show More</a>
+      {% endif %}
+    </div>
+
+    {# The closing brand card at the foot of the right sidebar. #}
+    <div class="right-card uc-tagline-card" aria-label="UniConnect">
+      <i class="bi bi-mortarboard-fill uc-tagline-logo" aria-hidden="true"></i>
+      <b>Build your future, together.</b>
+      <span>Connect. Learn. Grow.</span>
+      <svg class="uc-tagline-art" viewBox="0 0 120 70" aria-hidden="true" focusable="false">
+        <path d="M0 70V52h10V40h12v12h8V30l10-8 10 8v22h8V44h14v26z" />
+        <path class="b" d="M70 70V36h12v-8h10v8h12v34z" />
+        <path class="c" d="M104 70V48h16v22z" />
+      </svg>
+    </div>
+  </aside>
+
+  <!-- ============ RIGHT ICON RAIL ============
+       Shown instead of the right sidebar where the page needs the room
+       (Messages on large screens, static/css/chat.css): search, then
+       Events and Top Stories, then the shortcuts. Hidden everywhere else. -->
+  <aside class="app-right-rail" aria-label="Shortcuts">
+    <div class="sidebar-main-card rail-card">
+      <a href="{% url 'search' %}" title="Search" class="app-nav-link"><i class="bi bi-search"></i> <span>Search</span></a>
+    </div>
+    <div class="sidebar-main-card rail-card">
+      <a href="{% url 'events' %}" title="Events" class="app-nav-link"><i class="bi bi-calendar-event"></i> <span>Events</span></a>
+      <a href="{% url 'top_stories' %}" title="Top stories" class="app-nav-link"><i class="bi bi-fire"></i> <span>Top stories</span></a>
+    </div>
+    <div class="sidebar-main-card rail-card">
+      <a href="{% url 'marketplace' %}" title="Marketplace" class="app-nav-link"><span class="nav-bell"><i class="bi bi-shop"></i>{% if cart_count %}<span class="nav-notif-badge" aria-label="{{ cart_count }} in your cart">{{ cart_count }}</span>{% endif %}</span> <span>Marketplace</span></a>
+      <a href="{% url 'bookshop' %}" title="Bookshop" class="app-nav-link"><i class="bi bi-book"></i> <span>Bookshop</span></a>
+      <a href="{% url 'opportunities' %}" title="Opportunities" class="app-nav-link"><i class="bi bi-briefcase"></i> <span>Opportunities</span></a>
+      <a href="{% url 'groups' %}" title="Groups" class="app-nav-link"><i class="bi bi-collection"></i> <span>Groups</span></a>
+      <a href="{% url 'courses' %}" title="Course Companion" class="app-nav-link"><i class="bi bi-mortarboard"></i> <span>Course Companion</span></a>
+    </div>
+  </aside>
+
+  <!-- ============ SMALL-SCREEN BOTTOM BAR ============
+       On every page (Profile included): Home, Explore, Messages,
+       Notifications, Profile — and a "+" that opens the shortcuts
+       (Top Stories, Marketplace, Bookshop, Events, Groups). nav.js keeps
+       the highlight and badges right when pages switch in place. -->
+  {% with un=request.resolver_match.url_name|default:'' %}
+  <nav class="app-mobile-bottomnav" aria-label="Main">
+    <a href="{% url 'home' %}" class="app-mobile-bottomnav-link {% if un == 'home' %}active{% endif %}" title="Home" aria-label="Home"><i class="bi bi-house-door{% if un == 'home' %}-fill{% endif %}"></i></a>
+    <a href="{% url 'explore' %}" class="app-mobile-bottomnav-link {% if un == 'explore' or request.path|slice:':13' == '/communities/' %}active{% endif %}" title="Explore: communities, groups, events" aria-label="Explore"><i class="bi bi-compass{% if un == 'explore' %}-fill{% endif %}"></i></a>
+    <a href="{% url 'messages' %}" class="app-mobile-bottomnav-link {% if un == 'messages' or 'chat_' in un %}active{% endif %}" title="Messages" aria-label="Messages">
+      <span class="nav-bell"><i class="bi bi-chat-dots{% if un == 'messages' or 'chat_' in un %}-fill{% endif %}"></i><span class="nav-notif-badge js-chat-sidebar-badge" {% if not chat_unread %}hidden{% endif %} aria-label="{{ chat_unread }} unread chats">{% if chat_unread > 99 %}99+{% else %}{{ chat_unread }}{% endif %}</span></span>
+    </a>
+    <a href="{% url 'notifications' %}" class="app-mobile-bottomnav-link {% if un == 'notifications' %}active{% endif %}" title="Notifications" aria-label="Notifications">
+      <span class="nav-bell"><i class="bi bi-bell{% if un == 'notifications' %}-fill{% endif %}"></i><span class="nav-notif-badge js-notif-badge" {% if not notifications_unread %}hidden{% endif %} aria-label="{{ notifications_unread }} unread notifications">{{ notifications_badge }}</span></span>
+    </a>
+    <a href="{% url 'profile' %}" class="app-mobile-bottomnav-link {% if un == 'profile' %}active{% endif %}" title="Profile" aria-label="Profile"><i class="bi bi-person{% if un == 'profile' %}-fill{% endif %}"></i></a>
+    <div class="app-mobile-bottomnav-more">
+      <button type="button" class="app-mobile-bottomnav-link app-mobile-bottomnav-more-btn {% if un == 'top_stories' or un == 'marketplace' or un == 'listing_detail' or 'bookshop' in un or un == 'events' or 'opportunit' in un or un == 'groups' or 'course' in un %}active{% endif %}" id="bottomNavMoreBtn" aria-label="More: Top Stories, Marketplace, Bookshop, Events, Opportunities, Groups, Course Companion" aria-haspopup="menu" aria-controls="bottomNavMoreMenu"><i class="bi bi-plus-lg"></i>{% if cart_count %}<span class="nav-more-dot" aria-hidden="true"></span>{% endif %}</button>
+      <div class="app-mobile-bottomnav-more-menu" id="bottomNavMoreMenu" role="menu">
+        <a href="{% url 'top_stories' %}" role="menuitem" class="{% if un == 'top_stories' %}active{% endif %}"><i class="bi bi-fire"></i> Top Stories</a>
+        <a href="{% url 'marketplace' %}" role="menuitem" class="{% if un == 'marketplace' or un == 'listing_detail' %}active{% endif %}"><i class="bi bi-shop"></i> Marketplace{% if cart_count %}<span class="nav-cart-badge">{{ cart_count }}</span>{% endif %}</a>
+        <a href="{% url 'bookshop' %}" role="menuitem" class="{% if 'bookshop' in un %}active{% endif %}"><i class="bi bi-book"></i> Bookshop</a>
+        <a href="{% url 'events' %}" role="menuitem" class="{% if un == 'events' %}active{% endif %}"><i class="bi bi-calendar-event"></i> Events</a>
+        <a href="{% url 'opportunities' %}" role="menuitem" class="{% if 'opportunit' in un %}active{% endif %}"><i class="bi bi-briefcase"></i> Opportunities</a>
+        <a href="{% url 'groups' %}" role="menuitem" class="{% if un == 'groups' %}active{% endif %}"><i class="bi bi-collection"></i> Groups</a>
+        <a href="{% url 'courses' %}" role="menuitem" class="{% if 'course' in un %}active{% endif %}"><i class="bi bi-mortarboard"></i> Course Companion</a>
+      </div>
+    </div>
+  </nav>
+  {% endwith %}
+
+  <!-- ============ NOTIFICATIONS HOVER POPUP (desktop) ============
+       Shown beside the left sidebar while hovering its Notifications
+       link. app.js fills .js-notif-popup-body from
+       /notifications/?preview=1 (a preview: nothing is marked read). -->
+  <div class="notif-popup" id="notifPopup" role="tooltip" hidden>
+    <div class="notif-popup-body js-notif-popup-body">
+      <div class="notif-loading"><span class="spinner-border spinner-border-sm"></span></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

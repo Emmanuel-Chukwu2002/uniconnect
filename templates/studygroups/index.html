@@ -1,0 +1,65 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Groups — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% url 'group_create' as create_url %}
+{% comment %}Groups list (studygroups/views.py index). Styles: restyle.css ("Groups").{% endcomment %}
+<div class="st-top op-top">
+  <a href="{% url 'home' %}" class="st-back" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+  <div class="op-top-text">
+    <h1>Groups</h1>
+    <p>Classes, project teams, hostels — talk and work together</p>
+  </div>
+  <a href="{% url 'group_create' %}{% if kind %}?type={{ kind }}{% endif %}" class="st-btn op-post-btn"><i class="bi bi-plus-lg"></i> New group</a>
+</div>
+
+<form class="sr-box op-search" method="get" action="{% url 'groups' %}" role="search">
+  <button type="submit" class="sr-go" aria-label="Search" title="Search"><i class="bi bi-search"></i></button>
+  <input type="search" name="q" value="{{ q }}" placeholder="Search groups, e.g. COS 401 or Block C" aria-label="Search groups">
+  {% if tab != 'discover' %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
+  {% if kind %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+  {% if mine_only %}<input type="hidden" name="dept" value="1">{% endif %}
+  {% if q %}<a href="?tab={{ tab }}{% if kind %}&amp;type={{ kind }}{% endif %}" class="sr-clear" aria-label="Clear search"><i class="bi bi-x-circle-fill"></i></a>{% endif %}
+</form>
+
+<nav class="sr-tabs" aria-label="Group lists">
+  {% for key, label in tabs %}<a href="?tab={{ key }}" class="{% if key == tab %}is-on{% endif %}">{{ label }}{% if key == 'mine' %} <span class="bm-count">{{ my_count }}</span>{% endif %}</a>{% endfor %}
+</nav>
+
+<div class="sg-chips" role="list" aria-label="Group types">
+  <a role="listitem" href="?tab={{ tab }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if mine_only %}&amp;dept=1{% endif %}" class="sg-chip{% if not kind %} is-on{% endif %}"><i class="bi bi-grid"></i> All</a>
+  {% for value, label, icon, colour, help in types %}
+    <a role="listitem" href="?tab={{ tab }}&amp;type={{ value }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if mine_only %}&amp;dept=1{% endif %}" class="sg-chip{% if kind == value %} is-on{% endif %}" title="{{ help }}"><i class="bi {{ icon }}"></i> {{ label }}</a>
+  {% endfor %}
+</div>
+
+<form class="op-filters" method="get" action="{% url 'groups' %}">
+  <input type="hidden" name="tab" value="{{ tab }}">{% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}{% if kind %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+  <label class="op-check"><input type="checkbox" name="dept" value="1" class="st-switch" {% if mine_only %}checked{% endif %} onchange="this.form.requestSubmit()"> Only {{ student.department.name }}</label>
+</form>
+
+{% if recs %}{% include 'recommendations/_row.html' with recs=recs hint='Open groups for your courses, class and department' %}{% endif %}
+{% if groups is not None %}
+  {% if groups %}
+    {% include 'feed/_pc_sections.html' with card='studygroups/_pc_card.html' %}
+  {% else %}
+    <div class="sr-card sr-nothing">
+      <i class="bi bi-collection"></i>
+      <h2>No new groups to join</h2>
+      <p>You're in every {% if kind %}group of this type{% else %}group{% endif %} here. <a href="{% url 'group_create' %}{% if kind %}?type={{ kind }}{% endif %}">Start one</a> for your class, project team or hostel.</p>
+    </div>
+  {% endif %}
+{% else %}
+  {% if section %}
+    <div class="pc-crumb">
+      <a href="?{% if kind %}type={{ kind }}{% endif %}"><i class="bi bi-arrow-left"></i> All groups</a>
+      <span><b>{{ section.title }}</b> · {{ total }} group{{ total|pluralize }}</span>
+    </div>
+  {% endif %}
+  {% if q %}{% with empty_text='Be the first: <a href="'|add:create_url|add:'">start a group for it</a>.' %}{% include 'feed/_pc_grid.html' with card='studygroups/_pc_card.html' empty_icon='bi-collection' empty_title='No groups for “'|add:q|add:'”' %}{% endwith %}
+  {% elif tab == 'mine' %}{% with empty_text='Join one from <a href="?tab=discover">Discover</a>, or <a href="'|add:create_url|add:'">start your own</a>.' %}{% include 'feed/_pc_grid.html' with card='studygroups/_pc_card.html' empty_icon='bi-collection' empty_title="You're not in any group yet" %}{% endwith %}
+  {% else %}{% with empty_text='<a href="'|add:create_url|add:'">Start one</a> for your class, project team or hostel.' %}{% include 'feed/_pc_grid.html' with card='studygroups/_pc_card.html' empty_icon='bi-collection' empty_title='No groups here yet' %}{% endwith %}{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}{% include 'feed/_pc_act_js.html' %}{% endblock %}

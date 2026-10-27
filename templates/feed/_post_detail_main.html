@@ -1,0 +1,42 @@
+{% load post_extras %}{% comment %}
+  The opened post on its Post Details page. Everything is the same as the
+  feed card (_post_card.html) EXCEPT the name and the time, laid out like X:
+
+    header      avatar · name + badge on one line, @handle under it · menu
+    text, media, quoted post   (unchanged)
+    time line   "4:05 pm · 13 Oct 26" under the media  <- the time lives HERE
+    actions     the same action row as the feed (_post_actions.html)
+{% endcomment %}
+<div class="post-card post-detail" id="post-{{ post.id }}" data-post-id="{{ post.id }}" data-author-name="{{ post.author.get_full_name|default:post.author.username }}" data-author-url="{% url 'user_profile' post.author.username %}" data-author-photo="{% if post.author.student_profile.profile_photo %}{{ post.author.student_profile.profile_photo.url }}{% endif %}" data-created="{{ post.created_at|date:'c' }}" data-likes="{{ post.likes_count|default:0 }}" data-post-url="{% url 'post_detail' post.id %}">
+  {% if post.community_id and not hide_community %}
+    <a href="{% url 'community_detail' post.community_id %}" class="post-card-community-label"><i class="bi bi-people-fill"></i> {{ post.community.name }}</a>
+  {% endif %}
+  <div class="pd-author">
+    <a href="{% url 'user_profile' post.author.username %}" class="post-card-avatar" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}">
+      {% if not post.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </a>
+    <div class="pd-author-names">
+      <div class="pd-name-row">
+        <a href="{% url 'user_profile' post.author.username %}" class="post-card-name">{{ post.author.get_full_name|default:post.author.username }}</a>
+        {% if post.author.student_profile.is_verified %}<i class="bi bi-patch-check-fill post-card-badge" title="Verified student" aria-label="Verified"></i>{% endif %}
+      </div>
+      <a href="{% url 'user_profile' post.author.username %}" class="post-card-handle">@{{ post.author.username }}</a>
+    </div>
+    {% include 'feed/_post_menu.html' with on_post_detail=True %}
+  </div>
+
+  {% include 'feed/_post_labels.html' %}
+  {% if post.content %}<div class="post-card-text">{{ post.content|post_text }}</div>{% endif %}
+  {% post_poll post as pp %}{% if pp %}{% include 'feed/_post_poll.html' %}{% endif %}
+  {% include 'feed/_post_media.html' %}
+  {% if post.is_quote %}{% include 'feed/_quoted_post.html' with q=post.quote_of in_composer=False %}{% endif %}
+  {% if post.link_preview_id and not post.is_quote and not post.image and not post.video and not post.media_items.all %}{% include 'feed/_link_preview.html' %}{% endif %}
+
+  {# The time sits here, under the media — not in the header. #}
+  <div class="pd-meta">
+    <a href="{% url 'post_detail' post.id %}" class="post-card-time"><time class="js-local-time" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:'g:i' }} {{ post.created_at|date:'A'|lower }} &middot; {{ post.created_at|date:'j M y' }}</time></a>
+    {% if post.is_edited %}<span aria-hidden="true">&middot;</span><span class="post-card-edited">Edited</span>{% endif %}
+  </div>
+
+  {% include 'feed/_post_actions.html' %}
+</div>

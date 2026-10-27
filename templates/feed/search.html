@@ -1,0 +1,224 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if query %}{{ query }} — {% endif %}Search — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  Search (feed/search.py). Search box + tabs at the top; with no search yet,
+  recent searches (kept in this browser by the script below) and trending
+  hashtags. Post results use the feed's own post card. Styles: restyle.css
+  ("Search page").
+{% endcomment %}
+<div class="sr-top">
+  <a href="{% url 'home' %}" class="st-back" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+  <form class="sr-box" method="get" action="{% url 'search' %}" role="search">
+    <button type="submit" class="sr-go" aria-label="Search" title="Search"><i class="bi bi-search"></i></button>
+    <input type="search" name="q" value="{{ query }}" placeholder="Search UniConnect" aria-label="Search UniConnect" autocomplete="off" class="js-sr-input" data-query="{{ query }}"{% if not query %} autofocus{% endif %}>
+    {% if tab != 'top' %}<input type="hidden" name="type" value="{{ tab }}">{% endif %}
+    {% if query %}<a href="{% url 'search' %}" class="sr-clear" aria-label="Clear search"><i class="bi bi-x-circle-fill"></i></a>{% endif %}
+  </form>
+</div>
+
+{% if query %}
+  <nav class="sr-tabs" aria-label="Result types">
+    {% for key, label in tabs %}
+      <a href="?q={{ query|urlencode }}{% if key != 'top' %}&amp;type={{ key }}{% endif %}" class="{% if key == tab %}is-on{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+{% endif %}
+
+{% if not query %}
+  {# ---------- before searching ---------- #}
+  <section class="sr-card js-sr-recent" hidden>
+    <header class="sr-head"><h2>Recent</h2><button type="button" class="sr-link js-sr-clear-recent">Clear all</button></header>
+    <ul class="sr-recent js-sr-recent-list"></ul>
+  </section>
+  <section class="sr-card">
+    <header class="sr-head"><h2>Trending at your university</h2></header>
+    {% for tag, n in trending %}
+      <a href="{% url 'hashtag' tag %}" class="sr-trend">
+        <span class="sr-trend-rank">{{ forloop.counter }}</span>
+        <span class="sr-trend-text"><b>#{{ tag }}</b><small>{{ n }} post{{ n|pluralize }} in the last two weeks</small></span>
+        <i class="bi bi-chevron-right st-chev"></i>
+      </a>
+    {% empty %}
+      <p class="sr-empty-line">No hashtags trending yet. Add #tags to your posts and they'll show up here.</p>
+    {% endfor %}
+  </section>
+  <section class="sr-card">
+    <header class="sr-head"><h2>Search for</h2></header>
+    <div class="sr-chips">
+      <a href="{% url 'who_to_follow' %}"><i class="bi bi-people"></i> People</a>
+      <a href="{% url 'communities' %}"><i class="bi bi-people"></i> Communities</a>
+      <a href="{% url 'groups' %}"><i class="bi bi-collection"></i> Groups</a>
+      <a href="{% url 'events' %}"><i class="bi bi-calendar-event"></i> Events</a>
+      <a href="{% url 'opportunities' %}"><i class="bi bi-briefcase"></i> Opportunities</a>
+      <a href="{% url 'marketplace' %}"><i class="bi bi-shop"></i> Marketplace</a>
+      <a href="{% url 'bookshop' %}"><i class="bi bi-book"></i> Books</a>
+    </div>
+  </section>
+
+{% elif nothing %}
+  <div class="sr-card sr-nothing">
+    <i class="bi bi-search"></i>
+    <h2>No results for “{{ query }}”</h2>
+    <p>{% if tab != 'top' %}Try <a href="?q={{ query|urlencode }}">all results</a>, or{% else %}Try{% endif %} fewer or different words.</p>
+  </div>
+
+{% else %}
+  {# ---------- people ---------- #}
+  {% if results.people %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>People</h2>{% if more.people %}<a href="?q={{ query|urlencode }}&amp;type=people" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for s in results.people %}
+        <div class="sr-person">
+          <a href="{% url 'user_profile' s.user.username %}" class="sr-avatar" style="{% if s.profile_photo %}background-image:url({{ s.profile_photo.url }}){% endif %}">{% if not s.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+          <a href="{% url 'user_profile' s.user.username %}" class="sr-person-text">
+            <b>{{ s.user.get_full_name|default:s.user.username }}{% if s.is_verified %} <i class="bi bi-patch-check-fill st-verified"></i>{% endif %}</b>
+            <small>@{{ s.user.username }} · {{ s.department.name }} · {{ s.level.name }}</small>
+          </a>
+          {% if s.user_id != request.user.id %}
+            {% if s.user_id in following_ids %}
+              <button type="button" class="btn btn-sm btn-outline-secondary follow-btn" data-user-id="{{ s.user_id }}" data-status="accepted">Following</button>
+            {% elif s.user_id in pending_ids %}
+              <button type="button" class="btn btn-sm btn-outline-secondary follow-btn follow-btn-pending" data-user-id="{{ s.user_id }}" data-status="pending">Requested</button>
+            {% else %}
+              <button type="button" class="btn btn-sm btn-primary follow-btn" data-user-id="{{ s.user_id }}" data-status="none">Follow</button>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- communities ---------- #}
+  {% if results.communities %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Communities</h2>{% if more.communities %}<a href="?q={{ query|urlencode }}&amp;type=communities" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for c in results.communities %}
+        <a href="{{ c.get_absolute_url }}" class="sr-item">
+          <span class="sr-thumb" style="background-image:url({% if c.banner %}{{ c.banner.url }}{% else %}{{ c.topic_photo_url }}{% endif %})"></span>
+          <span class="sr-item-text"><b>{{ c.name }}</b><small>{{ c.get_topic_display }} · {% if c.is_restricted %}Restricted{% else %}Open{% endif %} · {{ c.university.short_name }}</small><em>{{ c.description|truncatechars:90 }}</em></span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- groups ---------- #}
+  {% if results.groups %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Groups</h2>{% if more.groups %}<a href="?q={{ query|urlencode }}&amp;type=groups" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for g in results.groups %}{% with info=g.type_info %}
+        <a href="{{ g.get_absolute_url }}" class="sr-item">
+          <span class="sg-tile is-{{ info.colour }}"><i class="bi {{ info.icon }}"></i></span>
+          <span class="sr-item-text"><b>{{ g.title }}</b><small>{{ info.label }} group · {{ g.get_privacy_display }} · {{ g.n_members }} member{{ g.n_members|pluralize }}</small>{% if g.description %}<em>{{ g.description|truncatechars:90 }}</em>{% endif %}</span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endwith %}{% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- posts ---------- #}
+  {% if results.posts %}
+    {% if tab == 'top' %}<header class="sr-head is-bare"><h2>Posts</h2>{% if more.posts %}<a href="?q={{ query|urlencode }}&amp;type=posts" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+    <div class="sr-posts">
+      {% for post in results.posts %}{% include 'feed/_post_card.html' %}{% endfor %}
+    </div>
+  {% endif %}
+
+  {# ---------- events ---------- #}
+  {% if results.events %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Events</h2>{% if more.events %}<a href="?q={{ query|urlencode }}&amp;type=events" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for e in results.events %}
+        <a href="{% url 'events' %}" class="sr-item">
+          <span class="sr-date"><b>{{ e.date|date:"d" }}</b><small>{{ e.date|date:"M" }}</small></span>
+          <span class="sr-item-text"><b>{{ e.title }}</b><small><i class="bi bi-geo-alt"></i> {{ e.location }}{% if e.time %} · {{ e.time|time:"g:i A" }}{% endif %}</small>{% if e.description %}<em>{{ e.description|truncatechars:90 }}</em>{% endif %}</span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- opportunities ---------- #}
+  {% if results.opportunities %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Opportunities</h2>{% if more.opportunities %}<a href="?q={{ query|urlencode }}&amp;type=opportunities" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for opp in results.opportunities %}
+        <a href="{{ opp.get_absolute_url }}" class="sr-item">
+          <span class="op-ico is-{{ opp.kind }}"><i class="bi {{ opp.icon }}"></i></span>
+          <span class="sr-item-text"><b>{{ opp.title }}</b><small>{{ opp.organization }} · {{ opp.get_kind_display }}{% if opp.deadline %} · Apply by {{ opp.deadline|date:"j M" }}{% endif %}</small></span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- marketplace ---------- #}
+  {% if results.market %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Marketplace</h2>{% if more.market %}<a href="?q={{ query|urlencode }}&amp;type=market" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for l in results.market %}
+        <a href="{% url 'listing_detail' l.pk %}" class="sr-item">
+          <span class="sr-thumb is-square"{% if l.cover_image %} style="background-image:url({{ l.cover_image.url }})"{% endif %}>{% if not l.cover_image %}<i class="bi {{ l.category_icon }}"></i>{% endif %}</span>
+          <span class="sr-item-text"><b>{{ l.title }}</b><small>₦{{ l.price|floatformat:"-2g" }} · {{ l.get_condition_display }}{% if l.location %} · {{ l.location }}{% endif %}</small></span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# ---------- books ---------- #}
+  {% if results.books %}
+    <section class="sr-card">
+      {% if tab == 'top' %}<header class="sr-head"><h2>Books</h2>{% if more.books %}<a href="?q={{ query|urlencode }}&amp;type=books" class="sr-link">See all</a>{% endif %}</header>{% endif %}
+      {% for b in results.books %}
+        <a href="{% url 'bookshop_detail' b.pk %}" class="sr-item">
+          <span class="sr-thumb is-book"{% if b.cover %} style="background-image:url({{ b.cover.url }})"{% endif %}>{% if not b.cover %}<i class="bi bi-book"></i>{% endif %}</span>
+          <span class="sr-item-text"><b>{{ b.title }}</b><small>{{ b.author }}{% if b.course_code %} · {{ b.course_code }}{% endif %} · ₦{{ b.price|floatformat:"-2g" }}</small></span>
+          <i class="bi bi-chevron-right st-chev"></i>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Recent searches: kept in this browser only (last 8).
+  UC.onPage(function (doc, signal) {
+    var KEY = 'uc-recent-searches';
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, 8))); } catch (e) {} }
+    var input = document.querySelector('.js-sr-input');
+    var current = input ? (input.getAttribute('data-query') || '') : '';
+    if (current) { save([current].concat(load().filter(function (x) { return x.toLowerCase() !== current.toLowerCase(); }))); }
+
+    var box = document.querySelector('.js-sr-recent');
+    var list = document.querySelector('.js-sr-recent-list');
+    if (!box || !list) { return; }
+    function draw() {
+      var items = load();
+      box.hidden = !items.length;
+      list.innerHTML = '';
+      items.forEach(function (text) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.href = '?q=' + encodeURIComponent(text);
+        a.innerHTML = '<i class="bi bi-clock-history"></i><span></span>';
+        a.querySelector('span').textContent = text;
+        var x = document.createElement('button');
+        x.type = 'button'; x.className = 'sr-x'; x.setAttribute('aria-label', 'Remove ' + text);
+        x.innerHTML = '<i class="bi bi-x-lg"></i>';
+        x.addEventListener('click', function () { save(load().filter(function (t) { return t !== text; })); draw(); });
+        li.appendChild(a); li.appendChild(x); list.appendChild(li);
+      });
+    }
+    draw();
+    var clear = document.querySelector('.js-sr-clear-recent');
+    if (clear) { clear.addEventListener('click', function () { save([]); draw(); }, { signal: signal }); }
+  });
+</script>
+{% endblock %}

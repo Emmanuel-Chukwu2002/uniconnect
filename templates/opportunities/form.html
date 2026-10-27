@@ -1,0 +1,37 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if editing %}Edit opportunity{% else %}Post an opportunity{% endif %} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Post / edit an opportunity (opportunities/views.py create, edit).{% endcomment %}
+<div class="st-top">
+  <a href="{% if editing %}{{ opp.get_absolute_url }}{% else %}{% url 'opportunities' %}{% endif %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <h1>{% if editing %}Edit opportunity{% else %}Post an opportunity{% endif %}</h1>
+</div>
+
+<form method="post" class="sr-card op-form" novalidate>
+  {% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="op-form-error"><i class="bi bi-exclamation-circle-fill"></i> {{ e }}</div>{% endfor %}
+  <div class="st-grid">
+    {% for field in form %}
+      {% if field.name == 'is_remote' %}
+        <label class="st-row op-remote is-wide">
+          <span class="st-row-text"><b>{{ field.label }}</b><small>{{ field.help_text }}</small></span>
+          {{ field }}
+        </label>
+      {% else %}
+        <label class="st-field{% if field.name in 'title description eligibility' %} is-wide{% endif %}">
+          <span>{{ field.label }}{% if field.field.required %} <em class="op-req">*</em>{% endif %}</span>
+          {{ field }}
+          {% for e in field.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+          {% if field.help_text and not field.errors %}<small class="st-hint">{{ field.help_text }}</small>{% endif %}
+        </label>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <p class="op-note">Add an application link, an email, or both.</p>
+  <div class="st-actions">
+    <a href="{% if editing %}{{ opp.get_absolute_url }}{% else %}{% url 'opportunities' %}{% endif %}" class="st-btn-ghost">Cancel</a>
+    <button type="submit" class="st-btn">{% if editing %}Save changes{% else %}Post opportunity{% endif %}</button>
+  </div>
+</form>
+{% endblock %}

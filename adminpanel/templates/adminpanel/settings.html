@@ -1,0 +1,44 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Settings</h1><p>Admin roles and what each can do. You are <b>{{ admin.role_label }}</b>{% if admin.university %} for {{ admin.university.name }}{% endif %}.</p></div></div>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Admin team</h2></div>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Account</th><th>Role</th><th>University</th><th>Assigned by</th><th></th></tr></thead><tbody>
+  {% for u in superusers %}<tr><td>@{{ u.username }}</td><td>Super Admin <span class="mut">(Django superuser)</span></td><td class="mut">All</td><td class="mut">—</td><td></td></tr>{% endfor %}
+  {% for r in team %}
+    <tr><td><a href="{% url 'staff_user' r.user_id %}">@{{ r.user.username }}</a></td><td>{{ r.get_role_display }}</td><td>{{ r.university.short_name|default:"All" }}</td><td class="mut">@{{ r.assigned_by.username|default:"—" }}</td>
+      <td class="ad-actions">{% if not r.user.last_login and not r.user.has_usable_password %}<span class="pill amber">Invite pending</span>
+        {% if 'assign_roles' in admin.perms %}<form method="post" class="ad-inline">{% csrf_token %}<input type="hidden" name="what" value="resend"><input type="hidden" name="role_id" value="{{ r.pk }}"><button class="ad-btn sm" type="submit">Resend invite</button></form>{% endif %}{% endif %}
+      {% if 'assign_roles' in admin.perms and r.user_id != admin.user.pk %}{% if admin.is_super or r.role == 'moderator' or r.role == 'support' %}<form method="post" class="ad-inline">{% csrf_token %}<input type="hidden" name="what" value="remove"><input type="hidden" name="role_id" value="{{ r.pk }}"><button class="ad-btn sm danger" type="submit">Remove role</button></form>{% endif %}{% endif %}</td></tr>
+  {% empty %}{% if not superusers %}<tr><td colspan="5" class="ad-empty">No roles assigned yet.</td></tr>{% endif %}{% endfor %}
+  </tbody></table></div>
+  {% if 'assign_roles' in admin.perms %}
+  <h3 class="ad-subhead">Give an existing account a role</h3>
+  <p class="ad-subnote">For a student who will also be an admin — one sign-in for both.</p>
+  <form method="post" class="ad-toolbar" style="border-bottom:0;padding-top:4px">{% csrf_token %}<input type="hidden" name="what" value="assign">
+    <input class="ad-input" name="user" required placeholder="Username or email" aria-label="Account" style="flex:1 1 200px">
+    <select class="ad-select" name="role" aria-label="Role">{% for v, l in assignable %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+    {% if universities %}<select class="ad-select" name="university" aria-label="University"><option value="">All universities</option>{% for u in universities %}<option value="{{ u.pk }}">{{ u.short_name }}</option>{% endfor %}</select>{% endif %}
+    <button class="ad-btn primary" type="submit"><i class="bi bi-person-check"></i> Assign role</button>
+  </form>
+  <h3 class="ad-subhead">Add a staff member who isn't a student</h3>
+  <p class="ad-subnote">Creates an admin-only account and emails them a link to choose their own password. They sign in with their email and go straight to this dashboard.</p>
+  <form method="post" class="ad-toolbar" style="border-bottom:0;padding-top:4px">{% csrf_token %}<input type="hidden" name="what" value="create">
+    <input class="ad-input" name="first_name" required placeholder="First name" aria-label="First name" style="flex:1 1 130px">
+    <input class="ad-input" name="last_name" placeholder="Last name" aria-label="Last name" style="flex:1 1 130px">
+    <input class="ad-input" name="email" type="email" required placeholder="Work email" aria-label="Email" style="flex:2 1 200px">
+    <select class="ad-select" name="role" aria-label="Role">{% for v, l in assignable %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+    {% if universities %}<select class="ad-select" name="university" aria-label="University"><option value="">All universities</option>{% for u in universities %}<option value="{{ u.pk }}">{{ u.short_name }}</option>{% endfor %}</select>{% endif %}
+    <button class="ad-btn primary" type="submit"><i class="bi bi-envelope-plus"></i> Create &amp; invite</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Permissions by role</h2></div>
+  <div class="ad-table-wrap"><table class="ad-table ad-matrix"><thead><tr><th>Permission</th>{% for v, l in roles %}<th>{{ l }}</th>{% endfor %}</tr></thead><tbody>
+  {% for label, row in matrix %}<tr><td>{{ label }}</td>{% for ok in row %}<td>{% if ok %}<i class="bi bi-check-lg" aria-label="Yes"></i>{% else %}<i class="bi bi-dash" aria-label="No"></i>{% endif %}</td>{% endfor %}</tr>{% endfor %}
+  </tbody></table></div>
+  <p class="ad-panel-body mut" style="margin:0">University Admins, and Moderators or Support Staff given a university, only see that university's students and content. Every action is checked on the server and recorded in Admin Logs.</p>
+</section>
+{% endblock %}

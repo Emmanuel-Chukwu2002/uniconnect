@@ -1,0 +1,40 @@
+{% comment %}Panels opened from the composer toolbar (_compose_tools.html, static/js/compose-tools.js).{% endcomment %}
+<div class="cx-panel js-cx-schedule" hidden>
+  <div class="cx-head"><i class="bi bi-clock-history"></i><b>Schedule</b><button type="button" class="cx-close js-cx-schedule-clear" aria-label="Don't schedule"><i class="bi bi-x-lg"></i></button></div>
+  <label class="cx-field"><span>Post on</span><input type="datetime-local" name="schedule_at" class="js-cx-when" step="60"></label>
+  <p class="cx-note js-cx-when-text">It'll go out at this time. You can change or cancel it in <a href="{% url 'scheduled_posts' %}">Scheduled posts</a>.</p>
+</div>
+<div class="cx-panel js-cx-location" hidden>
+  <div class="cx-head"><i class="bi bi-geo-alt-fill"></i><b>Location</b><button type="button" class="cx-close js-cx-location-clear" aria-label="Remove location"><i class="bi bi-x-lg"></i></button></div>
+  <input type="text" name="location" class="cx-input js-cx-place" maxlength="80" placeholder="Where are you? e.g. Main Library" autocomplete="off">
+  <div class="cx-places js-cx-places"></div>
+</div>
+{# A thread: the + button adds a box per post after this one (feed/threads.py). #}
+{% if adding_to_thread %}<input type="hidden" name="thread" value="{{ adding_to_thread.id }}">{% endif %}
+<div class="cx-thread js-cx-thread"></div>
+<template class="js-cx-thread-tpl">
+  <div class="cx-thread-part">
+    <span class="cx-thread-dot" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">{% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+    <div class="cx-thread-body">
+      <textarea name="thread_part" class="cx-thread-text js-cx-thread-text" maxlength="500" rows="2" placeholder="Add another post"></textarea>
+      {# This post's own photos (up to 4) or video; named thread_media_<n> when sent (compose-tools.js) #}
+      <div class="cx-thread-previews js-cx-thread-previews" hidden></div>
+      <label class="cx-thread-photo" title="Add photos or a video to this post" aria-label="Add photos or a video to this post">
+        <i class="bi bi-image"></i><input type="file" class="js-cx-thread-file" accept="image/*,video/mp4,video/webm,video/quicktime" multiple hidden>
+      </label>
+    </div>
+    <button type="button" class="cx-thread-remove js-cx-thread-remove" aria-label="Remove this post"><i class="bi bi-x-lg"></i></button>
+  </div>
+</template>
+<input type="hidden" name="draft_id" value="{% if draft %}{{ draft.id }}{% endif %}" class="js-draft-id">
+{% if draft_data %}{{ draft_data|json_script:"composeDraft" }}{% endif %}
+{# Closing with something typed (static/js/compose-tools.js): save it as a draft? #}
+<div class="cx-leave js-cx-leave" hidden role="alertdialog" aria-labelledby="cxLeaveTitle">
+  <div class="cx-leave-box">
+    <h3 id="cxLeaveTitle">Save this post?</h3>
+    <p>Keep it in your drafts and finish it later.</p>
+    <button type="button" class="cx-leave-btn is-main js-cx-save-draft"><i class="bi bi-file-earmark-text"></i> <span class="js-cx-save-label">Save draft</span></button>
+    <button type="button" class="cx-leave-btn is-danger js-cx-discard">Discard</button>
+    <button type="button" class="cx-leave-btn js-cx-keep">Keep editing</button>
+  </div>
+</div>

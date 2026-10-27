@@ -1,0 +1,26 @@
+{% load chat_tags %}
+<section class="wa-community">
+  <a href="{% url 'chat_community' card.community.id %}" class="wa-community-head" data-wa-nav>
+    <span class="wa-community-avatar"{% if card.community.avatar %} style="background-image:url('{{ card.community.avatar.url }}')"{% endif %}>{% if not card.community.avatar %}<i class="bi bi-people-fill"></i>{% endif %}</span>
+    <span class="wa-community-name">{{ card.community.name }}</span>
+  </a>
+  {% for g in card.groups|slice:":3" %}
+    {% if g.joined %}
+    <a href="{% url 'chat_conversation' g.conv.id %}" class="wa-community-group" data-wa-nav>
+    {% else %}
+    <button type="button" class="wa-community-group js-wa-join-group" data-url="{% url 'chat_community_join' card.community.id g.conv.id %}">
+    {% endif %}
+      <span class="wa-group-icon{% if g.conv.is_announcement %} is-announcement{% endif %}"><i class="bi {% if g.conv.is_announcement %}bi-megaphone-fill{% else %}bi-people-fill{% endif %}"></i></span>
+      <span class="wa-row-body">
+        <span class="wa-row-top">
+          <span class="wa-row-name">{{ g.conv.name }}</span>
+          {% if g.last %}<time class="wa-row-time js-wa-time" data-ts="{{ g.last.created_at|date:'c' }}" data-format="list">{{ g.last.created_at|wa_time }}</time>{% endif %}
+        </span>
+        <span class="wa-row-bottom">
+          <span class="wa-row-preview">{% if not g.joined %}<span class="wa-join-hint">Tap to join</span>{% elif g.preview %}{% if g.preview.prefix %}~ {{ g.preview.prefix }}{% endif %}{{ g.preview.text }}{% endif %}</span>
+        </span>
+      </span>
+    {% if g.joined %}</a>{% else %}</button>{% endif %}
+  {% endfor %}
+  <a href="{% url 'chat_community' card.community.id %}" class="wa-community-viewall" data-wa-nav><i class="bi bi-chevron-right"></i> View all</a>
+</section>

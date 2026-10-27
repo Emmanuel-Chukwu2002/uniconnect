@@ -1,0 +1,20 @@
+{% comment %}
+  Right sidebar "Top stories" box (data: feed/top_stories.py via the
+  sidebar_widgets context processor). The first four stories show;
+  "Show more" opens the full Top Stories page.
+{% endcomment %}
+<div class="right-card top-stories-card js-top-stories">
+  <div class="right-card-head"><h6>Top stories</h6></div>
+  {% for s in top_stories|slice:":4" %}
+    {% include 'feed/_top_stories_item.html' %}
+  {% empty %}
+    <div class="empty-state-small">No top stories yet.</div>
+  {% endfor %}
+  {% if top_stories %}
+    <div class="d-flex justify-content-end">
+      <a href="{% url 'top_stories' %}" class="top-stories-more text-decoration-none">
+        <span>Show more</span> <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+  {% endif %}
+</div>

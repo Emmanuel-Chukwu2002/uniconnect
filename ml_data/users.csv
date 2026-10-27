@@ -1,0 +1,303 @@
+user_id,faculty,department,level,group,is_simulated
+7,Faculty of Science,Computer Science,400 Level,tech,0
+8,Faculty of Science,Computer Science,400 Level,tech,0
+9,Faculty of Social Sciences,Political Science,100 Level,social,1
+10,Faculty of Social Sciences,Political Science,500 Level,social,1
+11,Faculty of Arts,History,300 Level,arts,1
+12,Faculty of Engineering,Civil Engineering,200 Level,engineering,1
+13,Faculty of Science,Computer Science,500 Level,tech,1
+14,Faculty of Science,Physics,300 Level,science,1
+15,Faculty of Social Sciences,Economics,500 Level,social,1
+16,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+17,Faculty of Social Sciences,Political Science,500 Level,social,1
+18,Faculty of Science,Physics,100 Level,science,1
+19,Faculty of Social Sciences,Political Science,300 Level,social,1
+20,Faculty of Arts,English,400 Level,arts,1
+21,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+22,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+23,Faculty of Engineering,Mechanical Engineering,400 Level,engineering,1
+24,Faculty of Science,Computer Science,200 Level,tech,1
+25,Faculty of Arts,English,200 Level,arts,1
+26,Faculty of Arts,History,100 Level,arts,1
+27,Faculty of Social Sciences,Economics,300 Level,social,1
+28,Faculty of Social Sciences,Economics,400 Level,social,1
+29,Faculty of Engineering,Civil Engineering,300 Level,engineering,1
+30,Faculty of Arts,History,400 Level,arts,1
+31,Faculty of Engineering,Civil Engineering,200 Level,engineering,1
+32,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+33,Faculty of Social Sciences,Political Science,200 Level,social,1
+34,Faculty of Social Sciences,Economics,200 Level,social,1
+35,Faculty of Science,Mathematics,200 Level,science,1
+36,Faculty of Engineering,Electrical Engineering,200 Level,engineering,1
+37,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+38,Faculty of Arts,History,400 Level,arts,1
+39,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1
+40,Faculty of Science,Mathematics,400 Level,science,1
+41,Faculty of Law,Law,500 Level,law,1
+42,Faculty of Science,Physics,500 Level,science,1
+43,Faculty of Arts,English,400 Level,arts,1
+44,Faculty of Science,Mathematics,100 Level,science,1
+45,Faculty of Science,Physics,400 Level,science,1
+46,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+47,Faculty of Engineering,Mechanical Engineering,400 Level,engineering,1
+48,Faculty of Science,Mathematics,300 Level,science,1
+49,Faculty of Social Sciences,Political Science,400 Level,social,1
+50,Faculty of Arts,English,300 Level,arts,1
+51,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1
+52,Faculty of Science,Physics,300 Level,science,1
+53,Faculty of Science,Physics,300 Level,science,1
+54,Faculty of Science,Computer Science,200 Level,tech,1
+55,Faculty of Science,Mathematics,100 Level,science,1
+56,Faculty of Arts,English,400 Level,arts,1
+57,Faculty of Social Sciences,Political Science,500 Level,social,1
+58,Faculty of Science,Mathematics,100 Level,science,1
+59,Faculty of Law,Law,500 Level,law,1
+60,Faculty of Science,Mathematics,400 Level,science,1
+61,Faculty of Social Sciences,Economics,400 Level,social,1
+62,Faculty of Arts,English,400 Level,arts,1
+63,Faculty of Law,Law,400 Level,law,1
+64,Faculty of Social Sciences,Political Science,200 Level,social,1
+65,Faculty of Law,Law,100 Level,law,1
+66,Faculty of Social Sciences,Political Science,100 Level,social,1
+67,Faculty of Science,Computer Science,500 Level,tech,1
+68,Faculty of Arts,History,500 Level,arts,1
+69,Faculty of Social Sciences,Political Science,400 Level,social,1
+70,Faculty of Social Sciences,Political Science,200 Level,social,1
+71,Faculty of Science,Computer Science,300 Level,tech,1
+72,Faculty of Arts,History,100 Level,arts,1
+73,Faculty of Social Sciences,Political Science,300 Level,social,1
+74,Faculty of Arts,English,400 Level,arts,1
+75,Faculty of Law,Law,100 Level,law,1
+76,Faculty of Social Sciences,Political Science,300 Level,social,1
+77,Faculty of Science,Physics,200 Level,science,1
+78,Faculty of Social Sciences,Economics,100 Level,social,1
+79,Faculty of Science,Mathematics,500 Level,science,1
+80,Faculty of Science,Mathematics,100 Level,science,1
+81,Faculty of Science,Computer Science,500 Level,tech,1
+82,Faculty of Science,Computer Science,100 Level,tech,1
+83,Faculty of Arts,English,500 Level,arts,1
+84,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+85,Faculty of Social Sciences,Political Science,100 Level,social,1
+86,Faculty of Social Sciences,Political Science,400 Level,social,1
+87,Faculty of Science,Physics,100 Level,science,1
+88,Faculty of Social Sciences,Political Science,300 Level,social,1
+89,Faculty of Arts,History,200 Level,arts,1
+90,Faculty of Social Sciences,Political Science,100 Level,social,1
+91,Faculty of Science,Computer Science,200 Level,tech,1
+92,Faculty of Science,Mathematics,400 Level,science,1
+93,Faculty of Science,Physics,500 Level,science,1
+94,Faculty of Engineering,Mechanical Engineering,200 Level,engineering,1
+95,Faculty of Arts,History,100 Level,arts,1
+96,Faculty of Social Sciences,Economics,500 Level,social,1
+97,Faculty of Arts,History,100 Level,arts,1
+98,Faculty of Social Sciences,Economics,500 Level,social,1
+99,Faculty of Science,Mathematics,200 Level,science,1
+100,Faculty of Social Sciences,Economics,200 Level,social,1
+101,Faculty of Engineering,Mechanical Engineering,200 Level,engineering,1
+102,Faculty of Arts,History,100 Level,arts,1
+103,Faculty of Science,Physics,500 Level,science,1
+104,Faculty of Science,Physics,200 Level,science,1
+105,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+106,Faculty of Arts,History,200 Level,arts,1
+107,Faculty of Engineering,Electrical Engineering,100 Level,engineering,1
+108,Faculty of Arts,History,400 Level,arts,1
+109,Faculty of Science,Physics,200 Level,science,1
+110,Faculty of Social Sciences,Political Science,200 Level,social,1
+111,Faculty of Science,Computer Science,500 Level,tech,1
+112,Faculty of Science,Mathematics,200 Level,science,1
+113,Faculty of Arts,English,200 Level,arts,1
+114,Faculty of Science,Physics,100 Level,science,1
+115,Faculty of Social Sciences,Economics,500 Level,social,1
+116,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+117,Faculty of Science,Physics,100 Level,science,1
+118,Faculty of Arts,English,400 Level,arts,1
+119,Faculty of Law,Law,200 Level,law,1
+120,Faculty of Social Sciences,Economics,300 Level,social,1
+121,Faculty of Science,Physics,300 Level,science,1
+122,Faculty of Engineering,Civil Engineering,400 Level,engineering,1
+123,Faculty of Arts,History,300 Level,arts,1
+124,Faculty of Arts,History,500 Level,arts,1
+125,Faculty of Science,Computer Science,400 Level,tech,1
+126,Faculty of Social Sciences,Economics,500 Level,social,1
+127,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+128,Faculty of Arts,History,500 Level,arts,1
+129,Faculty of Arts,History,500 Level,arts,1
+130,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+131,Faculty of Science,Computer Science,200 Level,tech,1
+132,Faculty of Social Sciences,Political Science,500 Level,social,1
+133,Faculty of Arts,English,100 Level,arts,1
+134,Faculty of Science,Computer Science,300 Level,tech,1
+135,Faculty of Arts,History,100 Level,arts,1
+136,Faculty of Social Sciences,Political Science,300 Level,social,1
+137,Faculty of Social Sciences,Economics,400 Level,social,1
+138,Faculty of Science,Computer Science,500 Level,tech,1
+139,Faculty of Engineering,Electrical Engineering,500 Level,engineering,1
+140,Faculty of Science,Computer Science,500 Level,tech,1
+141,Faculty of Law,Law,400 Level,law,1
+142,Faculty of Law,Law,200 Level,law,1
+143,Faculty of Science,Physics,100 Level,science,1
+144,Faculty of Social Sciences,Political Science,300 Level,social,1
+145,Faculty of Engineering,Civil Engineering,300 Level,engineering,1
+146,Faculty of Engineering,Civil Engineering,500 Level,engineering,1
+147,Faculty of Social Sciences,Political Science,500 Level,social,1
+148,Faculty of Engineering,Electrical Engineering,400 Level,engineering,1
+149,Faculty of Arts,History,300 Level,arts,1
+150,Faculty of Science,Mathematics,500 Level,science,1
+151,Faculty of Engineering,Mechanical Engineering,100 Level,engineering,1
+152,Faculty of Engineering,Civil Engineering,500 Level,engineering,1
+153,Faculty of Law,Law,200 Level,law,1
+154,Faculty of Arts,English,100 Level,arts,1
+155,Faculty of Science,Computer Science,500 Level,tech,1
+156,Faculty of Arts,History,100 Level,arts,1
+157,Faculty of Social Sciences,Economics,100 Level,social,1
+158,Faculty of Science,Mathematics,200 Level,science,1
+159,Faculty of Arts,History,300 Level,arts,1
+160,Faculty of Science,Computer Science,500 Level,tech,1
+161,Faculty of Arts,English,300 Level,arts,1
+162,Faculty of Social Sciences,Economics,300 Level,social,1
+163,Faculty of Engineering,Electrical Engineering,400 Level,engineering,1
+164,Faculty of Science,Physics,200 Level,science,1
+165,Faculty of Arts,English,200 Level,arts,1
+166,Faculty of Arts,History,500 Level,arts,1
+167,Faculty of Science,Computer Science,100 Level,tech,1
+168,Faculty of Science,Mathematics,100 Level,science,1
+169,Faculty of Science,Mathematics,300 Level,science,1
+170,Faculty of Law,Law,400 Level,law,1
+171,Faculty of Science,Physics,100 Level,science,1
+172,Faculty of Science,Mathematics,500 Level,science,1
+173,Faculty of Law,Law,200 Level,law,1
+174,Faculty of Social Sciences,Economics,200 Level,social,1
+175,Faculty of Social Sciences,Economics,400 Level,social,1
+176,Faculty of Science,Computer Science,200 Level,tech,1
+177,Faculty of Social Sciences,Political Science,400 Level,social,1
+178,Faculty of Engineering,Mechanical Engineering,100 Level,engineering,1
+179,Faculty of Science,Physics,300 Level,science,1
+180,Faculty of Science,Computer Science,400 Level,tech,1
+181,Faculty of Arts,History,100 Level,arts,1
+182,Faculty of Arts,English,100 Level,arts,1
+183,Faculty of Science,Mathematics,100 Level,science,1
+184,Faculty of Science,Computer Science,100 Level,tech,1
+185,Faculty of Social Sciences,Economics,400 Level,social,1
+186,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+187,Faculty of Engineering,Electrical Engineering,400 Level,engineering,1
+188,Faculty of Social Sciences,Economics,400 Level,social,1
+189,Faculty of Science,Computer Science,500 Level,tech,1
+190,Faculty of Arts,English,400 Level,arts,1
+191,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+192,Faculty of Science,Physics,100 Level,science,1
+193,Faculty of Engineering,Civil Engineering,500 Level,engineering,1
+194,Faculty of Engineering,Civil Engineering,400 Level,engineering,1
+195,Faculty of Science,Mathematics,200 Level,science,1
+196,Faculty of Science,Computer Science,200 Level,tech,1
+197,Faculty of Science,Computer Science,500 Level,tech,1
+198,Faculty of Arts,History,300 Level,arts,1
+199,Faculty of Science,Mathematics,300 Level,science,1
+200,Faculty of Law,Law,500 Level,law,1
+201,Faculty of Engineering,Electrical Engineering,200 Level,engineering,1
+202,Faculty of Arts,History,100 Level,arts,1
+203,Faculty of Social Sciences,Economics,100 Level,social,1
+204,Faculty of Engineering,Mechanical Engineering,100 Level,engineering,1
+205,Faculty of Arts,History,500 Level,arts,1
+206,Faculty of Social Sciences,Economics,200 Level,social,1
+207,Faculty of Science,Mathematics,100 Level,science,1
+208,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+209,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+210,Faculty of Science,Physics,100 Level,science,1
+211,Faculty of Science,Computer Science,300 Level,tech,1
+212,Faculty of Science,Computer Science,400 Level,tech,1
+213,Faculty of Science,Computer Science,300 Level,tech,1
+214,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+215,Faculty of Science,Computer Science,100 Level,tech,1
+216,Faculty of Law,Law,300 Level,law,1
+217,Faculty of Science,Physics,200 Level,science,1
+218,Faculty of Science,Physics,500 Level,science,1
+219,Faculty of Social Sciences,Economics,500 Level,social,1
+220,Faculty of Law,Law,200 Level,law,1
+221,Faculty of Science,Mathematics,500 Level,science,1
+222,Faculty of Arts,History,100 Level,arts,1
+223,Faculty of Science,Physics,100 Level,science,1
+224,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+225,Faculty of Science,Computer Science,100 Level,tech,1
+226,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1
+227,Faculty of Social Sciences,Political Science,300 Level,social,1
+228,Faculty of Arts,English,300 Level,arts,1
+229,Faculty of Engineering,Civil Engineering,500 Level,engineering,1
+230,Faculty of Engineering,Electrical Engineering,500 Level,engineering,1
+231,Faculty of Social Sciences,Economics,300 Level,social,1
+232,Faculty of Science,Mathematics,200 Level,science,1
+233,Faculty of Arts,History,200 Level,arts,1
+234,Faculty of Science,Computer Science,200 Level,tech,1
+235,Faculty of Social Sciences,Political Science,100 Level,social,1
+236,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+237,Faculty of Science,Physics,500 Level,science,1
+238,Faculty of Science,Computer Science,400 Level,tech,1
+239,Faculty of Law,Law,100 Level,law,1
+240,Faculty of Science,Mathematics,200 Level,science,1
+241,Faculty of Arts,English,200 Level,arts,1
+242,Faculty of Science,Mathematics,500 Level,science,1
+243,Faculty of Social Sciences,Economics,100 Level,social,1
+244,Faculty of Science,Mathematics,100 Level,science,1
+245,Faculty of Science,Physics,100 Level,science,1
+246,Faculty of Science,Mathematics,200 Level,science,1
+247,Faculty of Science,Mathematics,400 Level,science,1
+248,Faculty of Science,Mathematics,300 Level,science,1
+249,Faculty of Arts,History,300 Level,arts,1
+250,Faculty of Engineering,Electrical Engineering,400 Level,engineering,1
+251,Faculty of Engineering,Civil Engineering,500 Level,engineering,1
+252,Faculty of Engineering,Mechanical Engineering,400 Level,engineering,1
+253,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+254,Faculty of Arts,History,100 Level,arts,1
+255,Faculty of Law,Law,200 Level,law,1
+256,Faculty of Engineering,Mechanical Engineering,200 Level,engineering,1
+257,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+258,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1
+259,Faculty of Social Sciences,Political Science,500 Level,social,1
+260,Faculty of Science,Computer Science,300 Level,tech,1
+261,Faculty of Engineering,Electrical Engineering,500 Level,engineering,1
+262,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+263,Faculty of Law,Law,100 Level,law,1
+264,Faculty of Social Sciences,Economics,300 Level,social,1
+265,Faculty of Science,Physics,100 Level,science,1
+266,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+267,Faculty of Science,Computer Science,300 Level,tech,1
+268,Faculty of Engineering,Mechanical Engineering,400 Level,engineering,1
+269,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1
+270,Faculty of Social Sciences,Political Science,400 Level,social,1
+271,Faculty of Social Sciences,Economics,500 Level,social,1
+272,Faculty of Arts,English,500 Level,arts,1
+273,Faculty of Social Sciences,Political Science,200 Level,social,1
+274,Faculty of Social Sciences,Political Science,200 Level,social,1
+275,Faculty of Science,Physics,200 Level,science,1
+276,Faculty of Science,Physics,100 Level,science,1
+277,Faculty of Science,Computer Science,400 Level,tech,1
+278,Faculty of Social Sciences,Economics,300 Level,social,1
+279,Faculty of Science,Mathematics,200 Level,science,1
+280,Faculty of Law,Law,200 Level,law,1
+281,Faculty of Social Sciences,Economics,500 Level,social,1
+282,Faculty of Science,Physics,500 Level,science,1
+283,Faculty of Science,Computer Science,500 Level,tech,1
+284,Faculty of Social Sciences,Political Science,400 Level,social,1
+285,Faculty of Social Sciences,Political Science,100 Level,social,1
+286,Faculty of Engineering,Civil Engineering,100 Level,engineering,1
+287,Faculty of Science,Physics,100 Level,science,1
+288,Faculty of Engineering,Civil Engineering,300 Level,engineering,1
+289,Faculty of Science,Physics,300 Level,science,1
+290,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+291,Faculty of Engineering,Civil Engineering,400 Level,engineering,1
+292,Faculty of Arts,History,100 Level,arts,1
+293,Faculty of Engineering,Electrical Engineering,200 Level,engineering,1
+294,Faculty of Science,Physics,300 Level,science,1
+295,Faculty of Social Sciences,Political Science,200 Level,social,1
+296,Faculty of Science,Mathematics,500 Level,science,1
+297,Faculty of Engineering,Mechanical Engineering,400 Level,engineering,1
+298,Faculty of Science,Mathematics,300 Level,science,1
+299,Faculty of Engineering,Mechanical Engineering,300 Level,engineering,1
+300,Faculty of Science,Mathematics,100 Level,science,1
+301,Faculty of Arts,English,300 Level,arts,1
+302,Faculty of Science,Computer Science,100 Level,tech,1
+303,Faculty of Arts,English,400 Level,arts,1
+304,Faculty of Engineering,Mechanical Engineering,200 Level,engineering,1
+305,Faculty of Law,Law,300 Level,law,1
+306,Faculty of Arts,English,500 Level,arts,1
+307,Faculty of Engineering,Mechanical Engineering,500 Level,engineering,1
+308,Faculty of Engineering,Electrical Engineering,300 Level,engineering,1

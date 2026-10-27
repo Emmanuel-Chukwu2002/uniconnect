@@ -1,0 +1,63 @@
+{% load post_extras %}<div class="post-card" id="post-{{ post.id }}" data-post-id="{{ post.id }}" data-author-name="{{ post.author.get_full_name|default:post.author.username }}" data-author-url="{% url 'user_profile' post.author.username %}" data-author-photo="{% if post.author.student_profile.profile_photo %}{{ post.author.student_profile.profile_photo.url }}{% endif %}" data-created="{{ post.created_at|date:'c' }}" data-likes="{{ post.likes_count|default:0 }}" data-post-url="{% url 'post_detail' post.id %}">
+  {% if post.is_pinned %}
+    <div class="post-card-pinned"><i class="bi bi-pin-angle-fill"></i> Pinned</div>
+  {% endif %}
+  {% if post.repost_by %}
+    {# A simple repost: who shared it, above the untouched original. #}
+    <div class="post-card-repost-label js-repost-label" data-reposter-id="{{ post.repost_by.id }}">
+      <i class="bi bi-repeat"></i>
+      <a href="{% url 'user_profile' post.repost_by.username %}">{% if post.repost_by.id == request.user.id %}You{% else %}{{ post.repost_by.get_full_name|default:post.repost_by.username }}{% endif %}</a>{% if post.repost_others %} and {{ post.repost_others }} other{{ post.repost_others|pluralize }}{% endif %} reposted
+    </div>
+  {% endif %}
+  {% if post.community_id and not in_community %}
+    {# Posted in a community: which one, above the post (like X). #}
+    <a href="{% url 'community_detail' post.community_id %}" class="post-card-community-label"><i class="bi bi-people-fill"></i> {{ post.community.name }}</a>
+  {% endif %}
+  <div class="post-card-head">
+    <a href="{% url 'user_profile' post.author.username %}" class="post-card-avatar" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}">
+      {% if not post.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </a>
+    {% comment %}
+      Compact, X-style header on ONE line: name, badge, @handle, "· 7h".
+      When space runs out the @handle shortens first ("@Discu..."), then
+      the name; the badge, the time and the menu always stay (app.css,
+      "Post header"). The Post Details page has its own, expanded header
+      with the time under the media instead (_post_detail_main.html).
+    {% endcomment %}
+    <div class="post-card-info">
+      <div class="post-card-byline">
+        <a href="{% url 'user_profile' post.author.username %}" class="post-card-name">{{ post.author.get_full_name|default:post.author.username }}</a>
+        {% if post.author.student_profile.is_verified %}<i class="bi bi-patch-check-fill post-card-badge" title="Verified student" aria-label="Verified"></i>{% endif %}
+        <span class="post-card-handle{% if post.author.username|length > 5 %} is-long{% endif %}">@{{ post.author.username }}</span>
+        <span class="post-card-dot" aria-hidden="true">&middot;</span>
+        <a href="{% url 'post_detail' post.id %}" class="post-card-time" title="{{ post.created_at|date:'g:i A · j M Y' }}"><time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|short_ago }}</time></a>
+        {% if post.is_edited %}<span class="post-card-dot" aria-hidden="true">&middot;</span><span class="post-card-edited">Edited</span>{% endif %}
+      </div>
+      {% if cm_card %}
+        {# In a community (communities/detail.html): their role there, and their university. #}
+        <div class="post-card-subline"><i class="bi bi-mortarboard"></i> {{ post.cm_role|default:"Student" }}{% if post.author.student_profile.university %} &middot; {{ post.author.student_profile.university.short_name }}{% endif %}</div>
+      {% endif %}
+    </div>
+    {% include 'feed/_post_menu.html' %}
+  </div>
+  {% include 'feed/_post_labels.html' %}
+
+  {% if post.thread_root_id and not in_thread %}
+    <a href="{% url 'post_detail' post.thread_root_id %}" class="post-card-thread-label"><i class="bi bi-list-nested"></i> Part of a thread</a>
+  {% endif %}
+  {% if cm_card %}
+    {# Community posts show the #tags at the end of the text as chips. #}
+    {% body_and_tags post.content as bt %}
+    {% if bt.body %}<div class="post-card-text">{{ bt.body|post_text }}</div>{% endif %}
+    {% if bt.tags %}<div class="post-card-tags">{% for t in bt.tags %}<a href="{% url 'hashtag' t|lower %}" class="post-card-tag">{{ t }}</a>{% endfor %}</div>{% endif %}
+  {% elif post.content %}<div class="post-card-text">{{ post.content|post_text }}</div>{% endif %}
+  {% post_poll post as pp %}{% if pp %}{% include 'feed/_post_poll.html' %}{% endif %}
+  {% include 'feed/_post_media.html' %}
+  {% if post.is_quote %}{% include 'feed/_quoted_post.html' with q=post.quote_of in_composer=False %}{% endif %}
+  {% if post.link_preview_id and not post.is_quote and not post.image and not post.video and not post.media_items.all %}{% include 'feed/_link_preview.html' %}{% endif %}
+  {% if post.thread_size and not in_thread %}
+    <a href="{% url 'post_detail' post.id %}" class="post-card-thread-link">Show this thread <span>· {{ post.thread_size|add:1 }} posts</span></a>
+  {% endif %}
+
+  {% include 'feed/_post_actions.html' %}
+</div>

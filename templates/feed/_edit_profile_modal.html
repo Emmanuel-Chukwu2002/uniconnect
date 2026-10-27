@@ -1,0 +1,15 @@
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content editprofile-modal-content">
+      <form method="post" action="{% url 'edit_profile' %}" enctype="multipart/form-data" class="editprofile-form">
+        {% csrf_token %}
+        <div class="editprofile-header">
+          <button type="button" class="editprofile-icon-btn" data-bs-dismiss="modal" aria-label="Cancel"><i class="bi bi-x-lg"></i></button>
+          <span class="editprofile-title">Edit profile</span>
+          <button type="submit" class="editprofile-save-btn">Save</button>
+        </div>
+        {% include 'feed/_edit_profile_fields.html' %}
+      </form>
+    </div>
+  </div>
+</div>

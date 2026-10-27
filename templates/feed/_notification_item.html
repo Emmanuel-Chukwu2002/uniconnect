@@ -1,0 +1,42 @@
+{# One notification entry (one or several grouped rows). See _notification_list.html. #}
+<div class="notif-item {% if not entry.is_read %}is-unread{% endif %} js-notif-item" data-ids="{{ entry.ids }}" data-read="{% if entry.read_in_db or entry.is_read %}1{% else %}0{% endif %}">
+  {# The whole row is one link: /notifications/<id>/open/ marks it read and goes to the post / comment / profile. #}
+  <a href="{{ entry.url }}" class="notif-link">
+    <span class="notif-avatar{% if entry.icon_avatar %} is-icon{% endif %}" {% if entry.avatar_url %}style="background-image:url({{ entry.avatar_url }})"{% endif %}>
+      {% if entry.icon_avatar %}<i class="bi {{ entry.icon_avatar }} notif-avatar-icon"></i>{% elif not entry.avatar_url %}<span class="notif-avatar-initials">{{ entry.initials }}</span>{% endif %}
+      {% if not entry.icon_avatar %}<span class="notif-type-badge notif-badge-{{ entry.badge_colour }}"><i class="bi {{ entry.badge_icon }}"></i></span>{% endif %}
+    </span>
+    <span class="notif-body">
+      <span class="notif-text">{{ entry.message }}</span>
+      <span class="notif-time" title="{{ entry.timestamp|date:'D j M Y, g:i A' }}">{{ entry.time }}</span>
+    </span>
+    <span class="notif-unread-dot" aria-hidden="true"></span>
+  </a>
+
+  {% if entry.follow_id %}
+    {# Still-pending follow request: answer it right here, like Facebook's Confirm / Delete. #}
+    <div class="notif-actions js-notif-follow-actions">
+      <button type="button" class="btn btn-sm btn-primary js-notif-follow-accept" data-follow-id="{{ entry.follow_id }}">Confirm</button>
+      <button type="button" class="btn btn-sm notif-btn-secondary js-notif-follow-decline" data-follow-id="{{ entry.follow_id }}">Delete</button>
+    </div>
+  {% endif %}
+
+  {# Three-dot menu. It sits outside the link, so using it never opens the notification. #}
+  <div class="notif-menu dropdown">
+    <button type="button" class="notif-menu-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notification options">
+      <i class="bi bi-three-dots"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end post-card-dropdown">
+      <li>
+        <button type="button" class="dropdown-item js-notif-mark">
+          <i class="bi bi-check2"></i> <span class="js-notif-mark-label">{% if entry.read_in_db or entry.is_read %}Mark as unread{% else %}Mark as read{% endif %}</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="dropdown-item js-notif-delete">
+          <i class="bi bi-x-square"></i> Remove this notification
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>

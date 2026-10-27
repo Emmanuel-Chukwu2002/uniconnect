@@ -1,0 +1,14 @@
+{% extends 'accounts/auth_split.html' %}
+{% block title %}Link not valid — UniConnect{% endblock %}
+{# Shown when an email verification link is wrong or already used (accounts/views.py verify_email). #}
+{% block panel %}
+    <div class="lp-topline">Don't have an account? <a href="{% url 'register' %}" data-lp-swap>Sign Up</a></div>
+
+    <div class="lp-card lp-card-center">
+      <a href="{% url 'login' %}" class="lp-card-brand" aria-label="UniConnect"><i class="bi bi-mortarboard-fill lp-cap"></i><span class="lp-name">Uni<b>Connect</b></span></a>
+      <span class="lp-badge is-error"><i class="bi bi-link-45deg"></i></span>
+      <h2>Verification link not found</h2>
+      <p class="lp-sub">It may have already been used, or copied incorrectly. If you've already verified your account, just sign in. Otherwise, try registering again.</p>
+      <a href="{% url 'login' %}" class="lp-submit" data-lp-swap>Go to sign in</a>
+    </div>
+{% endblock %}

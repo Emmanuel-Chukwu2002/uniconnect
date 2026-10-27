@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Check your email — UniConnect{% endblock %}
+
+{% block body %}
+<div class="portal">
+  <div class="portal-left">
+    <div class="crest">U</div>
+    <div>
+      <h1>Almost there</h1>
+      <p>We just need to confirm this is really you before your account goes live.</p>
+    </div>
+    <div class="portal-foot">Step 6 of 6 &middot; UniConnect Student Registration</div>
+  </div>
+
+  <div class="portal-right">
+    <div class="portal-card" style="text-align:center;">
+      <div class="verify-icon"><i class="bi bi-envelope"></i></div>
+      <h2>Check your inbox</h2>
+      <div class="lede">
+        We've sent a verification link to
+        {% if email %}<strong>{{ email }}</strong>{% else %}your university email{% endif %}.
+        Click the link to activate your account, then come back and sign in.
+      </div>
+      <a href="{% url 'login' %}" class="btn btn-outline-secondary d-block">Back to sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

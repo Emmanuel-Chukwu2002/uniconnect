@@ -1,0 +1,14 @@
+{% autoescape off %}Hi {{ student.user.first_name }},
+
+Welcome to UniConnect! Your verification code is:
+
+    {{ code }}
+
+Type it on the "Check your inbox" screen to activate your account. Or open this link instead:
+
+{{ verify_url }}
+
+If you didn't sign up for UniConnect, ignore this email.
+
+— UniConnect
+{% endautoescape %}

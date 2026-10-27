@@ -1,0 +1,39 @@
+{% extends 'accounts/auth_split.html' %}
+{% block title %}Check your inbox — UniConnect{% endblock %}
+{% comment %}
+  Shown after the last sign-up step (accounts/views.py registration_sent):
+  type the 6-digit code from the email, or ask for a new one. The link in
+  the email does the same thing.
+{% endcomment %}
+{% block panel %}
+    <div class="lp-topline">Already verified? <a href="{% url 'login' %}" data-lp-swap>Sign In</a></div>
+
+    <div class="lp-card lp-card-center">
+      <a href="{% url 'login' %}" class="lp-card-brand" aria-label="UniConnect"><i class="bi bi-mortarboard-fill lp-cap"></i><span class="lp-name">Uni<b>Connect</b></span></a>
+      <span class="lp-badge"><i class="bi bi-envelope-check"></i></span>
+      <h2>Check your inbox</h2>
+      {% if student %}
+        <p class="lp-sub">We've sent a 6-digit code to <b>{{ student.university_email }}</b>. Enter it below to activate your account.</p>
+
+        {% for message in messages %}
+          <div class="lp-alert {% if message.tags == 'error' %}is-error{% endif %}" role="alert"><i class="bi {% if message.tags == 'error' %}bi-exclamation-circle-fill{% else %}bi-check-circle-fill{% endif %}"></i><span>{{ message }}</span></div>
+        {% endfor %}
+
+        <form method="post" novalidate class="lp-form" data-lp-swap>
+          {% csrf_token %}
+          <label class="visually-hidden" for="id_code">Verification code</label>
+          <input type="text" name="code" id="id_code" class="lp-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
+          <button type="submit" class="lp-submit">Verify account</button>
+        </form>
+
+        <form method="post" class="lp-resend" data-lp-swap>
+          {% csrf_token %}
+          <input type="hidden" name="action" value="resend">
+          Didn't get it? Check your spam folder, or <button type="submit" class="lp-link-btn">send a new code</button>.
+        </form>
+      {% else %}
+        <p class="lp-sub">We've sent a verification email to {% if email %}<b>{{ email }}</b>{% else %}your university email{% endif %}. Open the link in it to activate your account, then come back and sign in.</p>
+        <a href="{% url 'login' %}" class="lp-submit" data-lp-swap>Back to sign in</a>
+      {% endif %}
+    </div>
+{% endblock %}

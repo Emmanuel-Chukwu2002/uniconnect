@@ -1,0 +1,33 @@
+<script>
+  // Buttons on the card pages (feed/_pc_sections.html): Join / Ask (groups),
+  // Add (courses), Save (opportunities) — without leaving the page.
+  UC.onPage(function (doc, signal) {
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    function set(btn, html, state) { btn.innerHTML = html; btn.setAttribute('data-state', state || ''); }
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-pc-act');
+      if (!btn || btn.disabled) { return; }
+      e.preventDefault();
+      var kind = btn.getAttribute('data-kind');
+      btn.disabled = true;
+      fetch(btn.getAttribute('data-url'), { method: 'POST', body: new URLSearchParams(), credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { throw new Error(j.error || ''); } return j; }); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (kind === 'group') {
+            if (res.state === 'joined') { set(btn, '<i class="bi bi-check-lg"></i> Joined', 'done'); btn.disabled = true; }
+            else { set(btn, '<i class="bi bi-hourglass-split"></i> Requested', 'wait'); btn.disabled = true; }
+            if (window.showToast) { showToast(res.message || (res.state === 'joined' ? 'You joined the group.' : 'Request sent to the admins.')); }
+          } else if (kind === 'course') {
+            set(btn, '<i class="bi bi-check-lg"></i> Added', 'done'); btn.disabled = true;
+            if (window.showToast) { showToast('Added to My Courses.'); }
+          } else if (kind === 'opportunity') {
+            set(btn, res.saved ? '<i class="bi bi-bookmark-fill"></i> Saved' : '<i class="bi bi-bookmark"></i> Save', res.saved ? 'done' : '');
+            btn.setAttribute('aria-pressed', res.saved ? 'true' : 'false');
+            if (window.showToast) { showToast(res.saved ? 'Saved to your Bookmarks.' : 'Removed from your Bookmarks.'); }
+          }
+        })
+        .catch(function (err) { btn.disabled = false; if (window.showToast) { showToast(err.message || 'Something went wrong — try again.'); } });
+    }, { signal: signal });
+  });
+</script>

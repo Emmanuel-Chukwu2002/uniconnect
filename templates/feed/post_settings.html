@@ -1,0 +1,53 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if section == 'disclosure' %}Content disclosure{% else %}Who can reply{% endif %} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Your post's "Change who can reply" and "Content disclosure" (feed/post_settings.py). Styles: restyle.css ("Report / Block", "Post settings").{% endcomment %}
+<div class="rp">
+  <div class="st-top">
+    <a href="{% url 'post_detail' post.id %}" class="st-back" aria-label="Back to the post"><i class="bi bi-arrow-left"></i></a>
+    <h1>{% if section == 'disclosure' %}Content disclosure{% else %}Who can reply?{% endif %}</h1>
+  </div>
+
+  <div class="rp-card rp-preview">
+    <span class="rp-ava" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}">{% if not post.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+    <div><b>Your post</b> <small>· {{ post.created_at|timesince }} ago</small>
+      <p>{{ post.content|default:"(photo or video post)"|truncatechars:200 }}</p></div>
+  </div>
+
+  <form method="post" class="rp-card rp-form">
+    {% csrf_token %}
+    {% if section == 'disclosure' %}
+      <h2>Label this post</h2>
+      <p class="rp-muted">A label shows on the post so people know what they're looking at.</p>
+      <div class="rp-reasons" role="radiogroup">
+        {% for value, label, icon, help in disclosure_options %}
+          <label class="rp-reason ps-option">
+            <input type="radio" name="disclosure" value="{{ value }}"{% if post.disclosure == value %} checked{% endif %}>
+            <span class="ps-ico"><i class="bi {{ icon }}"></i></span>
+            <span><b>{{ label }}</b>{% if help %}<small>{{ help }}</small>{% endif %}</span>
+            <i class="bi bi-check-circle-fill"></i>
+          </label>
+        {% endfor %}
+      </div>
+    {% else %}
+      <h2>Choose who can reply to this post</h2>
+      <p class="rp-muted">Everyone can still see it, like it and repost it. Anyone mentioned can always reply.</p>
+      <div class="rp-reasons" role="radiogroup">
+        {% for value, label, icon, help in reply_options %}
+          <label class="rp-reason ps-option">
+            <input type="radio" name="reply_policy" value="{{ value }}"{% if post.reply_policy == value %} checked{% endif %}>
+            <span class="ps-ico"><i class="bi {{ icon }}"></i></span>
+            <span><b>{{ label }}</b><small>{{ help }}{% if value == 'mentioned' %}{% if mentioned %}: @{{ mentioned|join:", @" }}{% else %} — this post doesn't mention anyone, so only you could reply{% endif %}{% endif %}</small></span>
+            <i class="bi bi-check-circle-fill"></i>
+          </label>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="rp-actions">
+      <a href="{% url 'post_detail' post.id %}" class="st-btn-ghost">Cancel</a>
+      <button type="submit" class="dt-btn is-sm">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

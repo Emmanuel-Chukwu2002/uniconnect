@@ -1,0 +1,15 @@
+<script>
+  // Share buttons on the detail pages (event, listing, opportunity): the phone's
+  // share sheet when there is one, otherwise copy the link.
+  UC.onPage(function (doc, signal) {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-dt-share');
+      if (!btn) { return; }
+      var url = btn.getAttribute('data-url'), title = btn.getAttribute('data-title');
+      if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () {
+        if (window.showToast) { showToast('Link copied.'); }
+      }).catch(function () { window.prompt('Copy this link:', url); });
+    }, { signal: signal });
+  });
+</script>

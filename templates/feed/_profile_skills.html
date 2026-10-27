@@ -1,0 +1,36 @@
+{% comment %}Skills on a profile (feed/skills.py). Your own: add / remove. Someone else's:
+tap a skill to endorse it. Styles: restyle.css ("Profile skills").{% endcomment %}
+{% if skills or is_own %}
+<section class="pk js-pk" id="skills">
+  <header class="pk-head">
+    <h3><i class="bi bi-stars"></i> Skills</h3>
+    {% if is_own %}<span class="pk-count">{{ skills|length }}/{{ skills_max }}</span>{% elif skills %}<small>Tap a skill to endorse it</small>{% endif %}
+  </header>
+  <div class="pk-chips">
+    {% for s in skills %}
+      {% if is_own %}
+        <span class="pk-chip">
+          <a href="{% url 'explore' %}?tab=people&amp;skill={{ s.name|urlencode }}" class="pk-name" title="Find others with {{ s.name }}">{{ s.name }}</a>{% if s.n %}<span class="pk-n" title="{{ s.n }} endorsement{{ s.n|pluralize }}">{{ s.n }}</span>{% endif %}
+          <form method="post" action="{% url 'skill_remove' s.pk %}" class="js-pk-form">{% csrf_token %}<button type="submit" class="pk-x" aria-label="Remove {{ s.name }}"><i class="bi bi-x"></i></button></form>
+        </span>
+      {% else %}
+        <form method="post" action="{% url 'skill_endorse' s.pk %}" class="js-pk-endorse">{% csrf_token %}
+          <button type="submit" class="pk-chip is-btn{% if s.mine %} is-on{% endif %}" aria-pressed="{% if s.mine %}true{% else %}false{% endif %}" title="{% if s.mine %}You endorsed this — tap to take it back{% else %}Endorse {{ profile_user.first_name|default:profile_user.username }} for {{ s.name }}{% endif %}">
+            <i class="bi {% if s.mine %}bi-hand-thumbs-up-fill{% else %}bi-hand-thumbs-up{% endif %}"></i> <span class="pk-name">{{ s.name }}</span><span class="pk-n js-pk-n"{% if not s.n %} hidden{% endif %}>{{ s.n }}</span>
+          </button>
+        </form>
+      {% endif %}
+    {% empty %}
+      <p class="pk-empty">Add what you're good at — classmates can find you by skill and endorse you.</p>
+    {% endfor %}
+  </div>
+  {% if is_own and skills|length < skills_max %}
+    <form method="post" action="{% url 'skill_add' %}" class="pk-add js-pk-form">{% csrf_token %}
+      <input type="text" name="name" maxlength="40" list="pkSuggest" placeholder="Add a skill, e.g. Python" aria-label="Add a skill" autocomplete="off" required>
+      <datalist id="pkSuggest">{% for n in skill_suggestions %}<option value="{{ n }}">{% endfor %}</datalist>
+      <button type="submit" class="pk-add-btn"><i class="bi bi-plus-lg"></i> Add</button>
+    </form>
+    <p class="pk-error js-pk-error" hidden></p>
+  {% endif %}
+</section>
+{% endif %}

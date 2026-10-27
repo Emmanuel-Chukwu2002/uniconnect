@@ -1,0 +1,34 @@
+{% load post_extras %}{% comment %}
+The post's own content, shown in the comments modal's left pane
+(desktop) / top (mobile) — so you can read the thread while still
+seeing what's being discussed. Deliberately leaves out the actions
+row and "Liked by..." strip (those belong to the post card, not
+this read-only reference view) and reuses the same media partial so
+photos/video never drift out of sync with the real post card. The
+outer .post-card class is reused (not just for styling) so the
+existing photo-lightbox JS — which looks for the nearest .post-card
+ancestor — also works on a photo clicked from inside this pane.
+{% endcomment %}
+<div class="post-card comments-post-pane-card" data-post-id="{{ post.id }}" data-author-name="{{ post.author.get_full_name|default:post.author.username }}" data-author-url="{% url 'user_profile' post.author.username %}" data-author-photo="{% if post.author.student_profile.profile_photo %}{{ post.author.student_profile.profile_photo.url }}{% endif %}" data-created="{{ post.created_at|date:'c' }}" data-likes="{{ post.likes_count|default:0 }}" data-post-url="{% url 'post_detail' post.id %}">
+  <div class="comments-post-head">
+    <a href="{% url 'user_profile' post.author.username %}" class="post-card-avatar" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}">
+      {% if not post.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+    </a>
+    <div class="post-card-info">
+      <a href="{% url 'user_profile' post.author.username %}" class="post-card-name">{{ post.author.get_full_name|default:post.author.username }}</a>
+      <div class="post-card-meta">
+        <span class="post-card-handle">@{{ post.author.username }}</span>
+        <span class="post-card-dot">&middot;</span>
+        <span class="post-card-time">{{ post.created_at|timesince }} ago</span>
+        {% if post.is_edited %}
+          <span class="post-card-dot">&middot;</span>
+          <span class="post-card-edited">Edited</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if post.content %}<div class="post-card-text">{{ post.content|post_text }}</div>{% endif %}
+  {% include 'feed/_post_media.html' %}
+  {% if post.is_quote %}{% include 'feed/_quoted_post.html' with q=post.quote_of in_composer=False %}{% endif %}
+</div>

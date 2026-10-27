@@ -1,0 +1,10 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ title }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+<div class="center-card text-center" style="padding:48px 24px;">
+  <i class="bi {{ icon }}" style="font-size:40px;color:var(--accent);margin-bottom:16px;display:block;"></i>
+  <h4>{{ title }}</h4>
+  <p>{{ description }}</p>
+</div>
+{% endblock %}

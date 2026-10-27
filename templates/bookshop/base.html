@@ -1,0 +1,33 @@
+{% extends 'feed/base_app.html' %}
+{% load static %}
+{% comment %}
+  Bookshop shell (bookshop/views.py): wide layout (no right sidebar on
+  desktop), the shop header with "Sell a book", and the Discover /
+  Browse / Saved / My books tabs. Styles: static/css/bookshop.css.
+{% endcomment %}
+{% block title %}{% block bs_title %}Bookshop{% endblock %} — UniConnect{% endblock %}
+{% block shell_class %}bs-page{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/bookshop.css' %}?v=7">{% endblock %}
+
+{% block feed_content %}
+<div class="bs">
+  <header class="bs-header">
+    <a href="{% url 'bookshop' %}" class="bs-brand" aria-label="Bookshop home">
+      <span class="bs-brand-mark"><i class="bi bi-book-half"></i></span>
+      <span class="bs-brand-text"><strong>Bookshop</strong><small>Buy &amp; sell books on campus</small></span>
+    </a>
+    <a href="{% url 'bookshop_sell' %}" class="bs-btn bs-btn-primary bs-sell-btn"><i class="bi bi-plus-lg"></i><span>Sell a book</span></a>
+  </header>
+
+  <nav class="bs-tabs" aria-label="Bookshop sections">
+    <a href="{% url 'bookshop' %}" class="bs-tab {% if tab == 'discover' %}active{% endif %}"><i class="bi bi-compass"></i> Discover</a>
+    <a href="{% url 'bookshop_browse' %}" class="bs-tab {% if tab == 'browse' %}active{% endif %}"><i class="bi bi-grid"></i> Browse</a>
+    <a href="{% url 'bookshop_saved' %}" class="bs-tab {% if tab == 'saved' %}active{% endif %}"><i class="bi bi-heart"></i> Saved</a>
+    <a href="{% url 'bookshop_mine' %}" class="bs-tab {% if tab == 'mine' or tab == 'sell' %}active{% endif %}"><i class="bi bi-shop"></i> My books</a>
+  </nav>
+
+  {% block bs_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% static 'js/bookshop.js' %}?v=3"></script>{% endblock %}

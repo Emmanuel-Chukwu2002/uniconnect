@@ -1,0 +1,145 @@
+:root{
+  --ink:#12172E; --ink-soft:#1B2143; --ink-softer:#242B57;
+  --paper:#F7F3EA; --paper-line:#E4DCC8;
+  --gold:#D9A441; --gold-deep:#B9832A;
+  --forest:#3F7D5C; --forest-soft:#EAF3EE;
+  --brick:#B8503F;
+  --ink-text:#EDEAE0; --muted:#9CA3C4;
+  --paper-text:#22262F; --paper-muted:#6B6656;
+  --radius:14px;
+}
+/* The site font: Arial everywhere (also what Bootstrap's tooltips, pop-ups and form fields use). */
+:root{--bs-font-sans-serif:Arial,Helvetica,sans-serif;--bs-body-font-family:Arial,Helvetica,sans-serif;}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--ink);color:var(--ink-text);}
+h1,h2,h3,h4,.font-serif{font-weight:600;}
+/* Links are never underlined (Bootstrap underlines them by default); they
+   show they're clickable by changing colour on hover instead — each part
+   of the app sets its own hover colour. */
+a,a:hover,a:focus,a:active,.btn-link,.btn-link:hover,.btn-link:focus{text-decoration:none;}
+a{transition:color .15s ease, opacity .15s ease, background-color .15s ease;}
+
+/* ---------- Portal split-screen (login/register) ---------- */
+.portal{display:flex;min-height:100vh;}
+.portal-left{flex:1 1 42%;background:var(--ink);padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+.portal-left::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(217,164,65,.06) 40px);pointer-events:none;}
+.crest{width:54px;height:54px;border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gold);}
+.portal-left h1{font-size:36px;line-height:1.2;color:var(--ink-text);max-width:9.5em;margin:32px 0 16px;}
+.portal-left p{color:var(--muted);font-size:15px;line-height:1.6;max-width:34ch;}
+.portal-foot{font-size:12px;color:var(--muted);opacity:.7;}
+.portal-right{flex:1 1 58%;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+.portal-card{width:100%;max-width:440px;}
+.portal-card h2{color:var(--paper-text);font-size:26px;margin-bottom:6px;}
+.portal-card .lede{color:var(--paper-muted);font-size:14px;margin-bottom:28px;}
+
+/* ---------- Stepper ---------- */
+.stepper{display:flex;align-items:center;gap:6px;margin-bottom:26px;}
+.step-dot{width:26px;height:26px;border-radius:50%;background:var(--paper-line);color:var(--paper-muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.step-dot.done{background:var(--forest);color:#fff;}
+.step-dot.now{background:var(--gold);color:var(--ink);}
+.step-line{flex:1;height:2px;background:var(--paper-line);min-width:8px;}
+.step-line.done{background:var(--forest);}
+
+/* ---------- Crispy/Bootstrap form field overrides on parchment ---------- */
+.portal-card label{font-size:12.5px;color:var(--paper-muted);font-weight:500;margin-bottom:4px;}
+.portal-card .form-control, .portal-card .form-select{
+  padding:12px 14px;border:1.5px solid var(--paper-line);border-radius:10px;
+  background:#fff;font-size:14.5px;color:var(--paper-text);
+}
+.portal-card .form-control:focus, .portal-card .form-select:focus{
+  outline:none;border-color:var(--gold);box-shadow:0 0 0 .15rem rgba(217,164,65,.25);
+}
+.portal-card .form-text{color:var(--paper-muted);font-size:12px;}
+.portal-card .is-invalid{border-color:var(--brick) !important;border-width:2px !important;}
+.portal-card .invalid-feedback{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--brick);
+  font-size:13px;
+  font-weight:500;
+  margin-top:8px;
+}
+.portal-card .invalid-feedback::before{
+  content:"!";
+  flex:0 0 18px;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:var(--brick);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+}
+
+.password-field-wrapper{position:relative;}
+.password-field-wrapper input{padding-right:42px !important;}
+.password-toggle-btn{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  background:none;
+  border:none;
+  color:var(--paper-muted);
+  font-size:15px;
+  cursor:pointer;
+  padding:4px 6px;
+  line-height:1;
+}
+.password-toggle-btn:hover{color:var(--paper-text);}
+
+.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:600;}
+.btn-gold:hover{background:var(--gold-deep);border-color:var(--gold-deep);color:var(--ink);}
+.btn-gold, .portal-card .btn{width:100%;padding:12px;border-radius:10px;font-size:14.5px;}
+
+.switch-line{text-align:center;margin-top:20px;font-size:13.5px;color:var(--paper-muted);}
+.switch-line a{color:var(--gold-deep);font-weight:600;text-decoration:none;}
+
+.login-mode-tabs{display:flex;background:var(--paper-line);border-radius:999px;padding:3px;margin-bottom:22px;}
+.login-mode-tabs .mode-tab{flex:1;border:none;background:transparent;padding:9px 6px;border-radius:999px;font-size:13px;font-weight:600;color:var(--paper-muted);cursor:pointer;}
+.login-mode-tabs .mode-tab.active{background:#fff;color:var(--paper-text);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+.review-box{background:#fff;border:1.5px solid var(--paper-line);border-radius:10px;padding:16px 18px;margin-bottom:20px;}
+.review-row{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--paper-line);}
+.review-row:last-child{border-bottom:none;}
+.review-row span:first-child{color:var(--paper-muted);}
+.review-row span:last-child{color:var(--paper-text);font-weight:600;}
+
+.verify-icon{width:64px;height:64px;border-radius:50%;background:var(--forest-soft);color:var(--forest);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;}
+
+.alert-portal{border-radius:10px;font-size:13.5px;padding:12px 16px;margin-bottom:16px;}
+
+/* ---------- Toast notifications (shared with the app shell) ---------- */
+.toast-stack{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  z-index:2000;display:flex;flex-direction:column;gap:8px;
+  width:100%;max-width:420px;padding:0 16px;
+  pointer-events:none;
+}
+.toast-message{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border:1.5px solid var(--paper-line);
+  border-radius:10px;padding:12px 14px;
+  box-shadow:0 2px 10px rgba(16,24,40,.12);
+  font-size:14px;color:var(--paper-text);
+  pointer-events:auto;
+  animation:toast-in .25s ease-out;
+}
+.toast-message i{font-size:17px;flex:0 0 auto;}
+.toast-message span{flex:1;}
+.toast-message.toast-success i{color:var(--forest);}
+.toast-message.toast-error i, .toast-message.toast-danger i{color:var(--brick);}
+.toast-message.toast-info i, .toast-message.toast-warning i{color:var(--gold-deep);}
+.toast-close-btn{background:none;border:none;color:var(--paper-muted);padding:0;display:flex;align-items:center;font-size:16px;flex:0 0 auto;}
+.toast-close-btn:hover{color:var(--paper-text);}
+.toast-message.toast-hide{animation:toast-out .2s ease-in forwards;}
+@keyframes toast-in{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toast-out{to{opacity:0;transform:translateY(-10px);}}
+
+@media (max-width:480px){
+  .toast-stack{max-width:none;}
+}

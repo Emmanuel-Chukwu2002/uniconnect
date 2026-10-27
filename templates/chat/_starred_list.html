@@ -1,0 +1,39 @@
+{% comment %}Messages > Starred (chat/views.py starred): messages you starred, newest star first. Only you see them.{% endcomment %}
+<header class="wa-pane-header wa-subpage-header">
+  <a href="{% url 'messages' %}" class="wa-icon-btn" data-wa-nav aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="wa-pane-title is-visible">Starred messages</h1>
+</header>
+<div class="wa-pane-scroll">
+  <form method="get" class="wa-star-search" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search starred messages" aria-label="Search starred messages">
+  </form>
+  {% for it in items %}
+    {% with m=it.message %}
+    <article class="wa-star">
+      <div class="wa-star-head">
+        <b>{% if it.mine %}You{% else %}{{ it.sender.name|default:'Someone' }}{% endif %}</b>
+        <i class="bi bi-caret-right-fill" aria-hidden="true"></i>
+        <span class="wa-star-chat">{% if it.is_group %}<i class="bi bi-people-fill"></i> {% endif %}{{ it.chat }}</span>
+        <time datetime="{{ m.created_at|date:'c' }}">{{ m.created_at|date:'j M, g:i A' }}</time>
+      </div>
+      <a href="{{ it.url }}" class="wa-star-body"{% if '/groups/' in it.url %} data-no-soft{% else %} data-wa-nav{% endif %}>
+        {% if m.kind == 'image' and m.attachment %}<span class="wa-star-photo" style="background-image:url({{ m.attachment.url }})"></span>{% endif %}
+        <span class="wa-star-text">
+          {% if it.preview.icon and m.kind != 'image' %}<i class="bi {{ it.preview.icon }}"></i> {% endif %}{% if m.kind == 'text' or m.kind == 'image' or m.kind == 'video' %}{{ it.text|default:it.preview.text|truncatechars:300 }}{% else %}{{ it.preview.text }}{% if m.kind == 'file' and m.content %} — {{ it.text|truncatechars:200 }}{% endif %}{% endif %}
+        </span>
+        <span class="wa-star-go">Go to message <i class="bi bi-chevron-right"></i></span>
+      </a>
+      <form method="post" action="{% url 'chat_message_star' m.pk %}" class="wa-star-off">
+        {% csrf_token %}<input type="hidden" name="star" value="0"><input type="hidden" name="next" value="{% url 'chat_starred' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
+        <button type="submit" class="wa-icon-btn" aria-label="Unstar this message" title="Unstar"><i class="bi bi-star-fill"></i></button>
+      </form>
+    </article>
+    {% endwith %}
+  {% empty %}
+    <div class="wa-empty">
+      <i class="bi bi-star"></i>
+      <p>{% if q %}No starred messages match “{{ q }}”.{% else %}No starred messages yet. Star a message — from its menu in a chat, or ☆ under it on a group's page — to find it here later. Only you can see what you star.{% endif %}</p>
+    </div>
+  {% endfor %}
+</div>

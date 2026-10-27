@@ -1,0 +1,49 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}{{ q.title }} — {{ course.code }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}A course question and its answers (courses/views.py question).{% endcomment %}
+<div class="cc">
+  <div class="st-top">
+    <a href="{{ course.get_absolute_url }}?tab=questions" class="st-back" aria-label="Back to {{ course.code }} questions"><i class="bi bi-arrow-left"></i></a>
+    <h1>{{ course.code }} question</h1>
+  </div>
+
+  <article class="cc-card cc-question">
+    {% with sp=q.author.student_profile %}
+    <header class="cc-author">
+      <span class="dt-face is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ q.author.first_name|default:q.author.username|first|upper }}{% endif %}</span>
+      <span><b>{{ q.author.get_full_name|default:q.author.username }}</b><small>{{ q.created_at|ago }}</small></span>
+      {% if is_asker %}<form method="post" action="{% url 'course_question_delete' course.pk q.pk %}" onsubmit="return confirm('Delete this question and its answers?')" class="cc-author-del">{% csrf_token %}<button type="submit" class="st-btn-ghost sg-icon-btn" title="Delete question" aria-label="Delete question"><i class="bi bi-trash3"></i></button></form>{% endif %}
+    </header>
+    {% endwith %}
+    <h2 class="cc-q-title">{{ q.title }}</h2>
+    {% if q.body %}<div class="dt-text">{{ q.body|linebreaks|urlize }}</div>{% endif %}
+  </article>
+
+  <h3 class="cc-title">{{ answers|length }} answer{{ answers|length|pluralize }}</h3>
+  {% for a in answers %}{% with sp=a.author.student_profile %}
+    <article class="cc-card cc-answer{% if a.is_accepted %} is-accepted{% endif %}" id="a{{ a.pk }}">
+      {% if a.is_accepted %}<div class="cc-accepted"><i class="bi bi-check-circle-fill"></i> Helped {{ q.author.first_name|default:'the asker' }}</div>{% endif %}
+      <header class="cc-author">
+        <span class="dt-face is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ a.author.first_name|default:a.author.username|first|upper }}{% endif %}</span>
+        <span><b>{{ a.author.get_full_name|default:a.author.username }}</b><small>{{ sp.level.name }} · {{ a.created_at|ago }}</small></span>
+      </header>
+      <div class="dt-text">{{ a.body|linebreaks|urlize }}</div>
+      <footer class="cc-answer-actions">
+        {% if is_asker %}<form method="post" action="{% url 'course_answer_accept' course.pk q.pk a.pk %}">{% csrf_token %}<button type="submit" class="dt-link{% if a.is_accepted %} is-on{% endif %}"><i class="bi {% if a.is_accepted %}bi-check-circle-fill{% else %}bi-check-circle{% endif %}"></i> {% if a.is_accepted %}Marked as helpful{% else %}This helped me{% endif %}</button></form>{% endif %}
+        {% if a.author_id == request.user.id %}<form method="post" action="{% url 'course_answer_delete' course.pk q.pk a.pk %}">{% csrf_token %}<button type="submit" class="dt-link"><i class="bi bi-trash3"></i> Delete</button></form>{% endif %}
+      </footer>
+    </article>
+  {% endwith %}{% empty %}
+    <p class="cc-muted">No answers yet — if you know, help out below.</p>
+  {% endfor %}
+
+  <form method="post" class="cc-card cc-form cc-answer-form">{% csrf_token %}
+    <label for="ccAnswer" class="rv-label">Your answer</label>
+    <textarea name="body" id="ccAnswer" rows="4" maxlength="4000" required placeholder="Explain step by step — links to notes in this course are welcome."></textarea>
+    <button type="submit" class="dt-btn is-sm">Post answer</button>
+  </form>
+</div>
+{% endblock %}

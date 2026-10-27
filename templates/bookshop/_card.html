@@ -1,0 +1,22 @@
+{% comment %}One book in a shelf or grid (Apple Books / Amazon style). b = Book with .is_saved.{% endcomment %}
+<article class="bs-card{% if not b.is_available %} is-off{% endif %}">
+  <a href="{% url 'bookshop_detail' b.pk %}" class="bs-card-link" aria-label="{{ b.title }} by {{ b.author }}, {{ b.price_display }}"></a>
+  <div class="bs-card-cover">
+    {% include 'bookshop/_cover.html' %}
+    <span class="bs-badge {% if b.is_new %}bs-badge-new{% else %}bs-badge-used{% endif %}">{% if b.is_new %}New{% else %}Used{% endif %}</span>
+    {% if b.status == 'reserved' %}<span class="bs-badge bs-badge-reserved bs-badge-right-low">Reserved</span>{% endif %}
+    {% if b.status == 'sold' %}<span class="bs-ribbon">Sold</span>{% endif %}
+    <button type="button" class="bs-save js-bs-save{% if b.is_saved %} is-saved{% endif %}" data-url="{% url 'bookshop_save' b.pk %}"
+            aria-pressed="{{ b.is_saved|yesno:'true,false' }}" aria-label="{% if b.is_saved %}Unlike{% else %}Like{% endif %}" title="{% if b.is_saved %}Unlike{% else %}Like{% endif %}">
+      <i class="bi {% if b.is_saved %}bi-heart-fill{% else %}bi-heart{% endif %}"></i><span class="bs-save-n js-bs-like-count"{% if not b.likes %} hidden{% endif %}>{{ b.likes|default:0 }}</span>
+    </button>
+  </div>
+  <div class="bs-card-body">
+    <h3 class="bs-card-title">{{ b.title }}</h3>
+    <p class="bs-card-author">{{ b.author }}</p>
+    <div class="bs-card-foot">
+      <span class="bs-price">{{ b.price_display }}</span>
+      {% if b.course_code %}<span class="bs-code">{{ b.course_code }}</span>{% endif %}
+    </div>
+  </div>
+</article>

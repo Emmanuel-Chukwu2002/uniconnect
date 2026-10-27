@@ -1,0 +1,2 @@
+# Keep Linux line endings for the Render build script
+*.sh text eol=lf

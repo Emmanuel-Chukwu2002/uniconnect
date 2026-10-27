@@ -1,0 +1,50 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Reports — UniConnect staff{% endblock %}
+
+{% block feed_content %}
+{% comment %}Staff-only review list of reports (feed/moderation.py moderation_page).{% endcomment %}
+<div class="rp md">
+  <div class="st-top">
+    <a href="{% url 'home' %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>Reports</h1>
+    <span class="md-staff"><i class="bi bi-shield-check"></i> Staff</span>
+  </div>
+
+  <nav class="md-tabs">
+    {% for value, label in statuses %}
+      <a href="?status={{ value }}" class="md-tab{% if value == status %} is-on{% endif %}">{{ label }}{% if value == 'open' and open_count %} <b>{{ open_count }}</b>{% endif %}</a>
+    {% endfor %}
+  </nav>
+
+  {% for c in cards %}
+    <article class="rp-card md-item">
+      <header class="md-head">
+        <span class="rp-ava" style="{% if c.user.student_profile.profile_photo %}background-image:url({{ c.user.student_profile.profile_photo.url }}){% endif %}">{% if not c.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+        <div class="md-who"><b>{{ c.user.get_full_name|default:c.user.username }}</b><small>@{{ c.user.username }}{% if c.user.student_profile %} · {{ c.user.student_profile.university.short_name }}{% endif %}</small></div>
+        <span class="md-kind">{% if c.post or c.snapshot %}Post{% else %}Account{% endif %}</span>
+      </header>
+      {% if c.post %}
+        <a href="{% url 'post_detail' c.post.id %}" class="md-post">{{ c.post.content|default:"(photo or video post)"|truncatechars:300 }}</a>
+      {% elif c.snapshot %}
+        <p class="md-post is-gone">{{ c.snapshot|truncatechars:300 }}<small>(post removed)</small></p>
+      {% endif %}
+      <div class="md-reasons">
+        <span class="md-count"><i class="bi bi-flag-fill"></i> {{ c.reports|length }} report{{ c.reports|length|pluralize }}</span>
+        {% for label, n in c.reasons %}<span class="md-chip">{{ label }}{% if n > 1 %} ×{{ n }}{% endif %}</span>{% endfor %}
+      </div>
+      {% for r in c.reports %}{% if r.details %}<p class="md-note"><i class="bi bi-chat-left-quote"></i> “{{ r.details }}” <small>— {{ r.reporter.get_full_name|default:r.reporter.username }}, {{ r.created_at|timesince }} ago</small></p>{% endif %}{% endfor %}
+      {% if status == 'open' %}
+        <div class="md-actions">
+          <a href="{% url 'user_profile' c.user.username %}" class="st-btn-ghost">View profile</a>
+          <form method="post" action="{% url 'moderation_action' c.first.pk 'dismiss' %}">{% csrf_token %}<button type="submit" class="st-btn-ghost">No action needed</button></form>
+          {% if c.post %}<form method="post" action="{% url 'moderation_action' c.first.pk 'remove' %}">{% csrf_token %}<button type="submit" class="dt-btn is-sm md-remove"><i class="bi bi-trash3"></i> Remove post</button></form>{% endif %}
+        </div>
+      {% else %}
+        <p class="md-reviewed">{{ c.first.get_status_display }}{% if c.first.reviewed_by %} by {{ c.first.reviewed_by.get_full_name|default:c.first.reviewed_by.username }}{% endif %}{% if c.first.reviewed_at %}, {{ c.first.reviewed_at|timesince }} ago{% endif %}</p>
+      {% endif %}
+    </article>
+  {% empty %}
+    <div class="rp-card md-empty"><i class="bi bi-check2-circle"></i><p>{% if status == 'open' %}No reports waiting — all clear.{% else %}Nothing here yet.{% endif %}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}{{ u.get_full_name|default:u.username }}{% endblock %}
+{% block content %}
+<div class="ad-head">
+  <div><a href="{% url 'staff_users' %}" class="mut"><i class="bi bi-arrow-left"></i> User Management</a>
+    <h1>{{ u.get_full_name|default:u.username }}</h1>
+    <p>@{{ u.username }}{% if prof %} · {{ prof.university.name }}{% endif %}
+      {% if suspension %} · <span class="pill red">Suspended{% if suspension.ends_at %} until {{ suspension.ends_at|date:"d M Y" }}{% endif %}</span>{% elif not u.is_active %} · <span class="pill grey">Deactivated</span>{% endif %}
+      {% if target_role %} · <span class="pill purple">{{ target_role.get_role_display }}</span>{% endif %}</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="ad-btn" href="{% url 'user_profile' u.username %}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Public profile</a>
+    {% if not is_protected %}
+      {% if 'warn' in admin.perms %}{% url 'staff_user_action' u.pk as act_url %}{% include 'adminpanel/_reason_form.html' with url=act_url action='warn' label='Warn' icon='bi-exclamation-triangle' cls='' help='The student sees this warning the next time they open UniConnect.' %}{% endif %}
+      {% if 'suspend' in admin.perms %}
+        {% url 'staff_user_action' u.pk as act_url %}
+        {% if suspension or not u.is_active %}{% include 'adminpanel/_reason_form.html' with url=act_url action='reactivate' label='Reactivate' icon='bi-arrow-counterclockwise' cls='' %}
+        {% else %}{% include 'adminpanel/_reason_form.html' with url=act_url action='suspend' label='Suspend' icon='bi-slash-circle' cls='danger' days=True help='They are signed out and cannot sign in until the suspension ends or is lifted.' %}{% endif %}
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Account</h2>
+      {% if prof and 'verify' in admin.perms %}<form method="post" action="{% url 'staff_user_action' u.pk %}">{% csrf_token %}<input type="hidden" name="action" value="{% if prof.is_verified %}unverify{% else %}verify{% endif %}"><button class="ad-btn sm" type="submit"><i class="bi bi-patch-check"></i> {% if prof.is_verified %}Remove verification{% else %}Mark verified{% endif %}</button></form>{% endif %}</div>
+    <div class="ad-panel-body"><dl class="ad-kv">
+      {% if prof %}
+        <dt>University</dt><dd>{{ prof.university.name }}</dd>
+        <dt>Faculty</dt><dd>{{ prof.faculty.name }}</dd>
+        <dt>Department</dt><dd>{{ prof.department.name }} · {{ prof.level.name }}</dd>
+        <dt>Verified</dt><dd>{% if prof.is_verified %}<span class="pill green">Yes</span>{% else %}<span class="pill amber">No</span>{% endif %}</dd>
+        {% if 'private_details' in admin.perms %}
+          <dt>University email</dt><dd>{{ prof.university_email }}</dd>
+          <dt>Matric number</dt><dd>{{ prof.matric_number }}{% if same_matric %} <span class="pill red">Also used by {% for s in same_matric %}<a href="{% url 'staff_user' s.user_id %}">@{{ s.user.username }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}</dd>
+        {% endif %}
+        <dt>Bio</dt><dd>{{ prof.bio|default:"—" }}</dd>
+      {% endif %}
+      <dt>Joined</dt><dd>{{ u.date_joined|date:"d M Y, H:i" }}</dd>
+      <dt>Last sign-in</dt><dd>{{ u.last_login|date:"d M Y, H:i"|default:"Never" }}</dd>
+    </dl>
+    {% if prof and 'remove_content' in admin.perms and not is_protected %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        {% url 'staff_user_action' u.pk as act_url %}
+        {% if prof.profile_photo %}{% include 'adminpanel/_reason_form.html' with url=act_url action='clear_photo' label='Remove photo' icon='bi-person-x' cls='sm' %}{% endif %}
+        {% if prof.cover_photo %}{% include 'adminpanel/_reason_form.html' with url=act_url action='clear_cover' label='Remove cover' icon='bi-image' cls='sm' %}{% endif %}
+        {% if prof.bio %}{% include 'adminpanel/_reason_form.html' with url=act_url action='clear_bio' label='Clear bio' icon='bi-eraser' cls='sm' %}{% endif %}
+      </div>
+    {% endif %}</div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Activity summary</h2></div>
+    <div class="ad-panel-body"><div class="ad-stats">{% for label, n in summary %}<div><b>{{ n }}</b><small>{{ label }}</small></div>{% endfor %}</div></div></section>
+</div>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Reports about this account</h2></div>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>#</th><th>About</th><th>Reason</th><th>Status</th><th>Date</th></tr></thead><tbody>
+  {% for r in reports %}<tr><td>{% if 'review_reports' in admin.perms %}<a href="{% url 'staff_report' r.pk %}">#{{ r.pk }}</a>{% else %}#{{ r.pk }}{% endif %}</td><td>{{ r.get_target_type_display }}{% if r.target_label %}: <span class="mut">{{ r.target_label|truncatechars:60 }}</span>{% endif %}</td><td>{{ r.get_reason_display }}</td><td>{{ r.get_status_display }}</td><td class="mut">{{ r.created_at|date:"d M Y" }}</td></tr>
+  {% empty %}<tr><td colspan="5" class="ad-empty">No reports.</td></tr>{% endfor %}</tbody></table></div></section>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Warnings and suspensions</h2></div>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Action</th><th>Reason</th><th>By</th><th>Date</th><th>Status</th></tr></thead><tbody>
+  {% for a in actions %}<tr><td>{{ a.get_kind_display }}</td><td>{{ a.reason|truncatechars:120 }}</td><td class="mut">@{{ a.actor.username|default:"—" }}</td><td class="mut">{{ a.created_at|date:"d M Y, H:i" }}</td>
+    <td>{% if a.kind == 'suspension' %}{% if a.lifted_at %}<span class="pill grey">Lifted {{ a.lifted_at|date:"d M" }}</span>{% else %}<span class="pill red">Active</span>{% endif %}{% elif a.kind == 'warning' %}{% if a.acknowledged_at %}<span class="pill grey">Seen</span>{% else %}<span class="pill amber">Not seen yet</span>{% endif %}{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="ad-empty">None.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

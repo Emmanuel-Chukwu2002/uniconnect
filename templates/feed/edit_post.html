@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Edit post — UniConnect{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/app.css' %}?v=95">{% endblock %}
+
+{% block body %}
+<div class="compose-page">
+  <form method="post" action="{% url 'edit_post' post.id %}" enctype="multipart/form-data" class="compose-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <input type="hidden" name="remove_media_ids" value="" class="js-remove-media-ids">
+
+    <div class="compose-page-header">
+      <a href="{{ next_url|default:'javascript:history.back()' }}" class="compose-close-btn" aria-label="Close"><i class="bi bi-x-lg"></i></a>
+      <button type="submit" class="btn btn-primary compose-post-btn">Save</button>
+    </div>
+
+    {% if thread_position %}
+      <p class="ep-thread-note"><i class="bi bi-list-nested"></i> Post {{ thread_position.0 }} of {{ thread_position.1 }} in your thread — only this post changes; the others stay as they are.</p>
+    {% endif %}
+    <div class="compose-page-body">
+      <div class="compose-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">
+        {% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+      </div>
+      <div class="compose-input-area">
+        <textarea name="content" class="compose-textarea" placeholder="What's happening?" rows="4">{{ form.content.value|default:'' }}</textarea>
+        {% if existing_media %}
+          <div class="compose-media-preview-grid js-existing-media-grid count-{{ existing_media|length }}">
+            {% for m in existing_media %}
+              <div class="compose-media-preview-item" data-existing-id="{{ m.id }}">
+                {% if m.is_video %}
+                  <video src="{{ m.video_url }}"{% if m.poster_url %} poster="{{ m.poster_url }}" preload="none"{% endif %} controls></video>
+                {% else %}
+                  <img src="{{ m.photo_thumb }}" alt="">
+                {% endif %}
+                <button type="button" class="compose-remove-image js-remove-existing-media" aria-label="Remove media"><i class="bi bi-x-lg"></i></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="compose-media-preview-grid js-existing-media-grid"></div>
+        {% endif %}
+        <div class="compose-media-preview-grid js-new-media-grid"></div>
+        {% include 'feed/_compose_video_extras.html' %}
+      </div>
+    </div>
+
+    {% if form.errors %}
+      <div class="compose-error">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    <div class="compose-page-footer">
+      <div class="compose-reply-pill"><i class="bi bi-globe2"></i> Everyone can reply</div>
+      <div class="compose-toolbar">
+        <label class="compose-tool-btn" title="Add up to 4 photos, or a video">
+          <i class="bi bi-image"></i>
+          <input type="file" accept="image/*,video/*" class="compose-media-input" name="media" multiple hidden>
+        </label>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

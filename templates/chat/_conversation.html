@@ -1,0 +1,117 @@
+{% comment %}
+  An open conversation. Messages are drawn by conversation.js from the
+  JSON in #waConvData (the same function then draws live ones from the
+  WebSocket, so old and new messages look exactly alike).
+{% endcomment %}
+<div class="wa-conv js-wa-conv" data-conversation="{{ conversation.id }}" data-group="{{ conversation.is_group|yesno:'1,0' }}"{% if conversation.is_group %} data-mention-url="{% url 'chat_members' conversation.id %}"{% endif %}
+     {% if conv_info.other and not conv_info.is_self %}data-user="{{ conv_info.other.id }}"{% endif %}{% if conv_info.is_self %} data-self="1"{% endif %}>
+  <header class="wa-conv-header">
+    <a href="{% if participant.is_archived %}{% url 'chat_archived' %}{% else %}{% url 'messages' %}{% endif %}" class="wa-icon-btn wa-back-btn js-wa-back" data-wa-nav aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <button type="button" class="wa-conv-who js-wa-open-info" title="{% if conversation.is_group %}Group info{% else %}Contact info{% endif %}">
+      <span class="wa-head-avatar">{% include 'chat/_avatar.html' with p=conv_info size=40 %}<span class="wa-online-dot js-wa-head-dot" title="Online" {% if not presence.online %}hidden{% endif %}></span></span>
+      <span class="wa-conv-who-text">
+        <span class="wa-conv-name">{{ conv_info.title }}</span>
+        <span class="wa-conv-status js-wa-conv-status" data-default="{{ subtitle }}">{{ subtitle }}</span>
+      </span>
+    </button>
+    <div class="wa-header-actions">
+      {% if conversation.is_group and members %}
+        <button type="button" class="wa-member-stack js-wa-open-info" title="Group members" aria-label="Group members">
+          {% for m in members|slice:":3" %}{% include 'chat/_avatar.html' with p=m size=38 %}{% endfor %}
+          {% if members|length > 3 %}<span class="wa-member-more">+{{ members|length|add:"-3" }}</span>{% endif %}
+        </button>
+      {% endif %}
+      {% with sg=conversation.study_group %}{% if sg %}
+        {# A study group's chat: back to its page (posts, sessions, files, members) #}
+        <a href="{% url 'group_detail' sg.pk %}?tab={% if sg.show_posts %}posts{% else %}sessions{% endif %}" class="wa-icon-btn" data-no-soft title="Group page — posts, sessions, files" aria-label="Open the group page"><i class="bi bi-collection"></i></a>
+      {% endif %}{% endwith %}
+      <button type="button" class="wa-icon-btn wa-desktop-only js-wa-search-toggle" title="Search" aria-label="Search messages"><i class="bi bi-search"></i></button>
+      <div class="dropdown">
+        <button type="button" class="wa-icon-btn" data-bs-toggle="dropdown" aria-label="More options"><i class="bi bi-three-dots-vertical"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end wa-menu">
+          <li><button type="button" class="dropdown-item js-wa-open-info">{% if conversation.is_group %}Group info{% else %}View contact{% endif %}</button></li>
+          {% with sg=conversation.study_group %}{% if sg %}<li><a class="dropdown-item" href="{% url 'group_detail' sg.pk %}" data-no-soft>Group page (posts, sessions, files)</a></li>{% endif %}{% endwith %}
+          <li><button type="button" class="dropdown-item js-wa-search-toggle">Search</button></li>
+          <li><button type="button" class="dropdown-item js-wa-chat-action" data-on="pin" data-off="unpin" data-state="{{ participant.is_pinned|yesno:'1,0' }}" data-label-on="Pin chat" data-label-off="Unpin chat">{% if participant.is_pinned %}Unpin chat{% else %}Pin chat{% endif %}</button></li>
+          <li><button type="button" class="dropdown-item js-wa-chat-action" data-on="favourite" data-off="unfavourite" data-state="{{ participant.is_favourite|yesno:'1,0' }}" data-label-on="Add to favourites" data-label-off="Remove from favourites">{% if participant.is_favourite %}Remove from favourites{% else %}Add to favourites{% endif %}</button></li>
+          <li><button type="button" class="dropdown-item js-wa-chat-action" data-on="mute" data-off="unmute" data-state="{{ participant.is_muted|yesno:'1,0' }}" data-label-on="Mute notifications…" data-label-off="Unmute notifications">{% if participant.is_muted %}Unmute notifications{% if participant.muted_until %} <small class="wa-menu-note">(muted until {{ participant.muted_until|date:'D g:i a' }})</small>{% endif %}{% else %}Mute notifications…{% endif %}</button></li>
+          <li><button type="button" class="dropdown-item js-wa-chat-action" data-on="archive" data-off="unarchive" data-state="{{ participant.is_archived|yesno:'1,0' }}" data-label-on="Archive chat" data-label-off="Unarchive chat">{% if participant.is_archived %}Unarchive chat{% else %}Archive chat{% endif %}</button></li>
+          <li><button type="button" class="dropdown-item js-wa-chat-action" data-on="mark_unread" data-single="1">Mark as unread</button></li>
+          <li><button type="button" class="dropdown-item js-wa-wallpaper">Chat wallpaper</button></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'messages' %}" data-wa-nav>Close chat</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  {# Pinned messages (static/js/chat-pins.js) #}
+  <div class="pin-bar wa-pin-bar js-wa-pins" hidden></div>
+
+  <div class="wa-conv-search js-wa-conv-search" hidden>
+    <i class="bi bi-search"></i>
+    <input type="search" class="js-wa-conv-search-input" placeholder="Search this chat" aria-label="Search this chat">
+    <span class="wa-conv-search-count js-wa-conv-search-count"></span>
+    <button type="button" class="wa-icon-btn js-wa-search-toggle" aria-label="Close search"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <div class="wa-messages js-wa-messages" tabindex="-1" aria-live="polite">
+    <div class="wa-load-older js-wa-load-older" hidden><span class="spinner-border spinner-border-sm"></span></div>
+    <div class="wa-encryption-note"><i class="bi bi-shield-lock"></i> Messages are stored on UniConnect's server and only shown to people in this chat.</div>
+    <div class="wa-message-list js-wa-message-list"></div>
+  </div>
+
+  <button type="button" class="wa-scroll-down js-wa-scroll-down" hidden aria-label="Scroll to newest">
+    <i class="bi bi-chevron-double-down"></i><span class="wa-scroll-down-count js-wa-scroll-down-count" hidden></span>
+  </button>
+
+  {% if is_request %}
+    {# A message request (chat/requests.py): Accept moves it to your chats; replying does too. #}
+    <div class="wa-request-bar js-wa-request-bar" data-conversation="{{ conversation.id }}">
+      {% include 'chat/_avatar.html' with p=conv_info size=44 %}
+      <div class="wa-request-text">
+        <b>{{ conv_info.title }} wants to send you a message</b>
+        <span>You don't follow them. They won't know you've seen it until you accept or reply.</span>
+      </div>
+      <div class="wa-request-btns">
+        <button type="button" class="wa-request-btn is-delete js-wa-request" data-action="decline_request">Delete</button>
+        <button type="button" class="wa-request-btn is-accept js-wa-request" data-action="accept_request">Accept</button>
+      </div>
+    </div>
+  {% endif %}
+  {% if can_post %}
+  <form class="wa-composer js-wa-composer" autocomplete="off">
+    <div class="wa-emoji-panel js-wa-emoji-panel" hidden></div>
+    <div class="wa-attach-menu js-wa-attach-menu" hidden>
+      <label class="wa-attach-item"><span class="wa-attach-icon wa-attach-doc"><i class="bi bi-file-earmark-text-fill"></i></span>Document
+        <input type="file" class="js-wa-file" data-kind="file" hidden></label>
+      <label class="wa-attach-item"><span class="wa-attach-icon wa-attach-photo"><i class="bi bi-image-fill"></i></span>Photos &amp; videos
+        <input type="file" class="js-wa-file" data-kind="image" accept="image/*,video/mp4,video/webm,video/quicktime" hidden></label>
+      {% if conversation.is_group %}<button type="button" class="wa-attach-item js-wa-poll"><span class="wa-attach-icon wa-attach-poll"><i class="bi bi-bar-chart-fill"></i></span>Poll</button>{% endif %}
+    </div>
+    {# Replying to a message (static/js/chat/composer.js) #}
+    <div class="wa-reply-bar js-wa-reply-bar" hidden>
+      <div class="wa-reply-quote"><b class="js-wa-reply-name"></b><span class="js-wa-reply-text"></span></div>
+      <button type="button" class="wa-composer-btn js-wa-reply-cancel" aria-label="Cancel reply"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="wa-composer-box">
+      <button type="button" class="wa-composer-btn js-wa-emoji-toggle" aria-label="Emoji"><i class="bi bi-emoji-smile"></i></button>
+      <textarea class="wa-composer-input js-wa-input" rows="1" placeholder="Message" aria-label="Type a message" maxlength="4000"></textarea>
+      <button type="button" class="wa-composer-btn js-wa-attach-toggle" aria-label="Attach"><i class="bi bi-paperclip"></i></button>
+      <label class="wa-composer-btn js-wa-camera-btn" aria-label="Camera"><i class="bi bi-camera"></i>
+        <input type="file" class="js-wa-file" data-kind="image" accept="image/*" capture="environment" hidden></label>
+      <button type="button" class="wa-composer-btn js-wa-mic" aria-label="Record voice message" title="Record voice message"><i class="bi bi-mic"></i></button>
+    </div>
+    <div class="wa-recorder js-wa-recorder" hidden>
+      <button type="button" class="wa-composer-btn js-wa-rec-cancel" aria-label="Cancel recording"><i class="bi bi-trash"></i></button>
+      <span class="wa-rec-dot"></span><span class="wa-rec-time js-wa-rec-time">0:00</span>
+      <span class="wa-rec-hint">Recording…</span>
+    </div>
+    <button type="button" class="wa-send-btn js-wa-send" aria-label="Send" data-mode="idle" aria-disabled="true"><i class="bi bi-send-fill"></i></button>
+  </form>
+  {% else %}
+  <div class="wa-readonly-bar"><i class="bi bi-megaphone"></i> Only community admins can send messages here.</div>
+  {% endif %}
+
+  <aside class="wa-info-panel js-wa-info-panel" hidden></aside>
+</div>

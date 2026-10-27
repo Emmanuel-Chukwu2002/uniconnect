@@ -1,0 +1,167 @@
+{% comment %}
+Campus Pulse (feed/pulse.py bar_for): the bar at the top of Home, which replaced Quick access.
+Title + audience switch (My University / My Communities / Everyone), type chips, then one
+circle per update: "Your Update" first, then yours, people you follow, your university,
+your communities, everyone else (unopened before opened). The chips and the switch filter
+in the page (data-kind / data-scopes); what you may see at all is decided on the server.
+Clicking a circle opens the viewer (feed/_pulse_viewer.html). Script: feed/_pulse_js.html.
+Styles: restyle.css ("Campus Pulse").
+{% endcomment %}
+<section class="pulse js-pulse" aria-label="Campus Pulse">
+  <header class="pulse-head">
+    <div class="pulse-title">
+      <span class="pulse-flame" aria-hidden="true"><i class="bi bi-fire"></i></span>
+      <div><h2>Campus Pulse</h2><p>What's happening around your university?</p></div>
+    </div>
+    <div class="dropdown pulse-scope">
+      <button type="button" class="pulse-scope-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Whose updates to show">
+        <i class="bi bi-building js-pulse-scope-icon"></i> <span class="js-pulse-scope-label">My University</span> <i class="bi bi-chevron-down pulse-caret"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end pulse-scope-menu">
+        <li><button type="button" class="dropdown-item js-pulse-scope is-on" data-scope="uni" data-icon="bi-building" data-label="My University"><i class="bi bi-building"></i><span><b>My University</b><small>{{ pulse.composer.university.short_name|default:"Your campus" }} students</small></span></button></li>
+        <li><button type="button" class="dropdown-item js-pulse-scope" data-scope="comm" data-icon="bi-people" data-label="My Communities"><i class="bi bi-people"></i><span><b>My Communities</b><small>{% if pulse.has_communities %}Communities you're in{% else %}Join a community to see these{% endif %}</small></span></button></li>
+        <li><button type="button" class="dropdown-item js-pulse-scope" data-scope="all" data-icon="bi-globe2" data-label="Everyone"><i class="bi bi-globe2"></i><span><b>Everyone</b><small>Shared with all universities</small></span></button></li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="pulse-chips" role="group" aria-label="Filter by type">
+    <button type="button" class="pulse-chip is-on js-pulse-chip" data-kind="all" aria-pressed="true"><i class="bi bi-grid-fill"></i> All</button>
+    {% for key, label, icon, colour in pulse.kinds %}
+      <button type="button" class="pulse-chip pk-{{ colour }} js-pulse-chip" data-kind="{{ key }}" aria-pressed="false"><i class="bi {{ icon }}"></i> {{ label }}</button>
+    {% endfor %}
+  </div>
+
+  <div class="td-scroll js-td-scroll pulse-scroll">
+    <button type="button" class="td-arrow is-prev js-td-prev" aria-label="Back" hidden><i class="bi bi-chevron-left"></i></button>
+    <div class="td-row pulse-row" role="list">
+      <button type="button" class="pc pc-add js-pulse-compose" role="listitem">
+        <span class="pc-ring"><span class="pc-face"><i class="bi bi-plus-lg"></i></span></span>
+        <span class="pc-label">Your Update</span><span class="pc-sub">&nbsp;</span>
+      </button>
+      {% for c in pulse.circles %}
+        <button type="button" class="pc pk-{{ c.kind.colour }}{% if c.seen %} is-seen{% endif %}{% if c.mine %} is-mine{% endif %} js-pulse-open" role="listitem"
+          data-id="{{ c.status.pk }}" data-kind="{{ c.status.kind }}" data-scopes="{{ c.scopes }}"
+          title="{% if c.mine %}You{% else %}{{ c.name }}{% endif %} · {{ c.label }}">
+          <span class="pc-ring">
+            <span class="pc-face"{% if c.photo %} style="background-image:url('{{ c.photo }}')"{% endif %}>{% if not c.photo %}{{ c.initials }}{% endif %}</span>
+            <span class="pc-badge"><i class="bi {{ c.kind.icon }}"></i></span>
+            {% if c.status.kind == 'available' %}<span class="pc-live" aria-label="Available now"></span>{% endif %}
+            {% if c.answered %}<span class="pc-done" aria-label="Answered"><i class="bi bi-check-lg"></i></span>{% endif %}
+          </span>
+          <span class="pc-label">{% if c.mine %}You{% else %}{{ c.label }}{% endif %}</span>
+          <span class="pc-sub">{% if c.mine %}{{ c.label }}{% else %}{{ c.sub }}{% endif %}</span>
+        </button>
+      {% endfor %}
+      <p class="pulse-empty js-pulse-empty" hidden>No updates here yet. <button type="button" class="js-pulse-compose">Share one</button></p>
+    </div>
+    <button type="button" class="td-arrow is-next js-td-next" aria-label="More" hidden><i class="bi bi-chevron-right"></i></button>
+  </div>
+</section>
+
+{# ---------- Composer ---------- #}
+<div class="modal fade pulse-sheet" id="pulseCompose" tabindex="-1" aria-hidden="true" aria-labelledby="pulseComposeTitle">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <button type="button" class="td-sheet-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      <form method="post" action="{% url 'pulse_create' %}" enctype="multipart/form-data" class="pf js-pulse-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <h3 class="td-sheet-title" id="pulseComposeTitle"><i class="bi bi-fire"></i> Share on Campus Pulse</h3>
+
+        <div class="pf-kinds" role="radiogroup" aria-label="Type of update">
+          {% for key, label, icon, colour in pulse.composer.kinds %}
+            <label class="pf-kind pk-{{ colour }}"><input type="radio" name="kind" value="{{ key }}"{% if forloop.first %} checked{% endif %}><span><i class="bi {{ icon }}"></i> {{ label }}</span></label>
+          {% endfor %}
+        </div>
+
+        <fieldset class="pf-part" data-for="available">
+          <div class="pf-two">
+            <label><span>I'm available for</span>
+              <select name="activity" required>
+                <option value="">Choose…</option>
+                {% for value, label in pulse.composer.activities %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+              </select>
+            </label>
+            <label><span>For</span>
+              <select name="hours">{% for h, label in pulse.composer.hours %}<option value="{{ h }}"{% if h == 3 %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pf-part" data-for="event">
+          {% if pulse.composer.events %}
+            <label><span>From the Events page <small>(optional)</small></span>
+              <select name="event" class="js-pf-event">
+                <option value="">— Type the details instead —</option>
+                {% for e in pulse.composer.events %}<option value="{{ e.pk }}" data-title="{{ e.title }}" data-place="{{ e.location }}" data-date="{{ e.date|date:'Y-m-d' }}" data-time="{{ e.time|time:'H:i' }}">{{ e.title }} · {{ e.date|date:"D j M" }}</option>{% endfor %}
+              </select>
+            </label>
+          {% endif %}
+          <label><span>Event</span><input type="text" name="event_title" maxlength="120" placeholder="e.g. Django Workshop" required></label>
+          <label><span>Where</span><input type="text" name="event_place" maxlength="120" placeholder="e.g. Computer Science Department"></label>
+          <div class="pf-two">
+            <label><span>Date</span><input type="date" name="event_date" min="{% now 'Y-m-d' %}" required></label>
+            <label><span>Time</span><input type="time" name="event_time" value="16:00"></label>
+          </div>
+        </fieldset>
+
+        <label class="pf-text"><span class="visually-hidden">Your update</span>
+          <textarea name="text" maxlength="280" rows="3" class="js-pf-text" placeholder="{{ pulse.composer.placeholders.study }}"></textarea>
+          <small class="pf-count js-pf-count">0/280</small>
+        </label>
+        {{ pulse.composer.placeholders|json_script:"pulsePlaceholders" }}
+
+        <fieldset class="pf-part" data-for="study available question">
+          <div class="pf-two">
+            <label><span>Course <small>(optional)</small></span>
+              <select name="course">
+                <option value="">{% if pulse.composer.courses %}No course{% else %}Add courses in Course Companion{% endif %}</option>
+                {% for c in pulse.composer.courses %}<option value="{{ c.pk }}">{{ c.code }} – {{ c.title }}</option>{% endfor %}
+              </select>
+            </label>
+            <label class="pf-part" data-for="study available"><span>Topic <small>(optional)</small></span><input type="text" name="topic" maxlength="120" placeholder="e.g. Design of Experiments"></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pf-part" data-for="event opportunity people">
+          <label><span>Link <small>(optional)</small></span><input type="url" name="link" maxlength="300" placeholder="https://"></label>
+        </fieldset>
+
+        <div class="pf-row">
+          <label class="pf-media"><input type="file" name="media" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="js-pf-media"><i class="bi bi-image"></i> <span class="js-pf-file">Photo / video</span></label>
+          <label class="pf-audience"><i class="bi bi-eye"></i>
+            <select name="audience" class="js-pf-audience" aria-label="Who can see this">
+              <option value="university">My University{% if pulse.composer.university %} ({{ pulse.composer.university.short_name }}){% endif %}</option>
+              {% if pulse.composer.communities %}<option value="communities">A community…</option>{% endif %}
+              <option value="everyone">Everyone</option>
+            </select>
+          </label>
+        </div>
+        {% if pulse.composer.communities %}
+          <fieldset class="pf-community js-pf-community" hidden disabled>
+            <label><span>Community</span>
+              <select name="community" required>{% for c in pulse.composer.communities %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}</select>
+            </label>
+          </fieldset>
+        {% endif %}
+        <p class="pf-note js-pf-note">Only the audience you pick can see this. It disappears after 24 hours.</p>
+        <button type="submit" class="td-submit">Share update</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ---------- Viewer (one update at a time; filled from /pulse/<id>/) ---------- #}
+<div class="modal fade pulse-sheet pulse-viewer" id="pulseViewer" tabindex="-1" aria-hidden="true" aria-label="Campus Pulse update">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="pv-nav">
+        <button type="button" class="pv-step js-pulse-prev" aria-label="Previous update"><i class="bi bi-chevron-left"></i></button>
+        <span class="pv-pos js-pulse-pos"></span>
+        <button type="button" class="pv-step js-pulse-next" aria-label="Next update"><i class="bi bi-chevron-right"></i></button>
+        <button type="button" class="td-sheet-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body js-pulse-body"></div>
+    </div>
+  </div>
+</div>

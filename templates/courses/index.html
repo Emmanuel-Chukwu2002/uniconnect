@@ -1,0 +1,73 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if section %}{{ section.title }} — {% endif %}Course Companion — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  Course Companion home (courses/views.py index): My Courses, Quick Access,
+  then courses to add, closest first (courses/discover.py), as cards like
+  Who to follow. Styles: restyle.css ("Course Companion", "Who to follow cards").
+{% endcomment %}
+<div class="cc">
+  <div class="st-top">
+    <a href="{% if section or q %}{% url 'courses' %}{% else %}{% url 'home' %}{% endif %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>{% if section %}{{ section.title }}{% else %}Course Companion{% endif %}</h1>
+  </div>
+
+  <form class="sr-box cc-search" method="get" action="{% url 'courses' %}" role="search">
+    <button type="submit" class="sr-go" aria-label="Search" title="Search"><i class="bi bi-search"></i></button>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search courses…" aria-label="Search courses by code or title" autocomplete="off">
+    {% if q %}<a href="{% url 'courses' %}" class="sr-clear" aria-label="Clear search"><i class="bi bi-x-circle-fill"></i></a>{% endif %}
+  </form>
+
+  {# Quick Access: always at the top, right under the search bar #}
+  <section class="cc-quick-wrap">
+    <h2 class="cc-title">Quick Access</h2>
+    <nav class="cc-quick" aria-label="Quick access">
+      <a href="{% url 'timetable' %}" class="cc-quick-item"><span><i class="bi bi-calendar3-week"></i></span>Timetable</a>
+      {% for key, label, icon in sections %}
+        <a href="{% url 'courses_section' key %}" class="cc-quick-item"><span><i class="bi {{ icon }}"></i></span>{{ label }}</a>
+      {% endfor %}
+    </nav>
+  </section>
+
+  {% if q %}
+    <div class="pc-crumb"><span><b>Results for “{{ q }}”</b> · {{ items|length }}</span></div>
+    {% with empty_text='No course matches “'|add:q|add:'” yet — add it below.' %}
+      {% include 'feed/_pc_grid.html' with card='courses/_pc_card.html' empty_icon='bi-mortarboard' empty_title='No course found' %}
+    {% endwith %}
+    <section class="cc-card cc-new">
+      <header class="cc-head"><h2>Can't find your course?</h2></header>
+      <p class="cc-muted">Add it for everyone at your university — then share notes and past questions.</p>
+      <form method="post" action="{% url 'course_new' %}" class="cc-new-form">{% csrf_token %}
+        <input type="text" name="code" value="{{ suggest_code }}" placeholder="Code, e.g. COS 401" maxlength="20" required aria-label="Course code">
+        <input type="text" name="title" placeholder="Title, e.g. Data Structures" maxlength="120" required aria-label="Course title">
+        <button type="submit" class="dt-btn is-sm"><i class="bi bi-plus-lg"></i> Add course</button>
+      </form>
+    </section>
+  {% elif section %}
+    <div class="pc-crumb">
+      <a href="{% url 'courses' %}"><i class="bi bi-arrow-left"></i> Course Companion</a>
+      <span>{{ section.sub }} · {{ total }} course{{ total|pluralize }}</span>
+    </div>
+    {% include 'feed/_pc_grid.html' with card='courses/_pc_card.html' empty_icon='bi-mortarboard' empty_title='Nothing here yet' empty_text='Every course in this group is already in My Courses.' %}
+  {% else %}
+    <section class="pc-section" aria-labelledby="pc-mine">
+      <header class="pc-head">
+        <div><h2 id="pc-mine">My Courses</h2><p>{% if mine %}{{ mine|length }} course{{ mine|length|pluralize }} this semester{% else %}The courses you're taking{% endif %}</p></div>
+      </header>
+      {% if mine %}
+        <div class="pc-grid">{% for item in mine %}{% include 'courses/_pc_card.html' with i=forloop.counter0 %}{% endfor %}</div>
+      {% else %}
+        <div class="cc-empty">
+          <i class="bi bi-mortarboard"></i>
+          <p>Add the courses you're taking this semester — tap <b>Add</b> on one below, or search by code above, e.g. <b>COS 401</b>.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    {% include 'feed/_pc_sections.html' with card='courses/_pc_card.html' %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}{% include 'feed/_pc_act_js.html' %}{% endblock %}

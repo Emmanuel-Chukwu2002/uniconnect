@@ -1,0 +1,30 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Universities{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Universities</h1><p>Universities on UniConnect, their students and structure. An inactive university is hidden from registration.</p></div></div>
+<section class="ad-panel">
+  <div class="ad-table-wrap"><table class="ad-table">
+    <thead><tr><th>University</th><th>Short name</th><th>Student email domain</th><th>Faculties</th><th>Registered students</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in unis %}
+      <tr><td class="ttl"><span class="ad-crest" style="background:hsl({% widthratio u.pk 1 67 %},62%,42%)"><i class="bi bi-shield-fill"></i></span>{{ u.name }}</td>
+        <td>{{ u.short_name }}</td><td class="mut">@{{ u.email_domain }}</td><td class="num">{{ u.n_faculties }}</td><td class="num">{{ u.n_students }}</td>
+        <td>{% if u.is_active %}<span class="pill green">Active</span>{% else %}<span class="pill grey">Inactive</span>{% endif %}</td>
+        <td><a class="ad-btn sm" href="{% url 'staff_university' u.pk %}">Manage</a></td></tr>
+    {% empty %}<tr><td colspan="7" class="ad-empty">No universities.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% if 'manage_universities' in admin.perms %}
+<section class="ad-panel" id="add"><div class="ad-panel-head"><h2>Add a university</h2></div>
+  <form method="post" class="ad-panel-body ad-form">{% csrf_token %}
+    <div class="ad-form-row">
+      <label>Full name<input class="ad-input" name="name" maxlength="200" required placeholder="e.g. University of Lagos"></label>
+      <label>Short name<input class="ad-input" name="short_name" maxlength="20" required placeholder="e.g. UNILAG"></label>
+      <label>Student email domain<input class="ad-input" name="email_domain" maxlength="100" required placeholder="e.g. live.unilag.edu.ng"></label>
+    </div>
+    <label class="ad-check"><input type="checkbox" name="is_active" value="1"> Open for registration now <small>(leave off while faculties and departments are being set up)</small></label>
+    <div><button class="ad-btn primary" type="submit"><i class="bi bi-plus-lg"></i> Add university</button></div>
+  </form></section>
+{% endif %}
+{% endblock %}

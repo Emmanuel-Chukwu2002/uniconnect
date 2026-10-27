@@ -1,0 +1,42 @@
+# One-click setup on Render (render.com): New + > Blueprint > pick this repository.
+# It creates the PostgreSQL database and the website, and connects them. DEPLOY.md has the steps.
+databases:
+  - name: uniconnect-db
+    plan: free
+    databaseName: uniconnect
+    user: uniconnect_user
+
+services:
+  - type: web
+    name: uniconnect
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    # Daphne serves the pages and the real-time chat (WebSockets) together.
+    startCommand: daphne -b 0.0.0.0 -p $PORT uniconnect.asgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.2
+      - key: DATABASE_URL
+        fromDatabase:
+          name: uniconnect-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: SERVE_MEDIA
+        value: "1"
+      # Fill these in on Render's Environment tab (the same values as your .env):
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

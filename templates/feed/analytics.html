@@ -1,0 +1,49 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Analytics — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}All your posts' activity (feed/analytics.py analytics_overview). Styles: restyle.css ("Post analytics").{% endcomment %}
+<div class="an">
+  <div class="st-top">
+    <a href="{% url 'profile' %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>Analytics</h1>
+  </div>
+  <p class="rp-muted">How your posts did over the last {{ days }} days. Only you can see this.</p>
+
+  <section class="an-tiles" aria-label="Summary">
+    {% for label, value, help in tiles %}
+      <div class="an-tile"><span>{{ label }}</span><b>{{ value }}</b><small>{{ help }}</small></div>
+    {% endfor %}
+  </section>
+
+  {% include 'feed/_analytics_chart.html' with chart_title="Impressions per day" empty_what="your posts" %}
+
+  {% if top %}
+    <a href="{% url 'post_analytics' top.id %}" class="rp-card an-top">
+      <span class="an-top-badge"><i class="bi bi-trophy"></i> Top post</span>
+      <span class="an-post-text">{{ top.content|default:"(photo or video post)"|truncatechars:140 }}</span>
+      <small>{{ top.v.impressions }} impression{{ top.v.impressions|pluralize }} · {{ top.eng.total }} engagement{{ top.eng.total|pluralize }} · {{ top.rate }} rate</small>
+    </a>
+  {% endif %}
+
+  <section class="rp-card an-card">
+    <h2>Your posts</h2>
+    {% if posts %}
+      <div class="an-rows" role="table" aria-label="Your posts">
+        <div class="an-row is-head" role="row"><span role="columnheader" class="an-row-post">Post</span><span role="columnheader"><span class="an-lg">Impressions</span><span class="an-sm">Seen</span></span><span role="columnheader"><span class="an-lg">Engagements</span><span class="an-sm">Eng.</span></span><span role="columnheader">Rate</span></div>
+        {% for p in shown %}
+          <a href="{% url 'post_analytics' p.id %}" class="an-row" role="row">
+            <span role="cell" class="an-row-post"><b>{{ p.content|default:"(photo or video post)"|truncatechars:70 }}</b><small>{{ p.created_at|date:"j M" }}</small></span>
+            <span role="cell" data-label="Impressions">{{ p.v.impressions }}</span>
+            <span role="cell" data-label="Engagements">{{ p.eng.total }}</span>
+            <span role="cell" data-label="Rate">{{ p.rate }}</span>
+          </a>
+        {% endfor %}
+      </div>
+      {% if posts|length > shown|length %}<a href="?all=1" class="an-more">Show all {{ posts|length }} posts</a>{% endif %}
+    {% else %}
+      <p class="rp-muted">You haven't posted yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

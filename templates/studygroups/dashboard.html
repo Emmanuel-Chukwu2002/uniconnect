@@ -1,0 +1,167 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags static %}
+{% block title %}Study Groups — UniConnect{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/groups.css' %}?v=16">{% endblock %}
+
+{% block feed_content %}
+{% comment %}The Groups dashboard (studygroups/views.py index → studygroups/dashboard.py).
+Styles: groups.css ("Groups dashboard"). Searching, a type filter's "See all", or ?view=browse use index.html.{% endcomment %}
+<div class="gd">
+  <div class="gd-top">
+    <a href="{% url 'home' %}" class="gd-round" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+    <div class="gd-top-text"><small>Groups</small><h1>Study Groups</h1></div>
+    <a href="{% url 'group_create' %}{% if kind %}?type={{ kind }}{% endif %}" class="gd-round is-accent" aria-label="New group" title="New group"><i class="bi bi-plus-lg"></i></a>
+  </div>
+
+  <form class="gd-search" method="get" action="{% url 'groups' %}" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" placeholder="Search groups" aria-label="Search groups">
+    {% if kind %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+  </form>
+
+  {# Types, as round subject buttons #}
+  <nav class="gd-types" aria-label="Group types">
+    <a href="{% url 'groups' %}" class="gd-type{% if not kind %} is-on{% endif %}"><span><i class="bi bi-grid-fill"></i></span>All</a>
+    {% for value, label, icon, colour, help in types %}
+      <a href="?type={{ value }}" class="gd-type is-{{ colour }}{% if kind == value %} is-on{% endif %}" title="{{ help }}"><span><i class="bi {{ icon }}"></i></span>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {# ---------- My Groups ---------- #}
+  <section class="gd-sec">
+    <div class="gd-sec-head"><h2>My Groups</h2>{% if my_groups %}<a href="?tab=mine{% if kind %}&amp;type={{ kind }}{% endif %}">See all <span>{{ my_groups|length }}</span></a>{% endif %}</div>
+    {% if my_groups %}
+      <div class="gd-scroll" role="list">
+        {% for g in my_groups %}
+          <a role="listitem" href="{{ g.get_absolute_url }}" class="gd-tile is-wide" style="--g:{{ g.grad }};--ga:{{ g.grad_a }}">
+            <span class="gd-badge" title="{{ g.n_members }} member{{ g.n_members|pluralize }}">{{ g.n_members }}</span>
+            {% if g.course_code %}<small class="gd-code">{{ g.course_code }}</small>{% endif %}
+            <b>{{ g.name }}</b>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <a href="{% url 'group_create' %}" class="gd-empty"><i class="bi bi-plus-circle"></i><span><b>You're not in any group yet</b><small>Join one below or start your own.</small></span></a>
+    {% endif %}
+  </section>
+
+  {# ---------- Recent Activity ---------- #}
+  {% if activity %}
+  <section class="gd-sec">
+    <div class="gd-sec-head"><h2>Recent Activity</h2></div>
+    <div class="gd-acts js-gd-more" data-show="3">
+      {% for p in activity %}{% with sp=p.author.student_profile %}
+        <a href="{{ p.group.get_absolute_url }}?tab=posts#p{{ p.pk }}" class="gd-act">
+          <span class="gd-act-head">
+            <span class="sr-avatar is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+            <span><b>{{ p.author.get_full_name|default:p.author.username }}</b><small>{{ p.created_at|ago }} · {{ p.group.name }}</small></span>
+          </span>
+          <span class="gd-act-body">{% if p.title %}<b>{{ p.title }}</b> {% endif %}{{ p.body|truncatechars:160 }}</span>
+          <span class="gd-act-foot">
+            <span><i class="bi bi-arrow-up-circle"></i> {{ p.n_likes }} upvote{{ p.n_likes|pluralize }}</span>
+            <span><i class="bi bi-chat-square"></i> {{ p.n_comments }} comment{{ p.n_comments|pluralize }}</span>
+          </span>
+        </a>
+      {% endwith %}{% endfor %}
+    </div>
+    {% if activity|length > 3 %}<button type="button" class="gd-pill js-gd-toggle" data-more="View full activity" data-less="Show less">View full activity</button>{% endif %}
+  </section>
+  {% endif %}
+
+  {# ---------- Your leaderboard ---------- #}
+  <section class="gd-sec">
+    <div class="gd-sec-head"><h2>Leaderboard</h2></div>
+    <div class="gd-board">
+      <div class="gd-board-stats">
+        <span class="gd-blob" aria-hidden="true"></span>
+        <div class="gd-stat"><small>Campus rank</small><b><i class="bi bi-geo-alt-fill"></i> {% if board.campus_rank %}{{ board.campus_rank }}{% else %}–{% endif %}</b></div>
+        <div class="gd-stat"><small>Department</small><b class="is-blue">{% if board.dept_rank %}{{ board.dept_rank }}{% else %}–{% endif %}</b></div>
+        <a href="#gd-global" class="gd-round is-accent gd-board-go" aria-label="See the campus leaderboard"><i class="bi bi-arrow-right"></i></a>
+        <div class="gd-stat is-full"><small>Total points</small><b><i class="bi bi-trophy-fill"></i> {{ board.my_points }}</b></div>
+      </div>
+      <h3>{{ board.friends_label }}</h3>
+      <ol class="gd-people js-gd-more" data-show="3">
+        {% for r in board.friends %}{% with sp=r.user.student_profile %}
+          <li class="{% if r.me %}is-me{% endif %}">
+            <a href="{% url 'user_profile' r.user.username %}" class="sr-avatar is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+            <span><b>{% if r.me %}You{% else %}{{ r.user.get_full_name|default:r.user.username }}{% endif %}</b><small>{{ r.points }} point{{ r.points|pluralize }}</small></span>
+          </li>
+        {% endwith %}{% endfor %}
+      </ol>
+      {% if board.friends|length > 3 %}<button type="button" class="gd-pill js-gd-toggle" data-more="View all" data-less="Show less">View all</button>{% endif %}
+      <p class="gd-note">Points: a post {{ board.points_rule.post }}, a comment {{ board.points_rule.comment }}, each upvote on your post {{ board.points_rule.upvote }}.</p>
+    </div>
+  </section>
+
+  {# ---------- Picked For You ---------- #}
+  {% if picked %}
+  <section class="gd-sec">
+    <div class="gd-sec-head"><h2>Picked For You</h2><a href="?view=browse{% if kind %}&amp;type={{ kind }}{% endif %}">See all</a></div>
+    <div class="gd-grid">
+      {% for g in picked %}
+        <a href="{{ g.get_absolute_url }}" class="gd-tile" style="--g:{{ g.grad }};--ga:{{ g.grad_a }}">
+          <small class="gd-count">{{ g.n_members }} member{{ g.n_members|pluralize }}</small>
+          <b>{{ g.name }}</b>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------- Popular Groups ---------- #}
+  {% if popular %}
+  <section class="gd-sec">
+    <div class="gd-sec-head"><h2>Popular Groups</h2><a href="?view=browse{% if kind %}&amp;type={{ kind }}{% endif %}">See all</a></div>
+    <div class="gd-grid is-3">
+      {% for g in popular %}
+        <a href="{{ g.get_absolute_url }}" class="gd-tile" style="--g:{{ g.grad }};--ga:{{ g.grad_a }}">
+          <small class="gd-count">{{ g.n_members }} member{{ g.n_members|pluralize }}</small>
+          <b>{{ g.name }}</b>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------- Global (campus) leaderboard ---------- #}
+  {% if board.top %}
+  <section class="gd-sec" id="gd-global">
+    <div class="gd-sec-head"><h2>Campus Leaderboard</h2>{% if board.campus_rank %}<span class="gd-muted">You: #{{ board.campus_rank }}</span>{% endif %}</div>
+    <div class="gd-board is-plain">
+      <ol class="gd-people is-ranked js-gd-more" data-show="5">
+        {% for r in board.top %}{% with sp=r.user.student_profile %}
+          <li class="{% if r.me %}is-me{% endif %}">
+            <em>{{ r.rank }}</em>
+            <a href="{% url 'user_profile' r.user.username %}" class="sr-avatar is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+            <span><b>{% if r.me %}You{% else %}{{ r.user.get_full_name|default:r.user.username }}{% endif %}</b><small>{{ r.points }} points</small></span>
+          </li>
+        {% endwith %}{% endfor %}
+      </ol>
+      <div class="gd-board-foot">
+        {% if board.top|length > 5 %}<button type="button" class="gd-pill js-gd-toggle" data-more="View all" data-less="Show less">View all</button>{% endif %}
+        {% if board.campus_rank and board.campus_rank > 10 %}<span class="gd-muted">You: #{{ board.campus_rank }} · {{ board.my_points }} points</span>{% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <a href="{% url 'group_create' %}{% if kind %}?type={{ kind }}{% endif %}" class="gd-cta"><span><b>Create new study group</b><small>Invite classmates and start learning together</small></span><i class="bi bi-plus-lg"></i></a>
+  <p class="gd-browse"><a href="?view=browse">Browse every group by department and faculty <i class="bi bi-arrow-right"></i></a></p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // "View full activity" / "View all": lists start short and open in place.
+  document.querySelectorAll('.js-gd-more').forEach(function (list) {
+    var n = +list.dataset.show, btn = list.parentNode.querySelector('.js-gd-toggle');
+    if (!btn) return;
+    var items = list.children, open = false;
+    function apply() { for (var i = 0; i < items.length; i++) items[i].hidden = !open && i >= n; btn.textContent = open ? btn.dataset.less : btn.dataset.more; btn.setAttribute('aria-expanded', String(open)); }
+    btn.addEventListener('click', function () { open = !open; apply(); });
+    apply();
+  });
+})();
+</script>
+{% endblock %}

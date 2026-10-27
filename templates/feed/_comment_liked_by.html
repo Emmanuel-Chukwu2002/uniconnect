@@ -1,0 +1,32 @@
+{% if comment.likes_count > 0 %}
+  <div class="comment-liked-by">
+    <div class="comment-liked-by-avatars">
+      {% for liker in comment.recent_likers %}
+        <span>
+          {% if liker.student_profile.profile_photo %}
+            <img src="{{ liker.student_profile.profile_photo.url }}" alt="">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+        </span>
+      {% endfor %}
+    </div>
+    <p>
+      {% with other_count=comment.likes_count|add:"-1" %}
+        {% if comment.user_has_liked %}
+          {% if comment.likes_count == 1 %}
+            Liked by <b>You</b>
+          {% else %}
+            Liked by <b>You</b> and <b>{{ other_count }} other{{ other_count|pluralize }}</b>
+          {% endif %}
+        {% else %}
+          {% if comment.likes_count == 1 %}
+            Liked by <b>{{ comment.recent_likers.0.get_full_name|default:comment.recent_likers.0.username }}</b>
+          {% else %}
+            Liked by <b>{{ comment.recent_likers.0.get_full_name|default:comment.recent_likers.0.username }}</b> and <b>{{ other_count }} other{{ other_count|pluralize }}</b>
+          {% endif %}
+        {% endif %}
+      {% endwith %}
+    </p>
+  </div>
+{% endif %}

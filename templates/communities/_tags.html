@@ -1,0 +1,11 @@
+{% comment %}
+  A community's tags as chips, each searching Explore for it. The first
+  `show` are visible (4 unless given, with `rest` = "4:" to match); "+N"
+  shows the others (static/js/communities.js).
+{% endcomment %}
+{% with tags=c.tag_list limit=show|default:4 more=c.tag_list|slice:rest|default:'' %}{% if tags %}
+<div class="cm-tags">
+  {% for t in tags %}<a href="{% url 'communities' %}?tab=explore&amp;q={{ t|urlencode }}" class="cm-tag"{% if forloop.counter > limit %} hidden{% endif %}>{{ t }}</a>{% endfor %}
+  {% if more %}<button type="button" class="cm-tag cm-tag-more js-cm-more-tags" aria-label="Show {{ more|length }} more tag{{ more|length|pluralize }}">+{{ more|length }}</button>{% endif %}
+</div>
+{% endif %}{% endwith %}

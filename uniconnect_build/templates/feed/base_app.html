@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+
+  <!-- ============ LEFT SIDEBAR ============ -->
+  <aside class="app-sidebar">
+    <div class="sidebar-main-card">
+      <div class="app-logo"><i class="bi bi-mortarboard-fill"></i> UniConnect</div>
+
+      <nav>
+        <a href="{% url 'home' %}" class="app-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+          <i class="bi bi-house-door{% if request.resolver_match.url_name == 'home' %}-fill{% endif %}"></i> <span>Home</span>
+        </a>
+        <a href="{% url 'communities' %}" class="app-nav-link {% if request.resolver_match.url_name == 'communities' %}active{% endif %}">
+          <i class="bi bi-people{% if request.resolver_match.url_name == 'communities' %}-fill{% endif %}"></i> <span>Communities</span>
+        </a>
+        <a href="{% url 'bookmarks' %}" class="app-nav-link {% if request.resolver_match.url_name == 'bookmarks' %}active{% endif %}">
+          <i class="bi bi-bookmark{% if request.resolver_match.url_name == 'bookmarks' %}-fill{% endif %}"></i> <span>Bookmarks</span>
+        </a>
+        <a href="{% url 'profile' %}" class="app-nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+          <i class="bi bi-person{% if request.resolver_match.url_name == 'profile' %}-fill{% endif %}"></i> <span>Profile</span>
+        </a>
+        <a href="{% url 'messages' %}" class="app-nav-link {% if request.resolver_match.url_name == 'messages' %}active{% endif %}">
+          <i class="bi bi-chat-dots{% if request.resolver_match.url_name == 'messages' %}-fill{% endif %}"></i> <span>Messages</span>
+        </a>
+        <a href="{% url 'notifications' %}" class="app-nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+          <i class="bi bi-bell{% if request.resolver_match.url_name == 'notifications' %}-fill{% endif %}"></i> <span>Notifications</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="sidebar-bottom-card">
+      <a href="{% url 'account_settings' %}" class="app-nav-link {% if request.resolver_match.url_name == 'account_settings' %}active{% endif %}">
+        <i class="bi bi-gear"></i> <span>Settings</span>
+      </a>
+
+      <div class="theme-toggle-row">
+        <span style="position:relative;width:18px;height:18px;flex:0 0 18px;">
+          <i class="bi bi-moon theme-icon theme-icon-moon"></i>
+          <i class="bi bi-sun theme-icon theme-icon-sun"></i>
+        </span>
+        <span class="theme-toggle-label" id="modeText">Light Mode</span>
+        <button type="button" class="theme-toggle-switch" id="modeToggle" aria-label="Toggle light/dark mode">
+          <span class="theme-toggle-thumb"></span>
+        </button>
+      </div>
+
+      <div class="sidebar-profile-row">
+        <div class="sidebar-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}"></div>
+        <span class="sidebar-profile-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+      </div>
+
+      <a href="{% url 'logout' %}" class="app-nav-link">
+        <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============ CENTER CONTENT ============ -->
+  <main class="app-main">
+    {% block feed_content %}{% endblock %}
+  </main>
+
+  <!-- ============ RIGHT SIDEBAR ============ -->
+  <aside class="app-right-sidebar">
+    <div class="right-card search-card">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search UniConnect...">
+    </div>
+
+    <div class="right-card">
+      <div class="right-card-head">
+        <h6>Events</h6>
+        <a href="{% url 'events' %}">See all</a>
+      </div>
+      {% for event in events %}
+        <div class="event-row">
+          <div class="event-date-badge event-badge-{{ event.category }}">{{ event.date|date:"d" }}</div>
+          <div class="event-info">
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</div>
+          </div>
+          <a href="{% url 'events' %}" class="btn btn-sm btn-outline-primary">Details</a>
+        </div>
+      {% empty %}
+        <div class="empty-state-small">No upcoming events yet.</div>
+      {% endfor %}
+    </div>
+
+    <div class="right-card quicklinks-card">
+      <a href="{% url 'top_stories' %}"><i class="bi bi-fire"></i> Top Stories</a>
+      <a href="{% url 'marketplace' %}"><i class="bi bi-shop"></i> Marketplace</a>
+      <a href="{% url 'bookshop' %}"><i class="bi bi-book"></i> Bookshop</a>
+      <a href="{% url 'events' %}"><i class="bi bi-calendar-event"></i> Events</a>
+      <a href="{% url 'groups' %}"><i class="bi bi-collection"></i> Groups</a>
+    </div>
+
+    <div class="right-card">
+      <div class="right-card-head">
+        <h6>Who to follow</h6>
+      </div>
+      {% for s in suggestions %}
+        <div class="wtf-row">
+          <div class="wtf-avatar" style="{% if s.profile_photo %}background-image:url({{ s.profile_photo.url }}){% endif %}"></div>
+          <div class="wtf-info">
+            <div class="wtf-name">{{ s.user.get_full_name|default:s.user.username }}</div>
+            <div class="wtf-handle">{{ s.department.name }} &middot; {{ s.level.name }}</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary follow-btn" data-user-id="{{ s.user.id }}">Follow</button>
+        </div>
+      {% empty %}
+        <div class="empty-state-small">No suggestions yet.</div>
+      {% endfor %}
+      {% if suggestions %}
+        <a href="#" class="show-more-link">Show More</a>
+      {% endif %}
+    </div>
+  </aside>
+
+</div>
+{% endblock %}

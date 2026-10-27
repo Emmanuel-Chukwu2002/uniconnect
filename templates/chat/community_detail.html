@@ -1,0 +1,58 @@
+{% extends 'chat/base.html' %}
+{% load chat_tags %}
+{% block wa_title %}{{ card.community.name }}{% endblock %}
+{% block list_pane %}
+<header class="wa-pane-header wa-subpage-header">
+  <a href="{% url 'chat_communities' %}" class="wa-icon-btn" data-wa-nav aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="wa-pane-title is-visible">{{ card.community.name }}</h1>
+</header>
+<div class="wa-pane-scroll">
+  <div class="wa-community-hero">
+    <span class="wa-community-avatar is-large"{% if card.community.avatar %} style="background-image:url('{{ card.community.avatar.url }}')"{% endif %}>{% if not card.community.avatar %}<i class="bi bi-people-fill"></i>{% endif %}</span>
+    <h2>{{ card.community.name }}</h2>
+    <p class="wa-muted">Community · {{ members|length }} member{{ members|length|pluralize }}</p>
+    {% if card.community.description %}<p>{{ card.community.description }}</p>{% endif %}
+  </div>
+
+  <div class="wa-community-actions">
+    <button type="button" class="wa-pill-btn js-wa-community-new-group" data-url="{% url 'chat_community_new_group' card.community.id %}"><i class="bi bi-plus-lg"></i> New group</button>
+    {% if is_admin %}
+    <button type="button" class="wa-pill-btn js-wa-community-add" data-url="{% url 'chat_community_add_members' card.community.id %}"><i class="bi bi-person-plus"></i> Add members</button>
+    {% endif %}
+  </div>
+
+  <h3 class="wa-subsection">Groups</h3>
+  {% for g in card.groups %}
+    {% if g.joined %}
+    <a href="{% url 'chat_conversation' g.conv.id %}" class="wa-community-group" data-wa-nav>
+    {% else %}
+    <button type="button" class="wa-community-group js-wa-join-group" data-url="{% url 'chat_community_join' card.community.id g.conv.id %}">
+    {% endif %}
+      <span class="wa-group-icon{% if g.conv.is_announcement %} is-announcement{% endif %}"><i class="bi {% if g.conv.is_announcement %}bi-megaphone-fill{% else %}bi-people-fill{% endif %}"></i></span>
+      <span class="wa-row-body">
+        <span class="wa-row-top">
+          <span class="wa-row-name">{{ g.conv.name }}</span>
+          {% if g.last %}<time class="wa-row-time js-wa-time" data-ts="{{ g.last.created_at|date:'c' }}" data-format="list">{{ g.last.created_at|wa_time }}</time>{% endif %}
+        </span>
+        <span class="wa-row-bottom"><span class="wa-row-preview">{% if not g.joined %}<span class="wa-join-hint">Tap to join</span>{% elif g.preview %}{% if g.preview.prefix %}~ {{ g.preview.prefix }}{% endif %}{{ g.preview.text }}{% endif %}</span></span>
+      </span>
+    {% if g.joined %}</a>{% else %}</button>{% endif %}
+  {% endfor %}
+
+  <h3 class="wa-subsection">Members</h3>
+  {% for m in members %}
+    <div class="wa-info-member">
+      {% include 'chat/_avatar.html' with p=m size=40 %}
+      <span>{% if m.id == me.id %}You{% else %}{{ m.name }}{% endif %}</span>
+      {% if m.role == 'admin' %}<span class="wa-admin-tag">Admin</span>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block main_pane %}
+<div class="wa-placeholder">
+  <div class="wa-placeholder-icon"><i class="bi bi-people"></i></div>
+  <h2>{{ card.community.name }}</h2>
+  <p>Open a group on the left, or join one you're not in yet.</p>
+</div>
+{% endblock %}

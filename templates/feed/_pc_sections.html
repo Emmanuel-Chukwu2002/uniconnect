@@ -1,0 +1,21 @@
+{% comment %}
+  Sections of cards, closest first (feed/closeness.py) — Groups, Opportunities,
+  Course Companion. `groups`: [{key, title, sub, total, items}];
+  `card`: the card template, given `item`, `i` (for the rise-in delay) and `section_key`.
+  `see_all`: extra query for "See all" links, e.g. "type=hostel&".
+  Styles: restyle.css ("Who to follow cards").
+{% endcomment %}
+{% for g in groups %}
+  <section class="pc-section" style="--s:{{ forloop.counter0 }}" aria-labelledby="pc-{{ g.key }}">
+    <header class="pc-head">
+      <div>
+        <h2 id="pc-{{ g.key }}">{{ g.title }}</h2>
+        <p>{{ g.sub }}</p>
+      </div>
+      {% if g.total > g.items|length %}<a href="?{{ see_all }}section={{ g.key }}" class="pc-all">See all <span>{{ g.total }}</span></a>{% endif %}
+    </header>
+    <div class="pc-row">
+      {% for item in g.items %}{% include card with i=forloop.counter0 section_key=g.key %}{% endfor %}
+    </div>
+  </section>
+{% endfor %}

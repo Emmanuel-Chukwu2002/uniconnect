@@ -1,0 +1,16 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}View Platform{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>View Platform</h1>
+  <p>Each university on UniConnect is its own space. Choose one to see it the way its students do. You can look at everything but not post, like, comment, follow or message, and nothing you open is counted in students' feeds or the statistics.</p></div></div>
+<section class="ad-panel">
+  <form method="post" class="ad-pick">{% csrf_token %}
+    {% for u in unis %}
+      <button type="submit" name="university" value="{{ u.pk }}"{% if u.pk == current %} aria-current="true"{% endif %}{% if not u.levels %} disabled{% endif %}>
+        <span class="ic"><i class="bi bi-bank"></i></span>
+        <span><b>{{ u.name }}</b><small>{{ u.short_name }} · {{ u.n }} student{{ u.n|pluralize }}{% if not u.levels %} · no departments set up yet{% elif not u.is_active %} · not open yet{% endif %}</small></span>
+      </button>
+    {% empty %}<p class="ad-empty">No universities yet.</p>{% endfor %}
+  </form>
+</section>
+{% endblock %}

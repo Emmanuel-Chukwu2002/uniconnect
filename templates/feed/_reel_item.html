@@ -1,0 +1,78 @@
+{% load post_extras %}{% comment %}
+  One video in the full-screen Media feed on phones (home.html, Media
+  tab; static/js/reels.js; app.css "Media feed on phones"). Each one
+  fills the screen between the tabs at the top and the app's bottom bar;
+  swiping up or down snaps to the next or previous one.
+
+    the video                      fills the frame (landscape videos are letterboxed)
+    right-hand column              avatar + follow, like, comments, repost, save, share, sound disc
+    bottom edge                    a thin progress bar you can drag to seek
+    bottom-left                    name, caption (2 lines, "more"), sound and views
+
+  The buttons are the same ones the post cards use (same classes, same
+  endpoints), so likes, comments, reposts, quotes, bookmarks, sharing and
+  view counts all work exactly as they do in the feed.
+{% endcomment %}
+{% with v=post|first_video name=post.author.get_full_name|default:post.author.username %}
+{% if v %}
+<section class="reel" id="reel-{{ post.id }}" data-post-id="{{ post.id }}" aria-label="Video by {{ name }}">
+  <div class="reel-stage js-reel-stage">
+    <video class="js-uc-video reel-video" data-post-id="{{ post.id }}" src="{{ v.video_url }}"{% if v.stream_url %} data-stream="{{ v.stream_url }}"{% endif %}{% if v.poster_url %} poster="{{ v.poster_url }}"{% endif %} preload="none" playsinline muted loop disablepictureinpicture></video>
+    <div class="reel-spinner" aria-hidden="true"><span class="spinner-border"></span></div>
+    <div class="reel-paused" aria-hidden="true"><i class="bi bi-play-fill"></i></div>
+    <div class="reel-error" role="status" hidden><i class="bi bi-exclamation-circle"></i><span>This video can't be played right now.</span></div>
+    <button type="button" class="reel-sound-btn js-reel-sound" aria-label="Turn sound on"><i class="bi bi-volume-mute-fill"></i></button>
+  </div>
+  <div class="reel-shade" aria-hidden="true"></div>
+  {# Thin progress bar along the bottom: drag or tap it to jump through the video. #}
+  <div class="reel-progress" aria-hidden="true"><div class="reel-progress-fill js-reel-progress-fill"></div></div>
+  <input type="range" class="reel-seek js-reel-progress" min="0" max="1000" step="1" value="0" aria-label="Video position">
+
+  <div class="reel-info">
+    <div class="reel-byline">
+      <a href="{% url 'user_profile' post.author.username %}" class="reel-name">{{ name }}</a>
+      {% if post.author.student_profile.is_verified %}<i class="bi bi-patch-check-fill reel-badge" title="Verified student" aria-label="Verified"></i>{% endif %}
+      <span class="reel-time" aria-hidden="true">&middot;</span>
+      <time class="reel-time" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|short_ago }}</time>
+    </div>
+    {% if post.content %}
+      <div class="reel-caption js-reel-caption">{{ post.content|with_hashtags }}</div>
+      <button type="button" class="reel-more js-reel-more" hidden>more</button>
+    {% endif %}
+    <div class="reel-meta">
+      <i class="bi bi-music-note-beamed" aria-hidden="true"></i>
+      <span class="reel-meta-text">Original sound &middot; {{ name }} &middot; <span class="js-video-views" data-post-id="{{ post.id }}">{{ post.video_views_count|default:0 }} view{{ post.video_views_count|default:0|pluralize }}</span></span>
+    </div>
+  </div>
+
+  <div class="reel-actions">
+    <div class="reel-creator">
+      <a href="{% url 'user_profile' post.author.username %}" class="reel-avatar" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}" aria-label="{{ name }}'s profile">
+        {% if not post.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+      </a>
+      {% if post.author_id != request.user.id and post.author_id not in following_ids %}
+        <button type="button" class="reel-follow js-reel-follow" data-user-id="{{ post.author_id }}" data-status="{% if post.author_id in pending_ids %}pending{% else %}none{% endif %}"
+                aria-label="{% if post.author_id in pending_ids %}Cancel follow request to {{ name }}{% else %}Follow {{ name }}{% endif %}"><i class="bi {% if post.author_id in pending_ids %}bi-hourglass-split{% else %}bi-plus-lg{% endif %}"></i></button>
+      {% endif %}
+    </div>
+
+    <button type="button" class="reel-action js-like-btn {% if post.user_has_liked %}liked{% endif %}" data-post-id="{{ post.id }}" title="{% if post.user_has_liked %}Unlike{% else %}Like{% endif %}">
+      <i class="bi {% if post.user_has_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i><span class="reel-count js-like-count">{{ post.likes_count|default:0|compact_count }}</span>
+    </button>
+    <button type="button" class="reel-action js-open-comments" data-post-id="{{ post.id }}" title="Comments">
+      <i class="bi bi-chat"></i><span class="post-card-action-count reel-count">{{ post.comments_count|default:0|compact_count }}</span>
+    </button>
+    <button type="button" class="reel-action js-repost-btn {% if post.user_has_reposted %}reposted{% endif %}" data-post-id="{{ post.id }}" data-reposted="{% if post.user_has_reposted %}1{% else %}0{% endif %}" title="{% if post.user_has_reposted %}Undo repost or quote{% else %}Repost or quote{% endif %}" aria-haspopup="menu" aria-expanded="false">
+      <i class="bi bi-repeat"></i><span class="reel-count js-repost-count">{{ post.reposts_count|default:0 }}</span>
+    </button>
+    <button type="button" class="reel-action js-bookmark-btn {% if post.user_has_bookmarked %}bookmarked{% endif %}" data-post-id="{{ post.id }}" title="{% if post.user_has_bookmarked %}Remove bookmark{% else %}Bookmark{% endif %}">
+      <i class="bi {% if post.user_has_bookmarked %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i><span class="reel-count">Save</span>
+    </button>
+    <button type="button" class="reel-action js-share-post" data-post-id="{{ post.id }}" data-share-url="{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' post.id %}" title="Share" aria-haspopup="dialog">
+      <i class="bi bi-send"></i><span class="reel-count">Share</span>
+    </button>
+    <div class="reel-disc" aria-hidden="true" style="{% if post.author.student_profile.profile_photo %}background-image:url({{ post.author.student_profile.profile_photo.url }}){% endif %}"><i class="bi bi-music-note-beamed"></i></div>
+  </div>
+</section>
+{% endif %}
+{% endwith %}

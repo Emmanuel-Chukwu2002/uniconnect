@@ -1,0 +1,97 @@
+{% load group_tags %}{% comment %}One post in a group's Posts tab (detail.html). Also sent back on its own
+after a like, comment or vote so the page updates in place (views._card_response).{% endcomment %}
+{% with sp=post.author.student_profile %}
+<article class="sg-post{% if post.is_announcement %} is-announcement{% endif %}{% if post.pinned %} is-pinned{% endif %}" id="p{{ post.pk }}" data-post="{{ post.pk }}">
+  {% if post.pinned or post.is_announcement %}
+    <div class="sg-post-flag">{% if post.is_announcement %}<i class="bi bi-megaphone-fill"></i> Announcement{% else %}<i class="bi bi-pin-angle-fill"></i> Pinned{% endif %}</div>
+  {% endif %}
+  <header class="sg-post-head">
+    <a href="{% url 'user_profile' post.author.username %}" class="sr-avatar is-md" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+    <div class="sg-post-who">
+      <a href="{% url 'user_profile' post.author.username %}"><b>{{ post.author.get_full_name|default:post.author.username }}</b></a>
+      {% if post.author_role == 'owner' %}<span class="sg-role">Owner</span>{% elif post.author_role == 'admin' %}<span class="sg-role">Admin</span>{% endif %}
+      <small>{{ post.created_at|ago }}{% if post.is_edited %} · Edited{% endif %}</small>
+    </div>
+    {% if post.author_id == request.user.id or me.is_admin %}
+      <details class="sg-menu">
+        <summary aria-label="Post options"><i class="bi bi-three-dots"></i></summary>
+        <div class="sg-menu-list">
+          {% if post.author_id == request.user.id and not post.poll %}<button type="button" class="js-sg-edit"><i class="bi bi-pencil"></i> Edit post</button>{% endif %}
+          {% if me.is_admin %}<form method="post" action="{% url 'group_post_pin' group.pk post.pk %}">{% csrf_token %}<button type="submit"><i class="bi {% if post.pinned %}bi-pin-angle{% else %}bi-pin-angle-fill{% endif %}"></i> {% if post.pinned %}Unpin{% else %}Pin to top{% endif %}</button></form>{% endif %}
+          {% if post.poll %}<form method="post" action="{% url 'group_post_close' group.pk post.pk %}" class="js-sg-ajax">{% csrf_token %}<button type="submit"><i class="bi {% if post.poll_closed %}bi-unlock{% else %}bi-lock{% endif %}"></i> {% if post.poll_closed %}Reopen poll{% else %}Close poll{% endif %}</button></form>{% endif %}
+          <form method="post" action="{% url 'group_post_delete' group.pk post.pk %}" onsubmit="return confirm('Delete this post?')">{% csrf_token %}<button type="submit" class="is-danger"><i class="bi bi-trash3"></i> Delete</button></form>
+        </div>
+      </details>
+    {% endif %}
+  </header>
+
+  {% if post.title %}<h3 class="sg-post-title">{{ post.title }}</h3>{% endif %}
+  {% if post.body %}<div class="sg-post-body{% if post.poll %} is-question{% endif %}">{{ post.body|urlize|linebreaksbr }}</div>{% endif %}
+  {% if post.author_id == request.user.id and not post.poll %}
+    {# Editing your own post (static/js: .js-sg-edit shows this) #}
+    <form method="post" action="{% url 'group_post_edit' group.pk post.pk %}" class="sg-edit" hidden>{% csrf_token %}
+      <input type="text" name="title" value="{{ post.title }}" maxlength="150" placeholder="Title (optional)" aria-label="Title">
+      <textarea name="body" rows="4" maxlength="5000" aria-label="Text">{{ post.body }}</textarea>
+      <div class="sg-edit-actions"><button type="button" class="st-btn-ghost js-sg-edit-cancel">Cancel</button><button type="submit" class="st-btn">Save</button></div>
+    </form>
+  {% endif %}
+  {% if post.photos %}<div class="sg-post-photos is-{{ post.photos|length }}">{% for f in post.photos %}<a href="{% url 'group_file' group.pk f.pk %}" target="_blank" rel="noopener" data-no-soft><img src="{% url 'group_file' group.pk f.pk %}" alt="{{ f.name }}" loading="lazy"></a>{% endfor %}</div>{% endif %}
+  {% for f in post.videos %}<video class="sg-post-video" src="{% url 'group_file' group.pk f.pk %}" controls preload="metadata" playsinline></video>{% endfor %}
+  {% if post.docs %}
+    <div class="sg-post-docs">
+      {% for f in post.docs %}
+        <a href="{% url 'group_file' group.pk f.pk %}" class="sg-post-doc" target="_blank" rel="noopener" data-no-soft>
+          <span class="sg-file-ico is-{{ f.kind }}"><i class="bi {{ f.icon }}"></i></span>
+          <span><b>{{ f.name }}</b><small>{{ f.size|size }} · {{ f.extension|upper }}</small></span>
+          <i class="bi bi-download"></i>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if post.image %}<a href="{{ post.image.url }}" target="_blank" rel="noopener" data-no-soft class="sg-post-img"><img src="{{ post.image.url }}" alt="Photo shared by {{ post.author.first_name|default:post.author.username }}" loading="lazy"></a>{% endif %}
+
+  {% if post.poll %}
+    <div class="sg-poll{% if post.voted or post.poll_closed %} is-results{% endif %}">
+      {% for o in post.poll %}
+        <form method="post" action="{% url 'group_post_vote' group.pk post.pk %}" class="js-sg-ajax">{% csrf_token %}
+          <input type="hidden" name="option" value="{{ o.pk }}">
+          <button type="submit" class="sg-poll-opt{% if o.mine %} is-mine{% endif %}{% if o.leading and post.voted %} is-leading{% endif %}" {% if post.poll_closed %}disabled{% endif %} aria-pressed="{% if o.mine %}true{% else %}false{% endif %}">
+            <span class="sg-poll-bar" style="width:{% if post.voted or post.poll_closed %}{{ o.percent }}{% else %}0{% endif %}%"></span>
+            <span class="sg-poll-mark"><i class="bi {% if o.mine %}{% if post.poll_multiple %}bi-check-square-fill{% else %}bi-check-circle-fill{% endif %}{% else %}{% if post.poll_multiple %}bi-square{% else %}bi-circle{% endif %}{% endif %}"></i></span>
+            <span class="sg-poll-text">{{ o.text }}</span>
+            {% if post.voted or post.poll_closed %}<span class="sg-poll-pct">{{ o.percent }}%</span>{% endif %}
+          </button>
+        </form>
+      {% endfor %}
+      <p class="sg-poll-meta">{{ post.voters }} vote{{ post.voters|pluralize }}{% if post.poll_multiple %} · Choose any{% endif %}{% if post.poll_closed %} · <b>Closed</b>{% elif post.voted %} · Tap your answer again to take it back{% endif %}</p>
+    </div>
+  {% endif %}
+
+  <footer class="sg-post-actions">
+    <button type="button" class="sg-act js-sg-like{% if post.i_liked %} is-on{% endif %}" data-url="{% url 'group_post_like' group.pk post.pk %}" aria-pressed="{% if post.i_liked %}true{% else %}false{% endif %}">
+      <i class="bi {% if post.i_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i> <span class="js-sg-like-n">{{ post.like_count|default:'' }}</span> <span class="visually-hidden">likes</span>
+    </button>
+    <button type="button" class="sg-act js-sgc-open" aria-haspopup="dialog"><i class="bi bi-chat"></i> {{ post.comment_count|default:'' }} <span class="visually-hidden">comments</span></button>
+    {% if group.conversation_id %}<button type="button" class="sg-act js-sg-share" data-url="{% url 'group_post_share' group.pk post.pk %}" title="Share in the group chat"><i class="bi bi-send"></i> <span class="sg-act-label">Share to chat</span></button>{% endif %}
+    <button type="button" class="sg-act sg-act-end js-sg-save{% if post.i_saved %} is-on{% endif %}" data-url="{% url 'group_post_save' group.pk post.pk %}" aria-pressed="{% if post.i_saved %}true{% else %}false{% endif %}" title="{% if post.i_saved %}Saved{% else %}Save for later{% endif %}"><i class="bi {% if post.i_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> <span class="visually-hidden">Save</span></button>
+  </footer>
+
+  {# What the comments sheet shows for this post (detail.html #sgCommentsModal reads it) — refreshed with the card after every comment, like or edit #}
+  <template class="js-sgc-src" data-count="{{ post.comment_count }}" data-comment-url="{% url 'group_post_comment' group.pk post.pk %}">
+    <div class="post-card comments-post-pane-card">
+      <div class="comments-post-head">
+        <a href="{% url 'user_profile' post.author.username %}" class="post-card-avatar" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+        <div class="post-card-info">
+          <a href="{% url 'user_profile' post.author.username %}" class="post-card-name">{{ post.author.get_full_name|default:post.author.username }}</a>
+          <div class="post-card-meta"><span class="post-card-time">{{ post.created_at|timesince }} ago</span></div>
+        </div>
+      </div>
+      {% if post.title %}<div class="post-card-text"><b>{{ post.title }}</b></div>{% endif %}
+      {% if post.body %}<div class="post-card-text">{{ post.body|urlize|linebreaksbr }}</div>{% endif %}
+    </div>
+    <div class="js-sgc-thread">
+      {% for comment in post.comment_list %}{% include 'studygroups/_comment.html' %}{% empty %}<div class="comments-modal-loading">No comments yet — start the conversation.</div>{% endfor %}
+    </div>
+  </template>
+</article>
+{% endwith %}

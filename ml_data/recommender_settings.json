@@ -1,0 +1,54 @@
+{
+  "k": 5,
+  "weights": {
+    "cf": 0.0,
+    "content": 0.4,
+    "group": 0.6
+  },
+  "tfidf": {
+    "stop_words": "english",
+    "ngram_range": [
+      1,
+      2
+    ],
+    "sublinear_tf": true
+  },
+  "test_results": {
+    "Random": {
+      "precision@5": 0.0121,
+      "recall@5": 0.0247,
+      "ndcg@5": 0.0207,
+      "coverage": 1.0
+    },
+    "Most popular": {
+      "precision@5": 0.0229,
+      "recall@5": 0.0569,
+      "ndcg@5": 0.0403,
+      "coverage": 0.0516
+    },
+    "Popular in dept group": {
+      "precision@5": 0.065,
+      "recall@5": 0.1497,
+      "ndcg@5": 0.1165,
+      "coverage": 0.2817
+    },
+    "Item-item CF": {
+      "precision@5": 0.0336,
+      "recall@5": 0.0648,
+      "ndcg@5": 0.0537,
+      "coverage": 0.8826
+    },
+    "Content-based (TF-IDF)": {
+      "precision@5": 0.0407,
+      "recall@5": 0.0813,
+      "ndcg@5": 0.0679,
+      "coverage": 0.831
+    },
+    "Hybrid": {
+      "precision@5": 0.0721,
+      "recall@5": 0.1583,
+      "ndcg@5": 0.1178,
+      "coverage": 0.6948
+    }
+  }
+}

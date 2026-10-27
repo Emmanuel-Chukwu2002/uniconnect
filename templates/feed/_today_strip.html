@@ -1,0 +1,81 @@
+{% comment %}
+The top of Home (courses/today.py strip):
+"Campus Pulse": short-lived student updates (feed/_pulse_bar.html) — it replaced Quick access.
+"Upcoming": a small card (feed/_today_upcoming.html) whose View All lists everything due in the next 7 days.
+Deadlines open in a sheet. Styles: restyle.css ("Today strip", "Campus Pulse");
+scripts: feed/_today_strip_js.html, feed/_pulse_js.html.
+{% endcomment %}
+{# Campus Pulse replaced Quick access (feed/_pulse_bar.html, feed/pulse.py). #}
+{% if pulse %}{% include 'feed/_pulse_bar.html' %}{% endif %}
+
+{# Upcoming moved to the right sidebar (feed/_today_upcoming.html); this copy is for phones, where that sidebar is hidden. #}
+{% include 'feed/_today_upcoming.html' with where='main' %}
+
+{# ---------- Sheets ---------- #}
+<div class="modal fade td-sheet" id="tdSheet" tabindex="-1" aria-hidden="true" aria-label="Today">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <button type="button" class="td-sheet-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      <div class="td-sheet-body js-td-body"></div>
+    </div>
+  </div>
+</div>
+
+<template id="tdAdd">
+  <h3 class="td-sheet-title"><i class="bi bi-alarm"></i> Add a deadline</h3>
+  <p class="td-sheet-sub">Exams, tests and assignments — everyone taking the course sees the countdown.</p>
+  <form method="post" action="{% url 'deadline_add' %}" class="td-form">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <label><span>Course</span>
+      <select name="course" required>{% for c in today.courses %}<option value="{{ c.pk }}">{{ c.code }} – {{ c.title }}</option>{% endfor %}</select>
+    </label>
+    <div class="td-kinds" role="radiogroup" aria-label="Type">
+      {% for value, label in today.kinds %}<label class="td-kind"><input type="radio" name="kind" value="{{ value }}"{% if forloop.first %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+    </div>
+    <label><span>Title <small>(optional)</small></span><input type="text" name="title" maxlength="100" placeholder="e.g. First semester exam"></label>
+    <div class="td-two">
+      <label><span>Date</span><input type="date" name="date" required min="{% now 'Y-m-d' %}"></label>
+      <label><span>Time</span><input type="time" name="time" value="09:00"></label>
+    </div>
+    <button type="submit" class="td-submit">Add countdown</button>
+  </form>
+</template>
+
+<template id="tdAll">
+  <h3 class="td-sheet-title"><i class="bi bi-clock"></i> Upcoming</h3>
+  <p class="td-sheet-sub">Everything due in the next 7 days, soonest first: course work, events, opportunities, study sessions, polls and your scheduled posts.</p>
+  {% if today.upcoming %}
+  <ul class="tda">
+    {% for u in today.upcoming %}
+      <li>{% if u.sheet %}<button type="button" class="tda-row js-td-open{% if u.urgent %} is-urgent{% endif %}" data-sheet="{{ u.sheet }}" style="--fill:{{ u.fill }}">{% else %}<a href="{{ u.url }}" class="tda-row{% if u.urgent %} is-urgent{% endif %}" style="--fill:{{ u.fill }}">{% endif %}
+        <span class="tda-ring"><span>{{ u.short }}</span></span>
+        <span class="tda-text"><b>{{ u.name }}</b><small>{{ u.when|date:"D j M, g:i A" }} · {{ u.sub }}</small></span>
+        <i class="bi bi-chevron-right"></i>
+      {% if u.sheet %}</button>{% else %}</a>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="tda-empty"><i class="bi bi-check2-circle"></i> Nothing due in the next 7 days.</p>
+  {% endif %}
+  {% if today.courses %}<button type="button" class="td-submit is-ghost js-td-open" data-sheet="tdAdd"><i class="bi bi-plus-lg"></i> Add deadline</button>{% endif %}
+</template>
+
+{% for d in today.deadlines %}
+  <template id="tdD{{ d.pk }}">
+    <div class="tdd{% if d.urgent %} is-urgent{% endif %}" style="--fill:{{ d.fill }}">
+      <span class="tdd-ring"><span><b>{{ d.short_left }}</b><small>left</small></span></span>
+      <span class="tq-course">{{ d.course.code }}</span>
+      <h3 class="td-sheet-title"><i class="bi {{ d.icon }}"></i> {{ d.name }}</h3>
+      {% if d.title %}{% with t=d.title|cut:" · sample" %}{% if t %}<p class="tdd-title">{{ t }}</p>{% endif %}{% endwith %}{% endif %}
+      <p class="tdd-when">{{ d.get_kind_display }} {{ d.long_left }}</p>
+      <p class="tdd-date"><i class="bi bi-calendar-event"></i> {{ d.due_at|date:"l j F Y, g:i A" }}</p>
+      <p class="tq-meta">Added by {% if d.created_by_id == request.user.id %}you{% elif d.created_by %}{{ d.created_by.get_full_name|default:d.created_by.username }}{% else %}a classmate{% endif %} for everyone taking {{ d.course.code }}.</p>
+      <div class="tdd-actions">
+        <a href="{% url 'course_detail' d.course.pk %}" class="td-submit is-ghost"><i class="bi bi-journal-text"></i> Revise: {{ d.course.code }} notes</a>
+        {% if d.created_by_id == request.user.id %}
+          <form method="post" action="{% url 'deadline_delete' d.pk %}" onsubmit="return confirm('Remove this deadline for everyone?')">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="td-del"><i class="bi bi-trash3"></i> Remove</button></form>
+        {% endif %}
+      </div>
+    </div>
+  </template>
+{% endfor %}

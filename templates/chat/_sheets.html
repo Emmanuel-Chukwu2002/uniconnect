@@ -1,0 +1,56 @@
+{% comment %}
+  Panels that slide in over the list (wide screens) or the whole
+  screen (phones): New chat, New group, people picker for communities,
+  plus the call screens. Filled and driven by newchat.js / calls.js.
+{% endcomment %}
+<div class="wa-sheet js-wa-sheet" id="waPeopleSheet" hidden>
+  <header class="wa-sheet-header">
+    <button type="button" class="wa-icon-btn js-wa-sheet-close" aria-label="Back"><i class="bi bi-arrow-left"></i></button>
+    <div>
+      <h2 class="js-wa-sheet-title">New chat</h2>
+      <span class="wa-sheet-sub js-wa-sheet-sub"></span>
+    </div>
+  </header>
+  <label class="wa-search wa-sheet-search">
+    <i class="bi bi-search"></i>
+    <input type="search" class="js-wa-people-search" placeholder="Search name or username" aria-label="Search people" autocomplete="off">
+  </label>
+  <div class="wa-selected js-wa-selected" hidden></div>
+  <div class="wa-sheet-scroll">
+    {# Messages are for private chats: no New group / New community here (groups are made on the Groups page). #}
+    <div class="wa-sheet-shortcuts js-wa-sheet-shortcuts" style="display:none"></div>
+    <div class="wa-sheet-label js-wa-people-label">People on UniConnect</div>
+    <div class="js-wa-people"></div>
+  </div>
+  <div class="wa-sheet-footer js-wa-sheet-footer" hidden>
+    <input type="text" class="wa-input js-wa-group-name" maxlength="80" placeholder="Group name" aria-label="Group name">
+    <button type="button" class="wa-fab wa-fab-inline js-wa-sheet-confirm" aria-label="Create"><i class="bi bi-arrow-right"></i></button>
+  </div>
+</div>
+
+<div class="wa-call-screen js-wa-call-screen" hidden role="dialog" aria-label="Call">
+  <div class="wa-call-top">
+    <span class="wa-call-kind js-wa-call-kind"><i class="bi bi-lock-fill"></i> UniConnect call</span>
+    <div class="js-wa-call-avatar"></div>
+    <h2 class="js-wa-call-name"></h2>
+    <p class="js-wa-call-state">Calling…</p>
+    <p class="wa-call-note">Call history and ringing work live. Voice and video streaming isn't part of this version yet.</p>
+  </div>
+  <div class="wa-call-actions">
+    <button type="button" class="wa-call-btn wa-call-accept js-wa-call-accept" hidden aria-label="Accept"><i class="bi bi-telephone-fill"></i></button>
+    <button type="button" class="wa-call-btn wa-call-end js-wa-call-end" aria-label="End call"><i class="bi bi-telephone-x-fill"></i></button>
+  </div>
+</div>
+
+<div class="modal fade" id="waFormModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content wa-modal js-wa-form-modal">
+      <div class="wa-modal-head"><h2 class="js-wa-modal-title"></h2>
+        <button type="button" class="wa-icon-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
+      <label class="wa-field"><span>Name</span><input type="text" name="name" class="wa-input" maxlength="80" required></label>
+      <label class="wa-field"><span>Description (optional)</span><textarea name="description" class="wa-input" rows="2" maxlength="300"></textarea></label>
+      <p class="wa-form-error js-wa-form-error" hidden></p>
+      <div class="wa-modal-actions"><button type="submit" class="wa-btn-primary js-wa-modal-submit">Create</button></div>
+    </form>
+  </div>
+</div>

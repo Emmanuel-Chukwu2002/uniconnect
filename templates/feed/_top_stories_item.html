@@ -1,0 +1,4 @@
+<a href="{% url 'post_detail' s.post.id %}" class="top-story{% if extra %} top-story-extra{% endif %}">
+  <span class="top-story-title">{{ s.headline }}</span>
+  <span class="top-story-meta">{{ s.time_ago }} &middot; {{ s.readers_text }}</span>
+</a>

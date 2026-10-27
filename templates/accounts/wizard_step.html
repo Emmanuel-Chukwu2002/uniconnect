@@ -1,0 +1,83 @@
+{% extends 'accounts/auth_split.html' %}
+{% block title %}{{ step_title }} — UniConnect{% endblock %}
+{% comment %}
+  One step of sign-up (accounts/views.py RegistrationWizard: university →
+  your details → faculty → department → level → username → confirm). Same frame as the
+  sign-in page; static/js/auth.js sends each step and swaps in the next one
+  without reloading the page. The steps, checks and verification email are
+  unchanged.
+{% endcomment %}
+{% block panel %}
+    <div class="lp-topline">Already have an account? <a href="{% url 'login' %}" data-lp-swap>Sign In</a></div>
+
+    <div class="lp-card lp-card-wide">
+      <a href="{% url 'login' %}" class="lp-card-brand" aria-label="UniConnect"><i class="bi bi-mortarboard-fill lp-cap"></i><span class="lp-name">Uni<b>Connect</b></span></a>
+
+      <div class="lp-steps" aria-label="Step {{ step_number }} of {{ total_steps }}">
+        <div class="lp-steps-bar"><span style="width:{% widthratio step_number total_steps 100 %}%"></span></div>
+        <span class="lp-steps-text">Step {{ step_number }} of {{ total_steps }}</span>
+      </div>
+
+      <h2>{% if step_number == 1 %}Create your account{% else %}{{ step_title }}{% endif %}</h2>
+      <p class="lp-sub">{% if step_number == 1 %}Join UniConnect with your matric number and university email. First, {{ step_title|lower }}.{% else %}{{ step_lede }}{% endif %}</p>
+
+      {% if review %}
+        <dl class="lp-review">
+          <div><dt>University</dt><dd>{{ review.university }}</dd></div>
+          <div><dt>Name</dt><dd>{{ review.first_name }} {{ review.last_name }}</dd></div>
+          <div><dt>Matric number</dt><dd>{{ review.matric_number }}</dd></div>
+          <div><dt>University email</dt><dd>{{ review.university_email }}</dd></div>
+          <div><dt>Faculty</dt><dd>{{ review.faculty }}</dd></div>
+          <div><dt>Department</dt><dd>{{ review.department }}</dd></div>
+          <div><dt>Level</dt><dd>{{ review.level }}</dd></div>
+          {% if review.username %}<div><dt>Username</dt><dd>@{{ review.username }}</dd></div>{% endif %}
+        </dl>
+      {% endif %}
+
+      <form method="post" novalidate class="lp-form" data-lp-swap>
+        {% csrf_token %}
+        {{ wizard.management_form }}
+        {% for e in wizard.form.non_field_errors %}<div class="lp-alert is-error" role="alert"><i class="bi bi-exclamation-circle-fill"></i><span>{{ e }}</span></div>{% endfor %}
+
+        <div class="lp-fields">
+        {% for field in wizard.form %}
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <label class="lp-remember lp-confirm">{{ field }} {{ field.label }}</label>
+          {% else %}
+            <div class="lp-field{% if field.name == 'first_name' or field.name == 'last_name' %} is-half{% endif %}">
+              <label class="{% if field.field.widget.input_type == 'select' %}lp-label{% else %}visually-hidden{% endif %}" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              <div class="lp-input{% if field.errors %} has-error{% endif %}">
+                <i class="bi {% if field.name == 'university' %}bi-bank{% elif field.name == 'faculty' %}bi-buildings{% elif field.name == 'department' %}bi-diagram-3{% elif field.name == 'level' %}bi-layers{% elif field.name == 'username' %}bi-at{% elif field.name == 'matric_number' %}bi-person-vcard{% elif field.name == 'university_email' %}bi-envelope{% elif 'password' in field.name %}bi-lock{% else %}bi-person{% endif %} lp-input-icon"></i>
+                {{ field }}
+              </div>
+              {% if field.name == 'username' %}
+                <div class="lp-hint lp-un-msg js-signup-username-msg{% if field.errors %} is-bad{% endif %}" aria-live="polite">{% if field.errors %}{{ field.errors.0 }}{% else %}{{ field.help_text }}{% endif %}</div>
+                {% if username_suggestions %}
+                  <div class="lp-un-ideas"><span>Ideas:</span>{% for s in username_suggestions %}<button type="button" class="lp-un-chip js-signup-username-pick" data-name="{{ s }}">@{{ s }}</button>{% endfor %}</div>
+                {% endif %}
+              {% else %}
+              {% for e in field.errors %}<div class="lp-error">{{ e }}</div>{% endfor %}
+              {% if field.help_text and not field.errors %}<div class="lp-hint">{{ field.help_text }}</div>{% endif %}
+              {% endif %}
+            </div>
+          {% endif %}
+          {% if field.field.widget.input_type == 'checkbox' %}{% for e in field.errors %}<div class="lp-error">{{ e }}</div>{% endfor %}{% endif %}
+        {% endfor %}
+        </div>
+
+        <div class="lp-step-buttons">
+          {% if wizard.steps.prev %}
+            <button type="submit" name="wizard_goto_step" value="{{ wizard.steps.prev }}" class="lp-back-btn" formnovalidate><i class="bi bi-arrow-left"></i> Back</button>
+          {% endif %}
+          <button type="submit" class="lp-submit">{% if wizard.steps.next %}Continue{% else %}Create account{% endif %}</button>
+        </div>
+      </form>
+
+      {% if step_number == 1 %}
+        <div class="lp-note">
+          <i class="bi bi-shield-check"></i>
+          <div><b>Verifying student accounts</b><span>We email a link to your university address to confirm you're a real student before your account goes live.</span></div>
+        </div>
+      {% endif %}
+    </div>
+{% endblock %}

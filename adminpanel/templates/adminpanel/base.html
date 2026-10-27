@@ -1,0 +1,77 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} — UniConnect Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=4">
+</head>
+<body>
+{% comment %}
+The UniConnect admin dashboard shell (adminpanel/views.py ctx): sidebar, top bar, footer.
+Every page and action re-checks the admin's role on the server (adminpanel/permissions.py);
+the sidebar only lists the sections their role allows.
+{% endcomment %}
+<div class="ad" id="ad">
+  <aside class="ad-side" aria-label="Admin navigation">
+    <a href="{% url 'staff_overview' %}" class="ad-brand">
+      <span class="ad-logo"><i class="bi bi-mortarboard-fill"></i></span>
+      <span><b>UniConnect</b><small>Admin Dashboard</small></span>
+    </a>
+    <nav class="ad-nav">
+      {% for key, label, icon, url in nav %}
+        <a href="{{ url }}" class="{% if key == section %}is-on{% endif %}"{% if key == section %} aria-current="page"{% endif %}>
+          <i class="bi {{ icon }}"></i> <span>{{ label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="ad-quick">
+      <h4>Quick Access</h4>
+      <a href="{% url 'staff_view' %}"><i class="bi bi-compass"></i> View Platform <i class="bi bi-box-arrow-up-right"></i></a>
+      <a href="{% url 'staff_help' %}"><i class="bi bi-question-circle"></i> Help &amp; Support</a>
+      {% if admin.user.is_superuser %}<a href="/admin/"><i class="bi bi-database"></i> Django admin <i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+    </div>
+  </aside>
+
+  <div class="ad-page">
+    <header class="ad-top">
+      <button type="button" class="ad-burger" aria-label="Open menu" onclick="document.getElementById('ad').classList.toggle('is-open')"><i class="bi bi-list"></i></button>
+      <form class="ad-search" method="get" action="{% url 'staff_search' %}" role="search">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Search users, content, or reports..." aria-label="Search users, content, or reports">
+      </form>
+      <div class="ad-top-right">
+        <a href="{% url 'staff_reports' %}" class="ad-bell" aria-label="{{ pending_count }} reports waiting" title="Reports waiting">
+          <i class="bi bi-bell"></i>{% if pending_count %}<span>{{ pending_count }}</span>{% endif %}
+        </a>
+        <details class="ad-me">
+          <summary>
+            {% with p=admin.user.student_profile %}<span class="ad-avatar"{% if p.profile_photo %} style="background-image:url('{{ p.profile_photo.url }}')"{% endif %}>{% if not p.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>{% endwith %}
+            <div><b>{{ admin.user.get_full_name|default:admin.user.username }}</b><small>{{ admin.role_label }}{% if admin.university %} · {{ admin.university.short_name }}{% endif %}</small></div>
+            <i class="bi bi-chevron-down"></i>
+          </summary>
+          <div class="ad-me-menu">
+            <a href="{% url 'home' %}"><i class="bi bi-house"></i> Back to UniConnect</a>
+            <a href="{% url 'staff_settings' %}"><i class="bi bi-shield-lock"></i> My role &amp; permissions</a>
+            <a href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Log out</a>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <main class="ad-main{% block main_class %} is-single{% endblock %}">
+      <div class="ad-content">
+        {% if messages %}<div class="ad-msgs">{% for m in messages %}<div class="ad-msg {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+        {% block content %}{% endblock %}
+      </div>
+      {% block rail %}{% endblock %}
+    </main>
+
+    <footer class="ad-foot"><span><b>UniConnect</b> &nbsp;·&nbsp; Admin Dashboard</span><span>Version 1.0.0</span></footer>
+  </div>
+</div>
+</body>
+</html>

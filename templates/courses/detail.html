@@ -1,0 +1,63 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ course.code }} — {{ course.title }} — Course Companion — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}One course (courses/views.py detail): Notes, Questions, Past Questions, Study Groups.{% endcomment %}
+<div class="cc">
+  <div class="st-top">
+    <a href="{% url 'courses' %}" class="st-back" aria-label="Back to Course Companion"><i class="bi bi-arrow-left"></i></a>
+    <h1>Course</h1>
+  </div>
+
+  <article class="cc-card cc-hero">
+    <span class="cc-tile is-lg is-{{ course.colour }}"><i class="bi {{ course.icon }}"></i></span>
+    <div class="cc-hero-text">
+      <h2>{{ course.code }} – {{ course.title }}</h2>
+      <p>{% if course.department %}{{ course.department.name }} · {% endif %}{{ n_students }} student{{ n_students|pluralize }}</p>
+    </div>
+    <form method="post" action="{% if enrolled %}{% url 'course_unenroll' course.pk %}{% else %}{% url 'course_enroll' course.pk %}{% endif %}" class="cc-hero-btn">{% csrf_token %}
+      {% if enrolled %}<button type="submit" class="cc-added is-btn" title="Remove from My Courses"><i class="bi bi-check2"></i> In My Courses</button>
+      {% else %}<button type="submit" class="cc-add"><i class="bi bi-plus-lg"></i> Add to My Courses</button>{% endif %}
+    </form>
+  </article>
+
+  <nav class="sr-tabs sg-tabs" aria-label="Course sections">
+    {% for key, label, icon in sections %}
+      <a href="?tab={{ key }}" class="{% if key == tab %}is-on{% endif %}"><i class="bi {{ icon }}"></i> {{ label }}{% for k, n in counts.items %}{% if k == key and n %} <span class="bm-count">{{ n }}</span>{% endif %}{% endfor %}</a>
+    {% endfor %}
+  </nav>
+
+  {% if tab == 'notes' or tab == 'past' %}
+    <details class="cc-card cc-compose"{% if not materials %} open{% endif %}>
+      <summary><span class="cc-compose-ico"><i class="bi bi-cloud-arrow-up"></i></span>{% if tab == 'past' %}Upload a past question{% else %}Upload notes{% endif %}<i class="bi bi-chevron-down cc-chev"></i></summary>
+      <form method="post" action="{% url 'course_upload' course.pk %}" enctype="multipart/form-data" class="cc-form">{% csrf_token %}
+        <input type="hidden" name="kind" value="{{ kind }}">
+        <input type="text" name="title" maxlength="150" placeholder="{% if tab == 'past' %}e.g. First semester exam{% else %}e.g. Week 3 — Linked lists{% endif %}" aria-label="Title">
+        {% if tab == 'past' %}<input type="number" name="year" min="1980" max="2100" placeholder="Year, e.g. 2024" aria-label="Exam year" class="cc-year">{% endif %}
+        <label class="cc-file"><input type="file" name="file" required><span><i class="bi bi-paperclip"></i> Choose a file — PDF, Word, slides, images · up to 25MB</span></label>
+        <button type="submit" class="dt-btn is-sm">Upload</button>
+      </form>
+    </details>
+    <section class="cc-card">{% include 'courses/_materials.html' %}</section>
+
+  {% elif tab == 'questions' %}
+    <details class="cc-card cc-compose"{% if not questions %} open{% endif %}>
+      <summary><span class="cc-compose-ico"><i class="bi bi-question-lg"></i></span>Ask a question<i class="bi bi-chevron-down cc-chev"></i></summary>
+      <form method="post" action="{% url 'course_ask' course.pk %}" class="cc-form">{% csrf_token %}
+        <input type="text" name="title" maxlength="200" required placeholder="e.g. How do I balance an AVL tree after deleting a node?" aria-label="Your question">
+        <textarea name="body" rows="3" maxlength="4000" placeholder="Add details: what you tried, where you're stuck (optional)" aria-label="Details"></textarea>
+        <button type="submit" class="dt-btn is-sm">Post question</button>
+      </form>
+    </details>
+    <section class="cc-card">{% include 'courses/_questions.html' %}</section>
+
+  {% else %}
+    <div class="op-list">
+      {% for group in groups %}{% include 'studygroups/_card.html' %}{% empty %}
+        <div class="sr-card sr-nothing"><i class="bi bi-people"></i><h2>No study groups for {{ course.code }} yet</h2><p>Start one and classmates can join.</p></div>
+      {% endfor %}
+    </div>
+    <a href="{% url 'group_create' %}?type=academic&amp;code={{ course.code|urlencode }}" class="cc-start"><i class="bi bi-plus-lg"></i> Start a study group for {{ course.code }}</a>
+  {% endif %}
+</div>
+{% endblock %}

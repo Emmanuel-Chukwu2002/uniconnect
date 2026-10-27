@@ -1,0 +1,9 @@
+<div class="wa-status-row js-wa-status-row" data-user="{{ item.person.id }}" data-name="{{ item.person.name|lower }}" role="button" tabindex="0">
+  <span class="wa-status-ring{% if seen %} is-seen{% endif %}" style="--segments:{{ item.count }}">
+    {% include 'chat/_avatar.html' with p=item.person size=50 %}
+  </span>
+  <span class="wa-status-text">
+    <span class="wa-status-name">{{ item.person.name }}</span>
+    <span class="wa-status-time"><time class="js-wa-time" data-ts="{{ item.latest.created_at|date:'c' }}" data-format="ago">{{ item.latest.created_at|timesince }} ago</time></span>
+  </span>
+</div>

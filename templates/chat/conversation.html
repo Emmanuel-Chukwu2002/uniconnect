@@ -1,0 +1,5 @@
+{% extends 'chat/base.html' %}
+{% block wa_title %}{{ conv_info.title }}{% endblock %}
+{% block list_pane %}{% if participant.is_archived %}{% include 'chat/_archived_list.html' %}{% else %}{% include 'chat/_chats_list.html' %}{% endif %}{% endblock %}
+{% block main_pane %}{% include 'chat/_conversation.html' %}{% endblock %}
+{% block page_data %}{{ conv_data|json_script:"waConvData" }}{% endblock %}

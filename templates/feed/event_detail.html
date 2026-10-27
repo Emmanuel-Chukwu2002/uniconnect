@@ -1,0 +1,101 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ event.title }} — Events — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}One event (feed/details.py event_detail). Styles: restyle.css ("Detail pages").{% endcomment %}
+<div class="dt">
+  <div class="dt-topbar">
+    <a href="{% url 'events' %}" class="dt-icon-btn" aria-label="Back to Events"><i class="bi bi-arrow-left"></i></a>
+    <h1>Event Details</h1>
+    <button type="button" class="dt-icon-btn js-dt-share" data-url="{{ share_url }}" data-title="{{ event.title }}" aria-label="Share event" title="Share"><i class="bi bi-share"></i></button>
+  </div>
+
+  <div class="dt-banner" style="background-image:url('{{ banner }}')">
+    <span class="dt-banner-shade"></span>
+    <span class="dt-banner-tag"><i class="bi {{ event.category_icon }}"></i> {{ event.get_category_display }}</span>
+    <span class="dt-datebadge" aria-label="{{ event.date|date:'j F Y' }}">
+      <small>{{ event.date|date:"M"|upper }}</small>
+      <b>{{ event.date|date:"j" }}</b>
+      <small>{{ event.date|date:"Y" }}</small>
+    </span>
+  </div>
+
+  <article class="dt-body">
+    <h2 class="dt-title">{{ event.title }}</h2>
+
+    <ul class="dt-rows">
+      <li><i class="bi bi-geo-alt"></i> <span>{{ event.location }}</span></li>
+      <li><i class="bi bi-clock"></i> <span>{{ event.date|date:"l, j F Y" }}{% if event.time %} · {{ event.time|time:"g:i A" }}{% endif %}</span></li>
+      <li><i class="bi bi-ticket-perforated"></i> <span>{% if event.is_free %}Free entry{% else %}₦{{ event.price|floatformat:"-2g" }}{% endif %}{% if event.spots_left is not None %} · {{ event.spots_left }} spot{{ event.spots_left|pluralize }} left{% endif %}</span></li>
+      {% if event.organizer %}<li><i class="bi bi-person"></i> <span>Organised by <a href="{% url 'user_profile' event.organizer.username %}">{{ event.organizer.get_full_name|default:event.organizer.username }}</a></span></li>{% endif %}
+    </ul>
+
+    {% if event.description %}<div class="dt-text">{{ event.description|linebreaks|urlize }}</div>{% endif %}
+
+    <h3 class="dt-sub">Attending ({{ count }})</h3>
+    {% if count %}
+      <div class="dt-faces">
+        {% for a in faces %}{% with sp=a.user.student_profile %}
+          <a href="{% url 'user_profile' a.user.username %}" class="dt-face" title="{{ a.user.get_full_name|default:a.user.username }}" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ a.user.first_name|default:a.user.username|first|upper }}{% endif %}</a>
+        {% endwith %}{% endfor %}
+        {% if more %}<span class="dt-face is-more">+{{ more }}</span>{% endif %}
+      </div>
+    {% else %}
+      <p class="dt-muted">Nobody has registered yet{% if not is_organizer %} — be the first{% endif %}.</p>
+    {% endif %}
+
+    <div class="dt-actions">
+      {% if is_organizer %}
+        <a href="{% url 'events' %}?tab=attendees" class="dt-btn"><i class="bi bi-people"></i> See attendees</a>
+      {% elif registered %}
+        <form method="post" action="{% url 'toggle_attendance' %}">{% csrf_token %}
+          <input type="hidden" name="event_id" value="{{ event.id }}"><input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="dt-btn is-done"><i class="bi bi-calendar-check"></i> You're registered · Cancel</button>
+        </form>
+      {% elif full %}
+        <span class="dt-btn is-disabled" aria-disabled="true"><i class="bi bi-calendar-x"></i> This event is full</span>
+      {% else %}
+        <form method="post" action="{% url 'toggle_attendance' %}">{% csrf_token %}
+          <input type="hidden" name="event_id" value="{{ event.id }}"><input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="dt-btn"><i class="bi bi-calendar-plus"></i> Save my spot</button>
+        </form>
+      {% endif %}
+      <div class="dt-btn-row">
+        <form method="post" action="{% url 'event_save' event.id %}" class="js-dt-save-form">{% csrf_token %}
+          <button type="submit" class="dt-btn is-ghost js-dt-save{% if saved %} is-on{% endif %}" aria-pressed="{% if saved %}true{% else %}false{% endif %}">
+            <i class="bi {% if saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> <span>{% if saved %}Saved{% else %}Save Event{% endif %}</span>
+          </button>
+        </form>
+        <a href="{% url 'event_ics' event.id %}" class="dt-btn is-ghost" data-no-soft download><i class="bi bi-calendar-event"></i> Add to calendar</a>
+        {% if event.organizer_id != request.user.id %}<a href="{% url 'report_item' 'event' event.id %}" class="dt-btn is-ghost"><i class="bi bi-flag"></i> Report</a>{% endif %}
+      </div>
+    </div>
+  </article>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'feed/_detail_share_js.html' %}
+<script>
+  // Save Event: saves it to Bookmarks > Events without leaving the page.
+  UC.onPage(function (doc, signal) {
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.classList || !form.classList.contains('js-dt-save-form')) { return; }
+      e.preventDefault(); e.stopPropagation();
+      var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': m ? decodeURIComponent(m[1]) : '', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+        .then(function (res) {
+          var btn = form.querySelector('.js-dt-save');
+          btn.classList.toggle('is-on', res.saved);
+          btn.setAttribute('aria-pressed', res.saved ? 'true' : 'false');
+          btn.querySelector('i').className = 'bi ' + (res.saved ? 'bi-bookmark-fill' : 'bi-bookmark');
+          btn.querySelector('span').textContent = res.saved ? 'Saved' : 'Save Event';
+          if (window.showToast) { showToast(res.saved ? 'Saved to your Bookmarks.' : 'Removed from your Bookmarks.'); }
+        })
+        .catch(function () { if (window.showToast) { showToast('Could not save — try again.'); } });
+    }, { capture: true, signal: signal });
+  });
+</script>
+{% endblock %}

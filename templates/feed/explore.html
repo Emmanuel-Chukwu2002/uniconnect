@@ -1,0 +1,166 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags %}
+{% block title %}Explore — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Explore (feed/explore.py). Styles: restyle.css ("Explore").{% endcomment %}
+<div class="ex">
+  <h1 class="ex-h1">Explore</h1>
+
+  <form class="ex-search" method="get" action="{% url 'explore' %}" role="search">
+    <button type="submit" class="ex-search-go" aria-label="Search"><i class="bi bi-search"></i></button>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search {% if tab == 'communities' %}communities, groups…{% elif tab == 'people' %}people or skills…{% else %}{{ tab }}…{% endif %}" aria-label="Search {{ tab }}" autocomplete="off">
+    {% if tab != 'communities' %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
+    {% if skill %}<input type="hidden" name="skill" value="{{ skill }}">{% endif %}
+    {% if q %}<a href="?tab={{ tab }}" class="sr-clear" aria-label="Clear search"><i class="bi bi-x-circle-fill"></i></a>{% endif %}
+  </form>
+
+  {% if trending %}
+    <div class="ex-trending" role="list" aria-label="Trending hashtags">
+      <span class="ex-trending-label"><i class="bi bi-graph-up-arrow"></i> Trending</span>
+      {% for t, n in trending %}<a role="listitem" href="{% url 'hashtag' t %}" class="sg-chip">#{{ t }}</a>{% endfor %}
+    </div>
+  {% endif %}
+
+  <nav class="ex-tabs" aria-label="Explore">
+    {% for key, label in tabs %}<a href="?tab={{ key }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="{% if key == tab %}is-on{% endif %}">{{ label }}</a>{% endfor %}
+  </nav>
+
+  {% if tab == 'communities' or tab == 'groups' %}
+    {% if tab == 'communities' %}
+      <section class="ex-section">
+        <header class="ex-head"><h2>{% if q %}Communities{% else %}Popular Communities{% endif %}</h2><a href="{% url 'communities' %}?tab=explore{% if q %}&amp;q={{ q|urlencode }}{% endif %}">See all</a></header>
+        {% for c in communities %}
+          <div class="ex-row">
+            <a href="{% url 'community_detail' c.pk %}" class="ex-row-link" aria-label="{{ c.name }}"></a>
+            <span class="ex-tile is-{{ c.topic }}"><i class="bi {{ c.topic_icon }}"></i></span>
+            <span class="ex-text"><b>{{ c.name }}</b><small>{{ c.n_members|compact }} member{{ c.n_members|pluralize }}{% if c.university.short_name %} · {{ c.university.short_name }}{% endif %}</small></span>
+            {% if c.my_state == 'joined' %}<a href="{% url 'community_detail' c.pk %}" class="ex-btn is-done">Joined</a>
+            {% elif c.my_state == 'requested' %}<span class="ex-btn is-wait">Requested</span>
+            {% else %}<button type="button" class="ex-btn js-ex-act" data-url="{% url 'community_join' c.pk %}" data-kind="community">{% if c.is_restricted %}Ask{% else %}Join{% endif %}</button>{% endif %}
+          </div>
+        {% empty %}<p class="ex-empty">No communities{% if q %} match “{{ q }}”{% endif %} yet. <a href="{% url 'community_create' %}">Start one</a>.</p>{% endfor %}
+      </section>
+    {% endif %}
+
+    <section class="ex-section">
+      <header class="ex-head"><h2>{% if q %}Groups{% else %}Suggested Groups{% endif %}</h2><a href="{% url 'groups' %}{% if q %}?q={{ q|urlencode }}{% endif %}">See all</a></header>
+      {% for g in groups %}{% with info=g.type_info %}
+        <div class="ex-row">
+          <a href="{{ g.get_absolute_url }}" class="ex-row-link" aria-label="{{ g.title }}"></a>
+          <span class="sg-tile ex-soft is-{{ info.colour }}"><i class="bi {{ info.icon }}"></i></span>
+          <span class="ex-text"><b>{% if g.course_code %}{{ g.course_code }} – {% endif %}{{ g.name }}</b><small>{{ g.n_members|compact }} member{{ g.n_members|pluralize }} · {{ info.label }}</small></span>
+          {% if g.my_state == 'requested' %}<span class="ex-btn is-wait">Requested</span>
+          {% elif g.is_full %}<span class="ex-btn is-wait">Full</span>
+          {% else %}<button type="button" class="ex-btn js-ex-act" data-url="{% url 'group_join' g.pk %}" data-kind="group">{% if g.privacy == 'private' %}Ask{% else %}Join{% endif %}</button>{% endif %}
+        </div>
+      {% endwith %}{% empty %}<p class="ex-empty">No groups to suggest{% if q %} for “{{ q }}”{% endif %}. <a href="{% url 'group_create' %}">Start one</a> for your class or project.</p>{% endfor %}
+    </section>
+
+  {% elif tab == 'people' %}
+    {% if top_skills %}
+      <div class="ex-skills" role="list" aria-label="Find people by skill">
+        <a role="listitem" href="?tab=people{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="sg-chip{% if not skill %} is-on{% endif %}">Everyone</a>
+        {% for n in top_skills %}<a role="listitem" href="?tab=people&amp;skill={{ n|urlencode }}" class="sg-chip{% if skill|lower == n|lower %} is-on{% endif %}">{{ n }}</a>{% endfor %}
+      </div>
+    {% endif %}
+    <section class="ex-section">
+      <header class="ex-head"><h2>{% if skill %}People who know {{ skill }}{% elif q %}People{% else %}Classmates & people you may know{% endif %}</h2><a href="{% url 'profile' %}#skills">Your skills</a></header>
+      {% for p in people %}
+        <div class="ex-row ex-person">
+          <a href="{% url 'user_profile' p.user.username %}" class="ex-row-link" aria-label="{{ p.user.get_full_name|default:p.user.username }}"></a>
+          <span class="ex-avatar" style="{% if p.profile_photo %}background-image:url({{ p.profile_photo.url }}){% endif %}">{% if not p.profile_photo %}{{ p.user.first_name|default:p.user.username|first|upper }}{% endif %}</span>
+          <span class="ex-text">
+            <b>{{ p.user.get_full_name|default:p.user.username }}</b>
+            <small>{% if p.classmate %}Your classmate · {% elif p.shared_courses %}{{ p.shared_courses }} course{{ p.shared_courses|pluralize }} in common · {% endif %}{{ p.department.name }} · {{ p.level.name }}</small>
+            {% if p.skill_list %}<span class="ex-person-skills">{% for n in p.skill_list|slice:":3" %}<em{% if skill and n|lower == skill|lower %} class="is-match"{% endif %}>{{ n }}</em>{% endfor %}{% if p.skill_list|length > 3 %}<em>+{{ p.skill_list|length|add:"-3" }}</em>{% endif %}</span>{% endif %}
+          </span>
+          {% if p.follow_status == 'accepted' %}<button type="button" class="btn btn-sm btn-outline-secondary follow-btn ex-follow" data-user-id="{{ p.user_id }}" data-status="accepted">Following</button>
+          {% elif p.follow_status == 'pending' %}<button type="button" class="btn btn-sm btn-outline-secondary follow-btn follow-btn-pending ex-follow" data-user-id="{{ p.user_id }}" data-status="pending">Requested</button>
+          {% else %}<button type="button" class="btn btn-sm btn-primary follow-btn ex-follow" data-user-id="{{ p.user_id }}" data-status="none">Follow</button>{% endif %}
+        </div>
+      {% empty %}<p class="ex-empty">{% if skill %}Nobody at your university lists {{ skill }} yet.{% else %}No one found{% if q %} for “{{ q }}”{% endif %}.{% endif %}</p>{% endfor %}
+    </section>
+
+  {% elif tab == 'events' %}
+    <section class="ex-section">
+      <header class="ex-head"><h2>Upcoming Events</h2><a href="{% url 'events' %}">See all</a></header>
+      {% for e in events %}
+        <div class="ex-row">
+          <a href="{% url 'event_detail' e.pk %}" class="ex-row-link" aria-label="{{ e.title }}"></a>
+          <span class="ex-date"><small>{{ e.date|date:"M"|upper }}</small><b>{{ e.date|date:"j" }}</b></span>
+          <span class="ex-text"><b>{{ e.title }}</b><small>{{ e.location }}{% if e.time %} · {{ e.time|time:"g:i A" }}{% endif %} · {{ e.n_going|compact }} going</small></span>
+          {% if e.mine %}<a href="{% url 'event_detail' e.pk %}" class="ex-btn is-done">Yours</a>
+          {% elif e.registered %}<button type="button" class="ex-btn is-done js-ex-act" data-url="{% url 'toggle_attendance' %}" data-event="{{ e.pk }}" data-kind="event">Going</button>
+          {% elif e.full %}<span class="ex-btn is-wait">Full</span>
+          {% else %}<button type="button" class="ex-btn js-ex-act" data-url="{% url 'toggle_attendance' %}" data-event="{{ e.pk }}" data-kind="event">Register</button>{% endif %}
+        </div>
+      {% empty %}<p class="ex-empty">No upcoming events{% if q %} for “{{ q }}”{% endif %}.</p>{% endfor %}
+    </section>
+
+  {% elif tab == 'courses' %}
+    <section class="ex-section">
+      <header class="ex-head"><h2>Courses at your university</h2><a href="{% url 'courses' %}">My Courses</a></header>
+      {% for c in courses %}
+        <div class="ex-row">
+          <a href="{{ c.get_absolute_url }}" class="ex-row-link" aria-label="{{ c.code }} {{ c.title }}"></a>
+          <span class="cc-tile is-{{ c.colour }}"><i class="bi {{ c.icon }}"></i></span>
+          <span class="ex-text"><b>{{ c.code }} – {{ c.title }}</b><small>{{ c.n_students|compact }} student{{ c.n_students|pluralize }}</small></span>
+          <button type="button" class="ex-btn js-ex-act" data-url="{% url 'course_enroll' c.pk %}" data-kind="course">Add</button>
+        </div>
+      {% empty %}<p class="ex-empty">{% if q %}No course matches “{{ q }}”. <a href="{% url 'courses' %}?q={{ q|urlencode }}">Add it in Course Companion</a>.{% else %}You've added every course here. <a href="{% url 'courses' %}">Open My Courses</a>.{% endif %}</p>{% endfor %}
+    </section>
+
+  {% else %}
+    <section class="ex-section">
+      <header class="ex-head"><h2>Open Opportunities</h2><a href="{% url 'opportunities' %}">See all</a></header>
+      {% for o in opportunities %}
+        <div class="ex-row">
+          <a href="{{ o.get_absolute_url }}" class="ex-row-link" aria-label="{{ o.title }}"></a>
+          <span class="op-ico is-{{ o.kind }} ex-op"><i class="bi {{ o.icon }}"></i></span>
+          <span class="ex-text"><b>{{ o.title }}</b><small>{{ o.organization }} · {{ o.get_kind_display }}{% if o.deadline %} · by {{ o.deadline|date:"j M" }}{% endif %}</small></span>
+          <button type="button" class="ex-btn js-ex-act{% if o.saved %} is-done{% endif %}" data-url="{% url 'opportunity_save' o.pk %}" data-kind="opportunity">{% if o.saved %}Saved{% else %}Save{% endif %}</button>
+        </div>
+      {% empty %}<p class="ex-empty">No open opportunities{% if q %} for “{{ q }}”{% endif %}.</p>{% endfor %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Join / Ask / Register / Add / Save on Explore, without leaving the page.
+  UC.onPage(function (doc, signal) {
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    function set(btn, text, cls) { btn.textContent = text; btn.className = 'ex-btn ' + (cls || '') + ' js-ex-act'; }
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.js-ex-act');
+      if (!btn || btn.disabled) { return; }
+      e.preventDefault();
+      var kind = btn.getAttribute('data-kind'), body = new FormData();
+      if (kind === 'event') { body.append('event_id', btn.getAttribute('data-event')); }
+      btn.disabled = true;
+      fetch(btn.getAttribute('data-url'), { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) { throw new Error(j.error || ''); } return j; }); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (kind === 'community' || kind === 'group') {
+            if (res.state === 'joined') { set(btn, 'Joined', 'is-done'); btn.disabled = true; }
+            else if (res.state === 'requested') { set(btn, 'Requested', 'is-wait'); btn.disabled = true; }
+            if (window.showToast) { showToast(res.message || (res.state === 'joined' ? 'Joined!' : 'Request sent.')); }
+          } else if (kind === 'event') {
+            set(btn, res.registered ? 'Going' : 'Register', res.registered ? 'is-done' : '');
+            if (window.showToast) { showToast(res.registered ? "You're registered." : 'Registration cancelled.'); }
+          } else if (kind === 'course') {
+            set(btn, 'Added', 'is-done'); btn.disabled = true;
+            if (window.showToast) { showToast('Added to My Courses.'); }
+          } else if (kind === 'opportunity') {
+            set(btn, res.saved ? 'Saved' : 'Save', res.saved ? 'is-done' : '');
+            if (window.showToast) { showToast(res.saved ? 'Saved to your Bookmarks.' : 'Removed from your Bookmarks.'); }
+          }
+        })
+        .catch(function (err) { btn.disabled = false; if (window.showToast) { showToast(err.message || 'Something went wrong — try again.'); } });
+    }, { signal: signal });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% comment %}
+  Join / Joined / Requested button for community `c` (decorated by
+  communities.views._decorate: c.my_state is 'none', 'joined' or
+  'requested'). A real form, so it works without JavaScript;
+  static/js/communities.js sends it in the background and updates every
+  button for the same community on the page. Hovering "Joined" offers
+  "Leave"; hovering "Requested" offers "Cancel".
+{% endcomment %}
+<form method="post" action="{% if c.my_state == 'none' %}{% url 'community_join' c.id %}{% else %}{% url 'community_leave' c.id %}{% endif %}"
+      class="cm-join-form js-cm-join-form" data-community-id="{{ c.id }}"
+      data-join-url="{% url 'community_join' c.id %}" data-leave-url="{% url 'community_leave' c.id %}"
+      data-state="{{ c.my_state }}" data-restricted="{% if c.is_restricted %}1{% else %}0{% endif %}">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button type="submit" class="cm-join is-{{ c.my_state }}{% if big %} cm-join-lg{% endif %}{% if solid %} cm-join-solid{% endif %}"
+          aria-label="{% if c.my_state == 'joined' %}Leave {{ c.name }}{% elif c.my_state == 'requested' %}Cancel your request to join {{ c.name }}{% else %}Join {{ c.name }}{% endif %}">
+    {% if big %}<i class="bi bi-people-fill cm-join-ico" aria-hidden="true"></i>{% endif %}<span class="cm-join-text">{% if c.my_state == 'joined' %}Joined{% elif c.my_state == 'requested' %}Requested{% elif c.is_restricted %}Ask to join{% else %}Join{% endif %}</span>
+    <span class="cm-join-hover">{% if c.my_state == 'joined' %}Leave{% elif c.my_state == 'requested' %}Cancel{% endif %}</span>
+  </button>
+</form>

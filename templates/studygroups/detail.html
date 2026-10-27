@@ -1,0 +1,601 @@
+{% extends 'feed/base_app.html' %}
+{% load group_tags static %}
+{% block title %}{{ group.title }} — Groups — UniConnect{% endblock %}
+
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/groups.css' %}?v=25">{% endblock %}
+
+{% block feed_content %}
+{% comment %}One group (studygroups/views.py detail): header, then Posts / Files / Members / About
+tabs for members (non-members see About, and Members for public groups).{% endcomment %}
+{% with info=group.type_info %}
+{% comment %}Study groups (Academic) get the soft look (gradient blobs in the group's colours, groups.css "soft look");
+other groups keep the photo banner.{% endcomment %}
+<div class="gp{% if group.group_type == 'academic' %} is-soft{% endif %}" data-group="{{ group.pk }}">
+  {# Banner: back, chat, more; members' faces #}
+  <div class="gp-hero is-{{ info.colour }}" style="background-image:url('{{ group.cover_url }}')">
+    {# Tap the cover to view it full screen (the profile photo viewer, static/js/app.js .js-view-cover-photo) #}
+    <span class="gp-cover-hit js-view-cover-photo" data-photo-url="{{ group.cover_full_url }}" role="button" tabindex="0" aria-label="View the cover photo"></span>
+    <a href="{% url 'groups' %}" class="gp-hero-btn" aria-label="Back to Groups"><i class="bi bi-arrow-left"></i></a>
+    <div class="gp-hero-right">
+      <div class="dropdown">
+        <button type="button" class="gp-hero-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More"><i class="bi bi-three-dots"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button type="button" class="dropdown-item js-gp-copy" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'group_detail' group.pk %}"><i class="bi bi-link-45deg"></i> Copy link to this group</button></li>
+          {% if member and group.conversation_id %}<li><a class="dropdown-item" href="{% url 'chat_conversation' group.conversation_id %}" data-no-soft><i class="bi bi-chat-dots"></i> Open chat in Messages</a></li>{% endif %}
+          <li><a class="dropdown-item" href="?tab=about" data-soft-swap=".gp-tabs, .gp-panel"><i class="bi bi-info-circle"></i> About this group</a></li>
+        </ul>
+      </div>
+    </div>
+    {% if faces %}
+      <a href="?tab=members" class="gp-faces" data-soft-swap=".gp-tabs, .gp-panel" aria-label="{{ count }} members">
+        {% for m in faces %}{% with sp=m.user.student_profile %}<span class="gp-face" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}{{ m.user.first_name|default:m.user.username|slice:":1"|upper }}{% endif %}</span>{% endwith %}{% endfor %}
+        {% if more_faces %}<span class="gp-faces-more">+{{ more_faces }}</span>{% endif %}
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="gp-head">
+    <div class="gp-head-row">
+      {% if group.group_type == 'academic' or group.photo %}<span class="gp-icon is-{{ info.colour }} has-photo js-view-profile-photo" data-photo-url="{{ group.icon_full_url }}" role="button" tabindex="0" aria-label="View the group photo" style="background-image:url('{{ group.icon_url }}')"><i class="bi {{ info.icon }}"></i></span>
+      {% else %}<span class="gp-icon is-{{ info.colour }}" aria-hidden="true"><i class="bi {{ info.icon }}"></i></span>{% endif %}
+      <div class="gp-titles">
+        {% if group.group_type == 'academic' %}{% if group.course_code %}<small class="gp-code">{{ group.course_code }}</small>{% endif %}
+        <h1>{{ group.name }}</h1>{% else %}<h1>{{ group.title }}</h1>{% endif %}
+        <p>Group &middot; {{ group.university.name }} &middot; {{ count }} member{{ count|pluralize }}</p>
+        {% if chips %}<div class="gp-chips">{% for c in chips %}<span>{{ c }}</span>{% endfor %}</div>{% endif %}
+      </div>
+      <div class="gp-actions">
+        {% if member %}
+          <span class="gp-joined"><i class="bi bi-check-lg"></i> Joined</span>
+          {% if chat_url %}<a href="{{ chat_url }}" class="gp-msg" data-no-soft aria-label="Open the group chat in Messages"><i class="bi bi-chat-dots-fill"></i> Messages{% if chat_unread %} <span class="bm-count is-alert">{{ chat_unread }}</span>{% endif %}</a>{% endif %}
+        {% elif me %}
+          <form method="post" action="{% url 'group_leave' group.pk %}">{% csrf_token %}<button type="submit" class="gp-join is-pending" title="Cancel request"><i class="bi bi-hourglass-split"></i> Requested</button></form>
+        {% elif full %}
+          <span class="gp-join is-off"><i class="bi bi-people-fill"></i> Group is full</span>
+        {% elif not group.is_open %}
+          <span class="gp-join is-off"><i class="bi bi-pause-circle"></i> Not taking members</span>
+        {% else %}
+          <form method="post" action="{% url 'group_join' group.pk %}">{% csrf_token %}<button type="submit" class="gp-join"><i class="bi bi-person-plus"></i> {% if group.privacy == 'private' %}Ask to join{% else %}Join{% endif %}</button></form>
+        {% endif %}
+        <div class="dropdown">
+          <button type="button" class="gp-square" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Group options"><i class="bi bi-three-dots"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% if is_admin %}<li><a class="dropdown-item" href="{% url 'group_edit' group.pk %}"><i class="bi bi-gear"></i> Group settings</a></li>
+            <li><a class="dropdown-item" href="?tab=members"><i class="bi bi-link-45deg"></i> Invite link</a></li>{% endif %}
+            <li><button type="button" class="dropdown-item js-gp-copy" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'group_detail' group.pk %}"><i class="bi bi-copy"></i> Copy link</button></li>
+            {% if group.created_by_id != request.user.id %}<li><a class="dropdown-item" href="{% url 'report_item' 'group' group.pk %}"><i class="bi bi-flag"></i> Report group</a></li>{% endif %}
+            {% if member and me.role != 'owner' %}
+              <li><hr class="dropdown-divider"></li>
+              <li><form method="post" action="{% url 'group_leave' group.pk %}" onsubmit="return confirm('Leave this group? You will also leave its group chat.')">{% csrf_token %}<button type="submit" class="dropdown-item is-danger"><i class="bi bi-box-arrow-right"></i> Leave group</button></form></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% if group.description %}<p class="gp-desc">{{ group.description|linebreaksbr }}</p>{% endif %}
+
+    {% if member %}
+      {# Quick tiles #}
+      <div class="gp-tiles" data-soft-swap=".gp-tabs, .gp-panel">
+        {% if group.conversation_id %}
+          <button type="button" class="gp-tile js-gp-mute" data-url="{% url 'chat_action' group.conversation_id %}" data-muted="{% if chat_muted %}1{% else %}0{% endif %}"{% if chat_muted_until %} data-until="{{ chat_muted_until|date:'c' }}"{% endif %} aria-pressed="{% if chat_muted %}false{% else %}true{% endif %}">
+            <i class="bi {% if chat_muted %}bi-bell-slash{% else %}bi-bell{% endif %}"></i><b>Notifications</b><small class="js-gp-mute-state">{% if chat_muted %}{% if chat_muted_until %}Off until {{ chat_muted_until|date:'D g:i a' }}{% else %}Off{% endif %}{% else %}On{% endif %}</small>
+          </button>
+        {% endif %}
+        <a href="?tab=sessions{% if next_session %}#s{{ next_session.pk }}{% endif %}" class="gp-tile"><i class="bi bi-calendar-event"></i><b>Sessions</b><small>{% if next_session %}Next: {{ next_session.starts_at|date:'D j M' }}{% else %}None planned{% endif %}</small></a>
+        <a href="?tab=files" class="gp-tile"><i class="bi bi-file-earmark-text"></i><b>Files</b><small>{{ files_count }} file{{ files_count|pluralize }}</small></a>
+        <a href="?tab=members" class="gp-tile"><i class="bi bi-people"></i><b>Members</b><small>{{ count }} member{{ count|pluralize }}</small></a>
+        {% if group.show_posts %}<a href="?tab=posts&amp;show=announcements" class="gp-tile"><i class="bi bi-megaphone"></i><b>Announcements</b><small>{{ announcements_count }}</small></a>{% endif %}
+        {% if is_admin %}<a href="{% url 'group_edit' group.pk %}" class="gp-tile"><i class="bi bi-gear"></i><b>Group Settings</b><small>Admins</small></a>
+        {% else %}<a href="?tab=about" class="gp-tile"><i class="bi bi-info-circle"></i><b>Group Info</b><small>Rules &amp; admins</small></a>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <nav class="gp-tabs" aria-label="Group sections" data-soft-swap=".gp-tabs, .gp-panel">
+    {# The group chat opens in Messages — the Messages button beside Joined (chat/views.py conversation) #}
+    {% for key, label in tabs %}
+      <a href="?tab={{ key }}" class="{% if key == tab %}is-on{% endif %}">{{ label }}{% if key == 'members' and pending_count %} <span class="bm-count is-alert">{{ pending_count }}</span>{% endif %}</a>
+    {% endfor %}
+  </nav>
+</div>
+
+{% comment %}The open tab. Tabs, tiles and filters swap just this part in place (static/js/nav.js data-soft-swap) — no full reload.{% endcomment %}
+<div class="gp-panel">
+{% if tab == 'posts' %}
+{% if prefill %}<div class="gp-filter"><i class="bi bi-chat-left-quote"></i> Turning a chat message into a post — add a title so people can find it later.</div>{% endif %}
+
+  {# ---------- Composer ---------- #}
+  {# Finding discussions #}
+  <form method="get" class="sg-find" role="search">
+    <input type="hidden" name="tab" value="posts">{% if show %}<input type="hidden" name="show" value="{{ show }}">{% endif %}
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" value="{{ q }}" placeholder="{% if group.group_type == 'academic' %}Search threads, comments and files{% else %}Search posts, comments and files{% endif %}" aria-label="Search posts">
+  </form>
+  <div class="sg-filters" role="tablist" aria-label="Show" data-soft-swap=".gp-tabs, .gp-panel">
+    {% for key, label in post_filters %}<a href="?tab=posts{% if key %}&amp;show={{ key }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="{% if key == show %}is-on{% endif %}">{{ label }}</a>{% endfor %}
+  </div>
+
+  <form method="post" action="{% url 'group_post_create' group.pk %}" enctype="multipart/form-data" class="sr-card sg-composer js-sg-composer{% if prefill %} is-open{% endif %}" id="sgComposer">
+    {% csrf_token %}
+    {% if group.group_type == 'academic' %}{% with msp=request.user.student_profile %}<div class="sg-composer-hello">
+      <span class="sr-avatar is-md" style="{% if msp.profile_photo %}background-image:url({{ msp.profile_photo.url }}){% endif %}">{% if not msp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+      <span><b>Start a new thread</b><small>Ask a doubt, share notes or start a discussion</small></span>
+    </div>{% endwith %}{% endif %}
+    <input type="text" name="title" maxlength="150" placeholder="Title — e.g. COS 401 Assignment 2: Instructions and Questions" class="sg-title-input" aria-label="Title (optional)">
+    <textarea name="body" rows="{% if prefill %}4{% else %}2{% endif %}" maxlength="5000" placeholder="Share something with the group…" class="js-sg-body" aria-label="Write a post">{{ prefill|default:'' }}</textarea>
+    <div class="sg-attach-list js-sg-attach-list" hidden></div>
+    <div class="sg-poll-edit" hidden>
+      <input type="hidden" name="is_poll" value="" class="js-sg-is-poll">
+      {% for i in option_slots %}<input type="text" name="option_{{ i }}" maxlength="100" placeholder="Option {{ i }}{% if i > 2 %} (optional){% endif %}" class="sg-opt-input"{% if i > 3 %} hidden{% endif %}>{% endfor %}
+      <button type="button" class="sg-link js-sg-more-opt"><i class="bi bi-plus"></i> Add option</button>
+      <label class="op-check"><input type="checkbox" name="poll_multiple" value="1"> Let people choose more than one</label>
+    </div>
+    <div class="sg-composer-preview" hidden><img alt=""><button type="button" class="js-sg-clear-img" aria-label="Remove photo"><i class="bi bi-x-lg"></i></button></div>
+    <div class="sg-composer-bar">
+      <label class="sg-tool" title="Add a photo"><i class="bi bi-image"></i><input type="file" name="image" accept="image/*" class="js-sg-image" hidden><span>Photo</span></label>
+      <label class="sg-tool" title="Attach documents or a video (up to {{ 6 }}, 25MB each)"><i class="bi bi-paperclip"></i><input type="file" name="files" multiple class="js-sg-files" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.rar,.mp4,.webm,.mov,image/*" hidden><span>Files</span></label>
+      <button type="button" class="sg-tool js-sg-poll" aria-pressed="false" title="Make it a poll"><i class="bi bi-bar-chart-line"></i><span>Poll</span></button>
+      {% if me.is_admin %}<label class="sg-tool sg-announce" title="Pin it to the top and notify every member"><input type="checkbox" name="is_announcement" value="1"> <i class="bi bi-megaphone"></i><span>Announcement</span></label>{% endif %}
+      <button type="submit" class="st-btn sg-post-btn">Post</button>
+    </div>
+  </form>
+
+  <div class="sg-posts">
+    {% for post in posts %}
+      {% include 'studygroups/_post.html' %}
+    {% empty %}
+      <div class="sr-card sr-nothing">
+        <i class="bi bi-chat-square-text"></i>
+        {% if q or show %}<h2>Nothing found</h2><p>Try other words or another filter. <a href="?tab=posts">Show all posts</a></p>
+        {% else %}<h2>No posts yet</h2>
+        <p>Posts are for things people need to find again: assignment instructions, detailed questions, study resources. Quick questions go in Chat.</p>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+{% elif tab == 'sessions' %}
+  {% include 'studygroups/_sessions.html' %}
+
+{% elif tab == 'files' %}
+  <form method="post" action="{% url 'group_file_upload' group.pk %}" enctype="multipart/form-data" class="sr-card sg-upload">
+    {% csrf_token %}
+    <label class="sg-drop">
+      <input type="file" name="file" multiple class="js-sg-file" onchange="if(this.files.length){this.form.requestSubmit()}">
+      <i class="bi bi-cloud-arrow-up"></i>
+      <b>Upload lecture notes, slides or past questions</b>
+      <small>PDF, Word, PowerPoint, Excel, images, zip · up to 25MB each</small>
+    </label>
+  </form>
+  {# One library: files uploaded here, attached to posts, and sent in the chat (studygroups/views.py _library) #}
+  <form method="get" class="sg-find" role="search">
+    <input type="hidden" name="tab" value="files">{% if file_source %}<input type="hidden" name="from" value="{{ file_source }}">{% endif %}
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" value="{{ file_q }}" placeholder="Search files by name" aria-label="Search files">
+  </form>
+  <div class="sg-filters" aria-label="Where the files were shared" data-soft-swap=".gp-tabs, .gp-panel">
+    <a href="?tab=files" class="{% if not file_source %}is-on{% endif %}">All {{ library_total }}</a>
+    <a href="?tab=files&amp;from=uploads" class="{% if file_source == 'uploads' %}is-on{% endif %}"><i class="bi bi-cloud-arrow-up"></i>&nbsp;Uploaded {{ file_counts.uploads }}</a>
+    {% if group.show_posts %}<a href="?tab=files&amp;from=posts" class="{% if file_source == 'posts' %}is-on{% endif %}"><i class="bi bi-file-text"></i>&nbsp;In posts {{ file_counts.posts }}</a>{% endif %}
+    {% if group.conversation_id %}<a href="?tab=files&amp;from=chat" class="{% if file_source == 'chat' %}is-on{% endif %}"><i class="bi bi-chat-dots"></i>&nbsp;In chat {{ file_counts.chat }}</a>{% endif %}
+  </div>
+  <section class="sr-card">
+    {% for f in files %}
+      <div class="sr-item sg-file">
+        <a href="{{ f.url }}" class="sg-file-ico is-{{ f.kind }}" data-no-soft target="_blank" rel="noopener"><i class="bi {{ f.icon }}"></i></a>
+        <a href="{{ f.url }}" class="sr-item-text" data-no-soft target="_blank" rel="noopener">
+          <b>{{ f.name }}</b>
+          <small>{{ f.size|size }} · {{ f.by.get_full_name|default:f.by.username|default:'Someone' }} · {{ f.at|ago }} · <span class="sg-file-src">{% if f.source == 'chat' %}<i class="bi bi-chat-dots"></i> in the chat{% elif f.source == 'posts' %}<i class="bi bi-file-text"></i> in a post{% else %}<i class="bi bi-cloud-arrow-up"></i> uploaded{% endif %}</span></small>
+        </a>
+        {% if f.post_id %}<a href="?tab=posts#p{{ f.post_id }}" class="st-btn-ghost sg-icon-btn" title="Open the post" aria-label="Open the post with {{ f.name }}"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+        <a href="{{ f.url }}" class="st-btn-ghost sg-icon-btn" data-no-soft download="{{ f.name }}" title="Download" aria-label="Download {{ f.name }}"><i class="bi bi-download"></i></a>
+        {% if f.file and not f.post_id %}{% if f.file.uploaded_by_id == request.user.id or is_admin %}
+          <form method="post" action="{% url 'group_file_delete' group.pk f.file.pk %}" onsubmit="return confirm('Delete {{ f.name|escapejs }}?')">{% csrf_token %}<button type="submit" class="st-btn-ghost sg-icon-btn" title="Delete" aria-label="Delete {{ f.name }}"><i class="bi bi-trash3"></i></button></form>
+        {% endif %}{% endif %}
+      </div>
+    {% empty %}
+      <div class="sr-nothing sg-empty"><i class="bi bi-folder2-open"></i><h2>{% if file_q or file_source %}No files found{% else %}No files yet{% endif %}</h2><p>Files uploaded here, attached to posts or sent in the chat all show up in this one place — easy to find later.</p></div>
+    {% endfor %}
+  </section>
+
+{% elif tab == 'members' %}
+  {% if invite_url %}
+    <section class="sr-card sg-invite">
+      <header class="sr-head"><h2><i class="bi bi-link-45deg"></i> Invite link</h2></header>
+      <p>Anyone with this link can join{% if group.privacy == 'private' %} without waiting for approval{% endif %} — even students from other universities.</p>
+      <div class="sg-invite-row">
+        <input type="text" value="{{ invite_url }}" readonly class="js-sg-invite" aria-label="Invite link">
+        <button type="button" class="st-btn js-sg-copy"><i class="bi bi-copy"></i> Copy</button>
+      </div>
+      <form method="post" action="{% url 'group_reset_invite' group.pk %}" onsubmit="return confirm('Make a new link? The old one will stop working.')">{% csrf_token %}<button type="submit" class="sg-link"><i class="bi bi-arrow-repeat"></i> Reset link</button></form>
+    </section>
+  {% endif %}
+
+  {% if requests %}
+    <section class="sr-card">
+      <header class="sr-head"><h2>Requests <span class="bm-count is-alert">{{ requests|length }}</span></h2></header>
+      {% for m in requests %}
+        {% with sp=m.user.student_profile %}
+        <div class="sr-person">
+          <a href="{% url 'user_profile' m.user.username %}" class="sr-avatar" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+          <a href="{% url 'user_profile' m.user.username %}" class="sr-person-text"><b>{{ m.user.get_full_name|default:m.user.username }}</b><small>{{ sp.department.name }} · {{ sp.level.name }} · asked {{ m.joined_at|ago }}</small></a>
+          <form method="post" action="{% url 'group_member_action' group.pk m.pk 'approve' %}">{% csrf_token %}<button type="submit" class="st-btn sg-sm-btn">Approve</button></form>
+          <form method="post" action="{% url 'group_member_action' group.pk m.pk 'decline' %}">{% csrf_token %}<button type="submit" class="st-btn-ghost sg-sm-btn">Decline</button></form>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <section class="sr-card">
+    <header class="sr-head"><h2>Members <span class="bm-count">{{ count }}</span></h2></header>
+    {% for m in members %}
+      {% with sp=m.user.student_profile %}
+      <div class="sr-person">
+        <a href="{% url 'user_profile' m.user.username %}" class="sr-avatar" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+        <a href="{% url 'user_profile' m.user.username %}" class="sr-person-text">
+          <b>{{ m.user.get_full_name|default:m.user.username }}{% if m.user_id == request.user.id %} (you){% endif %}</b>
+          <small>{{ sp.department.name }} · {{ sp.level.name }}{% if sp.university_id != group.university_id %} · {{ sp.university.short_name|default:sp.university.name }}{% endif %}</small>
+        </a>
+        {% if m.role == 'owner' %}<span class="sg-role">Owner</span>{% elif m.role == 'admin' %}<span class="sg-role">Admin</span>{% endif %}
+        {% if is_admin and m.role != 'owner' and m.user_id != request.user.id %}
+          <details class="sg-menu">
+            <summary aria-label="Manage {{ m.user.get_full_name|default:m.user.username }}"><i class="bi bi-three-dots"></i></summary>
+            <div class="sg-menu-list">
+              {% if me.role == 'owner' %}
+                {% if m.role == 'admin' %}<form method="post" action="{% url 'group_member_action' group.pk m.pk 'remove_admin' %}">{% csrf_token %}<button type="submit"><i class="bi bi-shield-x"></i> Dismiss as admin</button></form>
+                {% else %}<form method="post" action="{% url 'group_member_action' group.pk m.pk 'make_admin' %}">{% csrf_token %}<button type="submit"><i class="bi bi-shield-check"></i> Make admin</button></form>{% endif %}
+              {% endif %}
+              {% if m.role == 'member' or me.role == 'owner' %}
+                <form method="post" action="{% url 'group_member_action' group.pk m.pk 'remove' %}">{% csrf_token %}<button type="submit" class="is-danger"><i class="bi bi-person-dash"></i> Remove from group</button></form>
+              {% endif %}
+            </div>
+          </details>
+        {% endif %}
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </section>
+
+{% else %}{# about #}
+  {% comment %}About: a heading, a one-line summary, the description, then the facts as a list with bold labels (groups.css "About tab").{% endcomment %}
+  <section class="sr-card ga">
+    <h2 class="ga-title">About {{ group.name }}</h2>
+    <p class="ga-lede">{% if group.course_code %}A study group for {{ group.course_code }}{% else %}{{ info.label }} group{% endif %} at {{ group.university.short_name|default:group.university.name }}{% if count %} · {{ count }} member{{ count|pluralize }}{% endif %}.</p>
+
+    {% if group.description %}<div class="ga-desc">{{ group.description|linebreaks|urlize }}</div>
+    {% else %}<p class="ga-desc is-empty">No description yet.{% if is_admin %} <a href="{% url 'group_edit' group.pk %}">Add one</a> so people know what the group is for.{% endif %}</p>{% endif %}
+
+    <ul class="ga-list">
+      <li><b>{{ info.label }}</b> — {{ info.help|lower }}.</li>
+      <li><b>{{ group.get_privacy_display }}</b> — {{ group.privacy_help|lower }}</li>
+      {% if group.department %}<li><b>Department</b> — {{ group.department.name }}{% if group.level %}, {{ group.level.name }}{% endif %}.</li>{% endif %}
+      {% if group.mode or group.schedule or group.place %}<li><b>Meetings</b> — {% if group.mode %}{{ group.get_mode_display|lower|capfirst }}{% endif %}{% if group.schedule %}{% if group.mode %}, {% endif %}{{ group.schedule }}{% endif %}{% if group.place %}{% if group.mode or group.schedule %} · {% endif %}{{ group.place }}{% endif %}.</li>{% endif %}
+      {% if group.meeting_link %}<li><b>Online</b> — {% if member %}<a href="{{ group.meeting_link }}" target="_blank" rel="noopener noreferrer" data-no-soft>join the meeting <i class="bi bi-box-arrow-up-right"></i></a>{% else %}the link is shown to members.{% endif %}</li>{% endif %}
+      <li><b>Started</b> — {{ group.created_at|date:"j F Y" }} by {{ group.created_by.get_full_name|default:group.created_by.username }}.</li>
+    </ul>
+
+    {% if group.rule_list %}
+      <h3 class="ga-sub">Group rules</h3>
+      <ol class="ga-rules">{% for r in group.rule_list %}<li>{{ r }}</li>{% endfor %}</ol>
+    {% elif is_admin %}
+      <p class="ga-note">No rules yet — <a href="{% url 'group_edit' group.pk %}">add a few</a> so everyone knows what belongs here.</p>
+    {% endif %}
+
+    {% if admins %}
+      <h3 class="ga-sub">Admins</h3>
+      <div class="ga-admins">
+        {% for m in admins %}{% with ap=m.user.student_profile %}
+          <a href="{% url 'user_profile' m.user.username %}" class="ga-admin">
+            <span class="sr-avatar is-md" style="{% if ap.profile_photo %}background-image:url({{ ap.profile_photo.url }}){% endif %}">{% if not ap.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+            <span><b>{{ m.user.get_full_name|default:m.user.username }}</b><small>{% if m.role == 'owner' %}Owner{% else %}Admin{% endif %}</small></span>
+          </a>
+        {% endwith %}{% endfor %}
+      </div>
+    {% endif %}
+  </section>
+  {% if is_admin %}
+    <section class="sr-card op-owner">
+      <header class="sr-head"><h2>Manage</h2></header>
+      <div class="st-actions is-split">
+        <a href="{% url 'group_edit' group.pk %}" class="st-btn-ghost"><i class="bi bi-pencil"></i> Edit group</a>
+        <form method="post" action="{% url 'group_toggle_open' group.pk %}">{% csrf_token %}<button type="submit" class="st-btn-ghost"><i class="bi {% if group.is_open %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i> {% if group.is_open %}Stop accepting members{% else %}Accept new members{% endif %}</button></form>
+      </div>
+    </section>
+  {% endif %}
+{% endif %}
+</div>{# /.gp-panel #}
+{% endwith %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/group-page.js' %}?v=3"></script>
+{% if member %}
+<script>
+  // Groups: likes, comments, votes update in place; composer extras; invite link copy.
+  UC.onPage(function (doc, signal) {
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    function send(url, body) {
+      return fetch(url, { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); });
+    }
+    function oops() { if (window.showToast) { showToast('Something went wrong — try again.'); } }
+
+    document.addEventListener('click', function (e) {
+      var like = e.target.closest('.js-sg-like');
+      if (like) {
+        e.preventDefault();
+        send(like.getAttribute('data-url')).then(function (res) {
+          like.classList.toggle('is-on', res.liked);
+          like.setAttribute('aria-pressed', res.liked ? 'true' : 'false');
+          like.querySelector('i').className = 'bi ' + (res.liked ? 'bi-heart-fill' : 'bi-heart');
+          like.querySelector('.js-sg-like-n').textContent = res.count || '';
+        }).catch(oops);
+        return;
+      }
+      var poll = e.target.closest('.js-sg-poll');
+      if (poll) {
+        var form = poll.closest('form'), edit = form.querySelector('.sg-poll-edit'), on = edit.hidden;
+        edit.hidden = !on;
+        poll.setAttribute('aria-pressed', on ? 'true' : 'false');
+        poll.classList.toggle('is-on', on);
+        form.querySelector('.js-sg-is-poll').value = on ? '1' : '';
+        form.querySelector('.js-sg-body').placeholder = on ? 'Ask a question, e.g. When should we meet this week?' : 'Share something with the group…';
+        if (on) { form.querySelector('.js-sg-body').focus(); }
+        return;
+      }
+      var more = e.target.closest('.js-sg-more-opt');
+      if (more) {
+        var hiddenOpt = more.closest('.sg-poll-edit').querySelector('.sg-opt-input[hidden]');
+        if (hiddenOpt) { hiddenOpt.hidden = false; hiddenOpt.focus(); }
+        if (!more.closest('.sg-poll-edit').querySelector('.sg-opt-input[hidden]')) { more.hidden = true; }
+        return;
+      }
+      var clear = e.target.closest('.js-sg-clear-img');
+      if (clear) {
+        var f = clear.closest('form'); f.querySelector('.js-sg-image').value = ''; f.querySelector('.sg-composer-preview').hidden = true;
+        return;
+      }
+      var edit = e.target.closest('.js-sg-edit');
+      if (edit) {
+        var card = edit.closest('.sg-post');
+        card.querySelector('.sg-edit').hidden = false;
+        card.querySelectorAll('.sg-post-title, .sg-post-body').forEach(function (x) { x.hidden = true; });
+        edit.closest('details').open = false;
+        card.querySelector('.sg-edit textarea').focus();
+        return;
+      }
+      var cancel = e.target.closest('.js-sg-edit-cancel');
+      if (cancel) {
+        var c2 = cancel.closest('.sg-post');
+        c2.querySelector('.sg-edit').hidden = true;
+        c2.querySelectorAll('.sg-post-title, .sg-post-body').forEach(function (x) { x.hidden = false; });
+        return;
+      }
+      var save = e.target.closest('.js-sg-save');
+      if (save) {
+        send(save.getAttribute('data-url')).then(function (res) {
+          save.classList.toggle('is-on', res.saved);
+          save.setAttribute('aria-pressed', res.saved ? 'true' : 'false');
+          save.querySelector('i').className = 'bi ' + (res.saved ? 'bi-bookmark-fill' : 'bi-bookmark');
+          if (window.showToast) { showToast(res.saved ? 'Saved — find it under Saved, or in Bookmarks > Groups.' : 'Removed from saved.'); }
+        }).catch(oops);
+        return;
+      }
+      var share = e.target.closest('.js-sg-share');
+      if (share) {
+        share.disabled = true;
+        send(share.getAttribute('data-url')).then(function (res) { if (window.showToast) { showToast(res.message); } })
+          .catch(oops).then(function () { share.disabled = false; });
+        return;
+      }
+      var copy = e.target.closest('.js-sg-copy');
+      if (copy) {
+        var input = document.querySelector('.js-sg-invite');
+        (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject()).catch(function () { input.select(); document.execCommand('copy'); })
+          .then(function () { if (window.showToast) { showToast('Invite link copied.'); } });
+      }
+    }, { signal: signal });
+
+    document.addEventListener('change', function (e) {
+      if (e.target.classList && e.target.classList.contains('js-sg-files')) {
+        // The attached files' names under the text.
+        var list = e.target.closest('form').querySelector('.js-sg-attach-list');
+        list.innerHTML = '';
+        Array.prototype.slice.call(e.target.files, 0, 6).forEach(function (f) {
+          var chip = document.createElement('span'); chip.className = 'sg-attach-chip';
+          chip.textContent = f.name + ' · ' + (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB');
+          list.appendChild(chip);
+        });
+        if (e.target.files.length > 6 && window.showToast) { showToast('Only the first 6 files will be attached.'); }
+        list.hidden = !e.target.files.length;
+        return;
+      }
+      if (!e.target.classList || !e.target.classList.contains('js-sg-image')) { return; }
+      var file = e.target.files[0], prev = e.target.closest('form').querySelector('.sg-composer-preview');
+      if (!file) { prev.hidden = true; return; }
+      prev.querySelector('img').src = URL.createObjectURL(file);
+      prev.hidden = false;
+    }, { signal: signal });
+
+    // Comments, votes, closing a poll: swap in the updated post (capture phase, before page navigation sees the submit).
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.classList || !form.classList.contains('js-sg-ajax')) { return; }
+      e.preventDefault();
+      e.stopPropagation();
+      var post = form.closest('.sg-post');
+      var data = new FormData(form, e.submitter || undefined);
+      send(form.action, data).then(function (res) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = res.html.trim();
+        post.replaceWith(wrap.firstElementChild);
+      }).catch(oops);
+    }, { capture: true, signal: signal });
+  });
+</script>
+{% endif %}
+<script>
+  // Tabs switch in place (nav.js data-soft-swap): highlight the tapped tab straight away.
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('.gp-tabs a[href^="?"]');
+    if (!t) { return; }
+    t.parentNode.querySelectorAll('a').forEach(function (a) { a.classList.toggle('is-on', a === t); });
+  });
+  // Keyboard: Enter or Space on the cover or the round picture opens it (as a click does).
+  document.addEventListener('keydown', function (e) {
+    var t = e.target.closest && e.target.closest('.js-view-cover-photo, .gp-icon.js-view-profile-photo');
+    if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
+  });
+</script>
+{% if member %}
+{% comment %}Comments sheet for group posts — the same look as Home's comments (base.html #commentsModal, app.css),
+   filled from each post's <template class="js-sgc-src"> (studygroups/_post.html, _comment.html).{% endcomment %}
+<div class="modal fade" id="sgCommentsModal" tabindex="-1" aria-hidden="true" aria-label="Comments">
+  <div class="modal-dialog modal-dialog-centered modal-lg comments-modal-dialog">
+    <div class="modal-content comments-modal-content">
+      <div class="comments-modal-header">
+        <div class="comments-modal-title-group">
+          <span class="comments-modal-title js-sgc-title">Comments</span>
+          <button type="button" class="comments-modal-sort-btn" disabled title="Sorting comments is coming soon"><i class="bi bi-sliders"></i></button>
+        </div>
+        <button type="button" class="comments-modal-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="comments-modal-body">
+        <div class="comments-modal-post-pane js-sgc-pane"></div>
+        <div class="comments-modal-thread-pane">
+          <div class="comments-sheet-handle" aria-hidden="true"><span class="comments-sheet-handle-bar"></span></div>
+          <div class="comments-modal-thread-list js-sgc-list"></div>
+          <form class="comments-modal-composer js-sgc-composer" method="post" action="">{% csrf_token %}
+            <div class="comment-composer-row">
+              {% with msp=request.user.student_profile %}<div class="comment-composer-avatar" style="{% if msp.profile_photo %}background-image:url({{ msp.profile_photo.url }}){% endif %}">{% if not msp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</div>{% endwith %}
+              <input type="text" name="body" class="comment-composer-input" placeholder="Write a comment…" maxlength="1000" autocomplete="off" required aria-label="Write a comment">
+              <button type="submit" class="comment-composer-send-btn" aria-label="Post comment"><i class="bi bi-send-fill"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // The comments sheet: open from a post's comment button; comment, reply, like, edit and delete
+  // without leaving it. Every action returns the post's fresh card; the sheet is redrawn from it.
+  UC.onPage(function (doc, signal) {
+    var modal = document.getElementById('sgCommentsModal');
+    if (!modal) { return; }
+    var list = modal.querySelector('.js-sgc-list'), pane = modal.querySelector('.js-sgc-pane'),
+      title = modal.querySelector('.js-sgc-title'), composer = modal.querySelector('.js-sgc-composer'), postId = null;
+    function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+    function card() { return document.querySelector('.sg-post[data-post="' + postId + '"]'); }
+    function oops() { if (window.showToast) { showToast('Something went wrong — try again.'); } }
+
+    function render(keep) {
+      var c = card(); if (!c) { return; }
+      var src = c.querySelector('.js-sgc-src'), n = +src.dataset.count;
+      var open = keep ? Array.prototype.map.call(list.querySelectorAll('.comment-replies[data-open]'), function (r) { return r.closest('.comment-item').dataset.commentId; }) : [];
+      var top = list.scrollTop;
+      pane.innerHTML = ''; list.innerHTML = '';
+      var tpl = src.content.cloneNode(true);
+      pane.appendChild(tpl.querySelector('.comments-post-pane-card'));
+      list.appendChild(tpl.querySelector('.js-sgc-thread'));
+      title.textContent = n === 1 ? '1 comment' : n + ' comments';
+      composer.action = src.dataset.commentUrl;
+      open.forEach(function (id) { var it = list.querySelector('#gc-' + id); if (it) { toggleReplies(it.querySelector(':scope > .comment-body > .js-sgc-replies'), true); } });
+      if (keep) { list.scrollTop = top; }
+    }
+    function toggleReplies(btn, show) {
+      if (!btn) { return; }
+      var box = btn.nextElementSibling, n = +btn.dataset.n;
+      show = show === undefined ? box.style.display === 'none' : show;
+      box.style.display = show ? '' : 'none';
+      if (show) { box.setAttribute('data-open', ''); } else { box.removeAttribute('data-open'); }
+      btn.querySelector('.js-sgc-replies-text').textContent = show ? 'Hide replies' : 'View ' + n + ' repl' + (n === 1 ? 'y' : 'ies');
+      btn.classList.toggle('is-open', show);
+    }
+    function send(url, body, then) {
+      return fetch(url, { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error(); } return r.json(); })
+        .then(function (res) {
+          var wrap = document.createElement('div'); wrap.innerHTML = res.html.trim();
+          var c = card(); if (c) { c.replaceWith(wrap.firstElementChild); }
+          render(true);
+          if (then) { then(); }
+        }).catch(oops);
+    }
+    function anchor(rect) {
+      var dlg = modal.querySelector('.comments-modal-dialog');
+      if (!window.matchMedia('(min-width:901px)').matches) { dlg.classList.remove('comments-anchored'); dlg.style.cssText = ''; return; }
+      var vw = innerWidth, vh = innerHeight, m = 24, maxW = Math.min(vw - m * 2, 860), maxH = Math.min(vh - m * 2, 760);
+      var w = Math.max(Math.min(rect.width, maxW), Math.min(600, maxW)), h = Math.max(Math.min(rect.height, maxH), Math.min(640, maxH));
+      dlg.classList.add('comments-anchored');
+      dlg.style.width = w + 'px'; dlg.style.height = h + 'px';
+      dlg.style.left = Math.max(m, Math.min(vw - m - w, rect.left + rect.width / 2 - w / 2)) + 'px';
+      dlg.style.top = Math.max(m, Math.min(vh - m - h, rect.top + rect.height / 2 - h / 2)) + 'px';
+    }
+
+    document.addEventListener('click', function (e) {
+      var openBtn = e.target.closest('.js-sgc-open');
+      if (openBtn) {
+        var c = openBtn.closest('.sg-post'); postId = c.dataset.post;
+        render(false); anchor(c.getBoundingClientRect());
+        // Like Home: a post without photos opens with the comments taller (app.js SHEET_SNAP_POINTS).
+        modal.querySelector('.comments-modal-body').style.setProperty('--sheet-height', c.querySelector('.sg-post-photos, .sg-post-img, .sg-post-video') ? '55%' : '78%');
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+        return;
+      }
+      if (!modal.contains(e.target)) { return; }
+      var like = e.target.closest('.js-sgc-like');
+      if (like) { var on = like.classList.toggle('liked'); like.querySelector('i').className = 'bi ' + (on ? 'bi-heart-fill' : 'bi-heart'); send(like.dataset.url); return; }
+      var rep = e.target.closest('.js-sgc-reply');
+      if (rep) {
+        var item = rep.closest('.comment-replies') ? rep.closest('.comment-replies').closest('.comment-item') : rep.closest('.comment-item');
+        var form = item.querySelector(':scope > .comment-body > .js-sgc-reply-form'), input = form.querySelector('input[name=body]');
+        form.classList.add('open');
+        if (rep.closest('.comment-replies') && !input.value) { input.value = '@' + rep.dataset.name + ' '; }
+        input.focus();
+        return;
+      }
+      var tog = e.target.closest('.js-sgc-replies');
+      if (tog) { toggleReplies(tog); return; }
+      var ed = e.target.closest('.js-sgc-edit');
+      if (ed) {
+        var bubble = ed.closest('.comment-bubble');
+        bubble.querySelector('.js-sgc-text').style.display = 'none';
+        var f = bubble.querySelector('.js-sgc-edit-form'); f.classList.add('open'); f.querySelector('textarea').focus();
+        return;
+      }
+      var cancel = e.target.closest('.js-sgc-edit-cancel');
+      if (cancel) {
+        var b2 = cancel.closest('.comment-bubble');
+        b2.querySelector('.js-sgc-edit-form').classList.remove('open'); b2.querySelector('.js-sgc-text').style.display = '';
+        return;
+      }
+      var del = e.target.closest('.js-sgc-delete');
+      if (del) { if (confirm('Delete this comment?')) { send(del.dataset.url); } return; }
+      var cp = e.target.closest('.js-sgc-copy');
+      if (cp && navigator.clipboard) { navigator.clipboard.writeText(cp.dataset.text).then(function () { if (window.showToast) { showToast('Copied.'); } }); }
+    }, { signal: signal });
+
+    // New comment, reply or edit: post it, then redraw (capture phase, before page navigation sees the submit).
+    modal.addEventListener('submit', function (e) {
+      var form = e.target;
+      e.preventDefault(); e.stopPropagation();
+      var isComposer = form === composer, data = new FormData(form);
+      if (!(data.get('body') || '').trim()) { return; }
+      form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = true; });
+      send(form.action, data, function () {
+        if (isComposer) { form.reset(); list.scrollTop = list.scrollHeight; }
+        else if (data.get('parent')) { var it = list.querySelector('#gc-' + data.get('parent')); if (it) { toggleReplies(it.querySelector(':scope > .comment-body > .js-sgc-replies'), true); } }
+      }).then(function () { form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; }); });
+    }, { capture: true, signal: signal });
+    // Enter in a reply box sends it (as Home's does).
+    modal.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.classList.contains('comment-reply-input')) { e.preventDefault(); e.target.form.requestSubmit(); }
+    }, { signal: signal });
+    modal.addEventListener('hidden.bs.modal', function () { postId = null; list.innerHTML = ''; pane.innerHTML = ''; }, { signal: signal });
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ label }} — Course Companion — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Quick Access (courses/views.py my_section): one section across all My Courses.{% endcomment %}
+<div class="cc">
+  <div class="st-top">
+    <a href="{% url 'courses' %}" class="st-back" aria-label="Back to Course Companion"><i class="bi bi-arrow-left"></i></a>
+    <h1>{{ label }}</h1>
+  </div>
+
+  <nav class="sr-tabs sg-tabs" aria-label="Sections">
+    {% for key, l, icon in sections %}<a href="{% url 'courses_section' key %}{% if only %}?course={{ only }}{% endif %}" class="{% if key == section %}is-on{% endif %}"><i class="bi {{ icon }}"></i> {{ l }}</a>{% endfor %}
+  </nav>
+
+  {% if courses %}
+    <div class="sg-chips" role="list" aria-label="Courses">
+      <a role="listitem" href="?" class="sg-chip{% if not only %} is-on{% endif %}">All my courses</a>
+      {% for c in courses %}<a role="listitem" href="?course={{ c.pk }}" class="sg-chip{% if only == c.pk|stringformat:'s' %} is-on{% endif %}">{{ c.code }}</a>{% endfor %}
+    </div>
+
+    {% if section == 'notes' or section == 'past' %}
+      <section class="cc-card">{% include 'courses/_materials.html' with show_course=True %}</section>
+    {% elif section == 'questions' %}
+      <section class="cc-card">{% include 'courses/_questions.html' with show_course=True %}</section>
+    {% else %}
+      <div class="op-list">
+        {% for group in groups %}{% include 'studygroups/_card.html' %}{% empty %}
+          <div class="sr-card sr-nothing"><i class="bi bi-people"></i><h2>No study groups for your courses yet</h2><p>Open a course and start one.</p></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <p class="cc-muted cc-hint">To add something, open the course from <a href="{% url 'courses' %}">My Courses</a>.</p>
+  {% else %}
+    <div class="sr-card sr-nothing"><i class="bi bi-mortarboard"></i><h2>Add your courses first</h2><p><a href="{% url 'courses' %}">Search for your courses</a> and add them to My Courses — their {{ label|lower }} will show here.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% load chat_tags %}
+<header class="wa-info-header">
+  <button type="button" class="wa-icon-btn js-wa-close-info" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+  <h2>{% if conversation.is_group %}Group info{% else %}Contact info{% endif %}</h2>
+</header>
+<div class="wa-info-body">
+  <div class="wa-info-hero">
+    {% include 'chat/_avatar.html' with p=conv_info size=120 %}
+    <h3>{{ conv_info.title }}</h3>
+    {% if conversation.is_group %}
+      <p class="wa-muted">Group · {{ members|length }} member{{ members|length|pluralize }}{% if conversation.community %} · {{ conversation.community.name }}{% endif %}</p>
+    {% elif other_user %}
+      <p class="wa-muted">@{{ other_user.username }}</p>
+    {% endif %}
+  </div>
+
+  {% if conversation.is_group %}
+    {% if conversation.description %}<div class="wa-info-card"><p>{{ conversation.description }}</p></div>{% endif %}
+  {% elif about %}
+    <div class="wa-info-card"><span class="wa-info-label">About</span><p>{{ about }}</p></div>
+    {% if other_user and not conv_info.is_self %}
+      <div class="wa-info-card"><a class="wa-info-link" href="{% url 'user_profile' other_user.username %}"><i class="bi bi-person-circle"></i> View UniConnect profile</a></div>
+    {% endif %}
+  {% endif %}
+
+  {% if media %}
+  <div class="wa-info-card">
+    <span class="wa-info-label">Media</span>
+    <div class="wa-info-media">
+      {% for m in media %}<a href="{{ m.attachment.url }}" target="_blank" rel="noopener" style="background-image:url('{{ m.attachment.url }}')" aria-label="Photo"></a>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if conversation.is_group %}
+  <div class="wa-info-card">
+    <span class="wa-info-label">{{ members|length }} member{{ members|length|pluralize }}</span>
+    {% for m in members %}
+      <div class="wa-info-member">
+        {% include 'chat/_avatar.html' with p=m size=40 %}
+        <span>{% if m.id == me.id %}You{% else %}{{ m.name }}{% endif %}</span>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

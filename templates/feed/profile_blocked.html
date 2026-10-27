@@ -1,0 +1,26 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}@{{ profile_user.username }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Someone's profile when either of you blocked the other (feed/views.py profile_view, feed/moderation.py).{% endcomment %}
+<div class="rp">
+  <div class="st-top">
+    <a href="javascript:history.back()" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+    <h1>@{{ profile_user.username }}</h1>
+  </div>
+  <div class="rp-card rp-blocked">
+    <span class="rp-blocked-ico"><i class="bi bi-slash-circle"></i></span>
+    {% if i_blocked %}
+      <h2>You blocked @{{ profile_user.username }}</h2>
+      <p>You can't see each other's posts or profiles, and you can't message each other. Unblock to see their profile again — they won't be told.</p>
+      <form method="post" action="{% url 'block_toggle' profile_user.username %}">{% csrf_token %}
+        <button type="submit" class="dt-btn is-sm">Unblock</button>
+      </form>
+    {% else %}
+      <h2>This profile isn't available</h2>
+      <p>You can't see @{{ profile_user.username }}'s posts or profile.</p>
+      <a href="{% url 'home' %}" class="st-btn-ghost">Back to Home</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

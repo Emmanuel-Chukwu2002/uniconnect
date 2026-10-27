@@ -1,0 +1,17 @@
+{% comment %}A horizontal shelf of books with "See all" and scroll arrows. s = {title, subtitle, books, link, icon}.{% endcomment %}
+<section class="bs-shelf js-bs-shelf" aria-labelledby="shelf-{{ s.key }}">
+  <div class="bs-shelf-head">
+    <div class="bs-shelf-titles">
+      <h2 id="shelf-{{ s.key }}"><i class="bi {{ s.icon }}"></i> {{ s.title }}</h2>
+      {% if s.subtitle %}<p>{{ s.subtitle }}</p>{% endif %}
+    </div>
+    <div class="bs-shelf-tools">
+      {% if s.link %}<a href="{{ s.link }}" class="bs-see-all">See all <i class="bi bi-chevron-right"></i></a>{% endif %}
+      <button type="button" class="bs-arrow js-bs-prev" aria-label="Scroll left"><i class="bi bi-chevron-left"></i></button>
+      <button type="button" class="bs-arrow js-bs-next" aria-label="Scroll right"><i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="bs-shelf-row js-bs-row">
+    {% for b in s.books %}{% include 'bookshop/_card.html' %}{% endfor %}
+  </div>
+</section>

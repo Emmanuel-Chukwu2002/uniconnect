@@ -1,0 +1,52 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Report #{{ r.pk }}{% endblock %}
+{% block content %}
+<div class="ad-head">
+  <div><a href="{% url 'staff_reports' %}" class="mut"><i class="bi bi-arrow-left"></i> Reports &amp; Complaints</a>
+    <h1>Report #{{ r.pk }} · {{ r.get_target_type_display }}</h1>
+    <p>{{ r.get_reason_display }} · reported {{ r.created_at|date:"d M Y, H:i" }} by @{{ r.reporter.username }}{% if r.university %} · {{ r.university.short_name }}{% endif %} ·
+      {% if r.status == 'open' %}<span class="pill amber">Pending</span>{% elif r.status == 'reviewing' %}<span class="pill blue">Under Review{% if r.assigned_to %} by @{{ r.assigned_to.username }}{% endif %}</span>{% elif r.status == 'dismissed' %}<span class="pill grey">Dismissed</span>{% elif r.status == 'removed' %}<span class="pill green">Content removed</span>{% else %}<span class="pill green">Action taken</span>{% endif %}</p></div>
+  {% if is_open %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      {% url 'staff_report_action' r.pk as act_url %}
+      {% if r.status == 'open' %}<form method="post" action="{{ act_url }}">{% csrf_token %}<input type="hidden" name="action" value="review"><button class="ad-btn primary" type="submit"><i class="bi bi-eye"></i> Start review</button></form>{% endif %}
+      {% include 'adminpanel/_reason_form.html' with url=act_url action='dismiss' label='Dismiss' icon='bi-x-circle' cls='' help='Nothing breaks the rules. Every open report about this is closed.' %}
+      {% if obj and kind.removable and 'remove_content' in admin.perms %}{% include 'adminpanel/_reason_form.html' with url=act_url action='remove' label='Remove content' icon='bi-trash3' cls='danger' help='Deletes it. Its text stays on the report and in the audit log.' %}{% endif %}
+      {% if 'warn' in admin.perms %}{% include 'adminpanel/_reason_form.html' with url=act_url action='warn' label='Warn owner' icon='bi-exclamation-triangle' cls='' %}{% endif %}
+      {% if 'suspend' in admin.perms %}{% include 'adminpanel/_reason_form.html' with url=act_url action='suspend' label='Suspend owner' icon='bi-slash-circle' cls='danger' days=True %}{% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>What was reported</h2>{% if obj_url %}<a href="{{ obj_url }}" target="_blank" rel="noopener">Open in UniConnect <i class="bi bi-box-arrow-up-right"></i></a>{% endif %}</div>
+    <div class="ad-panel-body" style="display:grid;gap:12px">
+      {% if r.target_label %}<b>{{ r.target_label }}</b>{% endif %}
+      {% if r.post_snapshot %}<p class="ad-quote">{{ r.post_snapshot }}</p>{% endif %}
+      {% if not obj and r.target_type != 'user' %}<p class="mut"><i class="bi bi-info-circle"></i> This {{ r.get_target_type_display|lower }} has been deleted.</p>{% endif %}
+      <dl class="ad-kv">
+        <dt>Owner</dt><dd><a href="{% url 'staff_user' r.reported_user_id %}">@{{ r.reported_user.username }}</a></dd>
+        <dt>Reporter's note</dt><dd>{{ r.details|default:"—"|linebreaksbr }}</dd>
+      </dl>
+    </div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Decision</h2></div>
+    <div class="ad-panel-body"><dl class="ad-kv">
+      <dt>Status</dt><dd>{{ r.get_status_display }}</dd>
+      <dt>Moderator</dt><dd>{% if r.reviewed_by %}@{{ r.reviewed_by.username }}{% elif r.assigned_to %}@{{ r.assigned_to.username }} (reviewing){% else %}—{% endif %}</dd>
+      <dt>Decided</dt><dd>{{ r.reviewed_at|date:"d M Y, H:i"|default:"—" }}</dd>
+      <dt>Reason</dt><dd>{{ r.decision_reason|default:"—"|linebreaksbr }}</dd>
+      {% for a in actions %}<dt>{{ a.get_kind_display }}</dt><dd>{{ a.reason }} <span class="mut">(@{{ a.actor.username }})</span></dd>{% endfor %}
+    </dl></div></section>
+</div>
+
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Other reports about this</h2></div>
+    <div class="ad-table-wrap"><table class="ad-table"><tbody>
+    {% for o in others %}<tr><td><a href="{% url 'staff_report' o.pk %}">#{{ o.pk }}</a></td><td>{{ o.get_reason_display }}</td><td class="mut">@{{ o.reporter.username }}</td><td class="mut">{{ o.get_status_display }}</td></tr>
+    {% empty %}<tr><td class="ad-empty">Only this one.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Owner's other reports</h2><a href="{% url 'staff_user' r.reported_user_id %}">View account</a></div>
+    <div class="ad-table-wrap"><table class="ad-table"><tbody>
+    {% for o in history %}<tr><td><a href="{% url 'staff_report' o.pk %}">#{{ o.pk }}</a></td><td>{{ o.get_target_type_display }}</td><td>{{ o.get_reason_display }}</td><td class="mut">{{ o.get_status_display }}</td></tr>
+    {% empty %}<tr><td class="ad-empty">No other reports.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

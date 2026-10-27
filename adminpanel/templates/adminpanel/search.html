@@ -1,0 +1,15 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<div class="ad-head"><div><h1>Search</h1><p>{% if q %}Results for “{{ q }}”{% else %}Search users, posts, or reports (type #123 for a report number).{% endif %}</p></div></div>
+{% if q %}
+<div class="ad-grid2">
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Users</h2><a href="{% url 'staff_users' %}?q={{ q|urlencode }}">See all</a></div>
+    <div class="ad-table-wrap"><table class="ad-table"><tbody>{% for p in users %}<tr><td><a href="{% url 'staff_user' p.user_id %}">{{ p.user.get_full_name|default:p.user.username }}</a> <span class="mut">@{{ p.user.username }} · {{ p.university.short_name }}</span></td></tr>{% empty %}<tr><td class="ad-empty">No users.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="ad-panel"><div class="ad-panel-head"><h2>Reports</h2></div>
+    <div class="ad-table-wrap"><table class="ad-table"><tbody>{% for r in reports %}<tr><td><a href="{% url 'staff_report' r.pk %}">#{{ r.pk }}</a> {{ r.get_target_type_display }} · {{ r.get_reason_display }} <span class="mut">{{ r.get_status_display }}</span></td></tr>{% empty %}<tr><td class="ad-empty">No reports.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+<section class="ad-panel"><div class="ad-panel-head"><h2>Posts</h2><a href="{% url 'staff_moderation' %}?q={{ q|urlencode }}">See all</a></div>
+  <div class="ad-table-wrap"><table class="ad-table"><tbody>{% for p in posts %}<tr><td><a href="{% url 'post_detail' p.pk %}" target="_blank" rel="noopener">{{ p.content|default:"Photo or video post"|truncatechars:100 }}</a> <span class="mut">@{{ p.author.username }}</span></td></tr>{% empty %}<tr><td class="ad-empty">No posts.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
+{% endblock %}

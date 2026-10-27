@@ -1,0 +1,33 @@
+{% comment %}Question of the day (courses/today.py, courses/views.py daily_answer): the question and its options;
+once answered, the right answer, yours, the explanation and how classmates did. Swapped in place after answering.{% endcomment %}
+<div class="tq js-tq" data-q="{{ q.pk }}">
+  <div class="tq-head">
+    <span class="tq-course">{{ q.course.code }}</span>
+    <span class="tq-kicker">Question of the day</span>
+  </div>
+  <p class="tq-text">{{ q.text }}</p>
+  {% if q.my_answer %}
+    <ul class="tq-results">
+      {% for key, text, pct in q.stats.rows %}
+        <li class="{% if key == q.correct %}is-right{% elif key == q.my_answer.choice %}is-wrong{% endif %}">
+          <span class="tq-bar" style="width:{{ pct }}%"></span>
+          <span class="tq-opt"><b>{{ key|upper }}</b> {{ text }}</span>
+          <span class="tq-pct">{% if key == q.correct %}<i class="bi bi-check-circle-fill"></i>{% elif key == q.my_answer.choice %}<i class="bi bi-x-circle-fill"></i>{% endif %} {{ pct }}%</span>
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="tq-verdict {% if q.my_answer.is_correct %}is-right{% else %}is-wrong{% endif %}">
+      {% if q.my_answer.is_correct %}<i class="bi bi-stars"></i> You got it right!{% else %}<i class="bi bi-lightbulb"></i> Not quite — the answer is <b>{{ q.correct|upper }}</b>.{% endif %}
+    </p>
+    {% if q.explanation %}<p class="tq-why">{{ q.explanation|cut:"Sample question. " }}</p>{% endif %}
+    <p class="tq-meta">{{ q.stats.total }} classmate{{ q.stats.total|pluralize }} answered today · {{ q.stats.correct_pct }}% got it right. A new question tomorrow.</p>
+  {% else %}
+    <form method="post" action="{% url 'daily_answer' q.pk %}" class="tq-form js-tq-form">{% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      {% for key, text in q.options %}
+        <button type="submit" name="choice" value="{{ key }}" class="tq-choice"><b>{{ key|upper }}</b><span>{{ text }}</span></button>
+      {% endfor %}
+    </form>
+    <p class="tq-meta">One try — then see the answer and how your classmates did.</p>
+  {% endif %}
+</div>

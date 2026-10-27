@@ -1,0 +1,41 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}Top stories — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}The full list behind the sidebar's "Top stories" box (views.top_stories_page).{% endcomment %}
+<div class="profile-topbar">
+  <a href="{% url 'home' %}" class="profile-back-btn" aria-label="Back to home"><i class="bi bi-arrow-left"></i></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">Top stories</div>
+    <div class="profile-topbar-sub">What people at your university are reading</div>
+  </div>
+</div>
+
+{% if trending %}
+{# Trending hashtags (feed/top_stories.py trending_topics), soft pastel cards #}
+<section class="ts-trend" aria-labelledby="tsTrendTitle">
+  <div class="ts-trend-head">
+    <h2 id="tsTrendTitle">Trending</h2>
+    {# Opens Home's Trending tab: the posts getting the most engagement at the student's university right now. #}
+    <a href="{% url 'home' %}?tab=trending">See all</a>
+  </div>
+  <div class="ts-trend-row" role="list">
+    {% for t in trending %}
+      <a role="listitem" href="{% url 'hashtag' t.tag %}" class="ts-topic is-{{ t.tone }}">
+        <span class="ts-topic-ico"><i class="bi {{ t.icon }}"></i></span>
+        <b>{{ t.label }}</b>
+        <small>{{ t.count|stringformat:"02d" }} post{{ t.count|pluralize }}</small>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="right-card top-stories-card top-stories-page">
+  {% for s in stories %}
+    {% include 'feed/_top_stories_item.html' %}
+  {% empty %}
+    <div class="empty-state-small">No top stories yet. Posts that people like and comment on will show up here.</div>
+  {% endfor %}
+</div>
+{% endblock %}

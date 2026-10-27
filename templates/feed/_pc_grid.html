@@ -1,0 +1,25 @@
+{% load post_extras %}
+{% comment %}
+  One section in full, or search results, as a grid of cards with pages
+  (feed/closeness.py). `items`, `page`, `card`; the empty message goes in `empty_title` / `empty_text`.
+{% endcomment %}
+<section class="pc-section is-full">
+  {% if items %}
+    <div class="pc-grid">
+      {% for item in items %}{% include card with i=forloop.counter0 section_key=section.key %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="people-empty">
+      <i class="bi {{ empty_icon|default:'bi-search' }}"></i>
+      <h4>{{ empty_title }}</h4>
+      <p>{{ empty_text|safe }}</p>
+    </div>
+  {% endif %}
+</section>
+{% if page.paginator.num_pages > 1 %}
+  <nav class="people-pages" aria-label="Pages">
+    {% if page.has_previous %}<a href="{% with_page page.previous_page_number %}"><i class="bi bi-chevron-left"></i> Previous</a>{% else %}<span></span>{% endif %}
+    <span class="people-pages-info">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="{% with_page page.next_page_number %}">Next <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+  </nav>
+{% endif %}

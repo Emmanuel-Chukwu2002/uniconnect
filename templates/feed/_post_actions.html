@@ -1,0 +1,27 @@
+{# A post's action row and "Liked by" line — the same in the feed and on the Post Details page. #}
+  <div class="post-card-actions">
+    <div class="post-card-actions-left">
+      <button type="button" class="post-card-action-btn js-like-btn {% if post.user_has_liked %}liked{% endif %}" data-post-id="{{ post.id }}" title="{% if post.user_has_liked %}Unlike{% else %}Like{% endif %}">
+        <i class="bi {% if post.user_has_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+      <button type="button" class="post-card-action-btn js-open-comments" data-post-id="{{ post.id }}" title="Comments">
+        <i class="bi bi-chat"></i>{% if post.comments_count %}<span class="post-card-action-count">{{ post.comments_count }}</span>{% endif %}
+      </button>
+      <button type="button" class="post-card-action-btn js-repost-btn {% if post.user_has_reposted %}reposted{% endif %}" data-post-id="{{ post.id }}" data-reposted="{% if post.user_has_reposted %}1{% else %}0{% endif %}" title="{% if post.user_has_reposted %}Undo repost or quote{% else %}Repost or quote{% endif %}" aria-haspopup="menu" aria-expanded="false">
+        <i class="bi bi-repeat"></i><span class="post-card-action-count js-repost-count"{% if not post.reposts_count %} hidden{% endif %}>{{ post.reposts_count|default:0 }}</span>
+      </button>
+      {% if post.author_id == request.user.id %}
+        <a href="{% url 'post_analytics' post.id %}" class="post-card-action-btn post-card-stats" title="View post activity" aria-label="View post activity"><i class="bi bi-bar-chart-line"></i></a>
+      {% endif %}
+      <button type="button" class="post-card-action-btn js-share-post" data-post-id="{{ post.id }}" data-share-url="{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' post.id %}" title="Share" aria-haspopup="dialog">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+    <button type="button" class="post-card-action-btn js-bookmark-btn {% if post.user_has_bookmarked %}bookmarked{% endif %}" data-post-id="{{ post.id }}" title="{% if post.user_has_bookmarked %}Remove bookmark{% else %}Bookmark{% endif %}">
+      <i class="bi {% if post.user_has_bookmarked %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+    </button>
+  </div>
+
+  <div class="js-liked-by-slot">
+    {% include 'feed/_post_liked_by.html' %}
+  </div>

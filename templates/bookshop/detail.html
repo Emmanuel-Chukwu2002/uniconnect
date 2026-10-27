@@ -1,0 +1,111 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_title %}{{ book.title }}{% endblock %}
+{% block bs_content %}
+<nav class="bs-crumbs" aria-label="Breadcrumb">
+  <a href="{% url 'bookshop' %}">Bookshop</a><i class="bi bi-chevron-right"></i>
+  <a href="{% url 'bookshop_browse' %}?category={{ book.category }}">{{ book.get_category_display }}</a><i class="bi bi-chevron-right"></i>
+  <span>{{ book.title|truncatechars:40 }}</span>
+</nav>
+
+<article class="bs-detail">
+  <div class="bs-detail-cover">
+    <div class="bs-detail-cover-inner">
+      {% with b=book %}{% include 'bookshop/_cover.html' %}{% endwith %}
+      {% if book.status == 'sold' %}<span class="bs-ribbon bs-ribbon-lg">Sold</span>{% endif %}
+    </div>
+    <div class="bs-detail-meta-mini">
+      <span><i class="bi bi-eye"></i> {{ views_count }} view{{ views_count|pluralize }}</span>
+      <span><i class="bi bi-heart"></i> <span class="js-bs-save-count" data-url="{% url 'bookshop_save' book.pk %}">{{ saves_count }}</span> like{{ saves_count|pluralize }}</span>
+    </div>
+  </div>
+
+  <div class="bs-detail-info">
+    <div class="bs-detail-badges">
+      <span class="bs-pill {% if book.is_new %}bs-pill-new{% else %}bs-pill-used{% endif %}">{{ book.get_condition_display }}</span>
+      <span class="bs-pill"><i class="bi {{ book.category_icon }}"></i> {{ book.get_category_display }}</span>
+      {% if book.course_code %}<a class="bs-pill bs-pill-code" href="{% url 'bookshop_browse' %}?q={{ book.course_code|urlencode }}">{{ book.course_code }}</a>{% endif %}
+    </div>
+    <h1 class="bs-detail-title">{{ book.title }}</h1>
+    <p class="bs-detail-author">by <a href="{% url 'bookshop_browse' %}?q={{ book.author|urlencode }}">{{ book.author }}</a>{% if book.edition %} · {{ book.edition }}{% endif %}</p>
+
+    <div class="bs-buybox">
+      <div class="bs-buybox-price">
+        <span class="bs-price-lg">{{ book.price_display }}</span>
+        <span class="bs-status bs-status-{{ book.status }}">{% if book.status == 'available' %}<i class="bi bi-check-circle-fill"></i> Available{% elif book.status == 'reserved' %}<i class="bi bi-clock-fill"></i> Reserved{% else %}<i class="bi bi-x-circle-fill"></i> Sold{% endif %}</span>
+      </div>
+
+      {% if is_mine %}
+        <div class="bs-owner-note"><i class="bi bi-person-check"></i> This is your listing.</div>
+        <div class="bs-actions">
+          <a href="{% url 'bookshop_edit' book.pk %}" class="bs-btn bs-btn-primary bs-btn-lg"><i class="bi bi-pencil"></i> Edit listing</a>
+          <form method="post" action="{% url 'bookshop_status' book.pk %}" class="bs-inline-form">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            {% if book.status == 'sold' %}
+              <button name="status" value="available" class="bs-btn bs-btn-ghost bs-btn-lg"><i class="bi bi-arrow-counterclockwise"></i> Put back on sale</button>
+            {% else %}
+              <button name="status" value="sold" class="bs-btn bs-btn-success bs-btn-lg"><i class="bi bi-bag-check"></i> Mark as sold</button>
+            {% endif %}
+          </form>
+        </div>
+      {% else %}
+        <div class="bs-actions">
+          {% if book.status != 'sold' %}
+            <form method="post" action="{% url 'bookshop_contact' book.pk %}" class="bs-inline-form bs-grow">
+              {% csrf_token %}
+              <button type="submit" class="bs-btn bs-btn-primary bs-btn-lg bs-btn-block"><i class="bi bi-chat-dots-fill"></i> Message seller</button>
+            </form>
+            {% if book.contact_phone %}
+              <a href="https://wa.me/{{ book.whatsapp_number }}?text={{ 'Hi! Is your book “'|urlencode }}{{ book.title|urlencode }}{{ '” still available? (seen on UniConnect Bookshop)'|urlencode }}" target="_blank" rel="noopener" class="bs-btn bs-btn-whatsapp bs-btn-lg"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+              <a href="tel:{{ book.contact_phone }}" class="bs-btn bs-btn-ghost bs-btn-lg bs-btn-icon" aria-label="Call the seller" title="Call {{ book.contact_phone }}"><i class="bi bi-telephone"></i></a>
+            {% endif %}
+          {% else %}
+            <p class="bs-sold-note">This book has been sold. Check out similar books below.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+      <div class="bs-actions bs-actions-secondary">
+        <button type="button" class="bs-btn bs-btn-ghost js-bs-save js-bs-save-big{% if book.is_saved %} is-saved{% endif %}" data-url="{% url 'bookshop_save' book.pk %}" aria-pressed="{{ book.is_saved|yesno:'true,false' }}">
+          <i class="bi {% if book.is_saved %}bi-heart-fill{% else %}bi-heart{% endif %}"></i> <span class="js-bs-save-label">{% if book.is_saved %}Saved{% else %}Save{% endif %}</span>
+        </button>
+        <button type="button" class="bs-btn bs-btn-ghost js-bs-share" data-url="{{ share_url }}" data-title="{{ book.title }}"><i class="bi bi-share"></i> Share</button>
+        {% if book.seller_id != request.user.id %}<a href="{% url 'report_item' 'book' book.pk %}" class="bs-btn bs-btn-ghost"><i class="bi bi-flag"></i> Report</a>{% endif %}
+      </div>
+    </div>
+
+    <ul class="bs-trust">
+      <li><i class="bi bi-geo-alt"></i><span><strong>Meet on campus</strong>{% if book.meetup_spot %}{{ book.meetup_spot }}{% else %}Agree a spot in chat{% endif %}</span></li>
+      <li><i class="bi bi-search-heart"></i><span><strong>Check it first</strong>Look through the book before paying</span></li>
+      <li><i class="bi bi-cash-coin"></i><span><strong>Pay on pickup</strong>Cash or transfer when you meet</span></li>
+    </ul>
+
+    {% if book.description %}
+      <section class="bs-section"><h2>About this book</h2><p class="bs-desc">{{ book.description|linebreaksbr }}</p></section>
+    {% endif %}
+
+    <section class="bs-section">
+      <h2>Details</h2>
+      <dl class="bs-specs">
+        <div><dt>Condition</dt><dd>{{ book.get_condition_display }}</dd></div>
+        <div><dt>Category</dt><dd>{{ book.get_category_display }}</dd></div>
+        {% if book.course_code %}<div><dt>Course</dt><dd>{{ book.course_code }}</dd></div>{% endif %}
+        {% if book.department %}<div><dt>Department</dt><dd>{{ book.department.name }}</dd></div>{% endif %}
+        {% if book.edition %}<div><dt>Edition</dt><dd>{{ book.edition }}</dd></div>{% endif %}
+        <div><dt>Listed</dt><dd>{{ book.created_at|date:"j M Y" }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="bs-seller">
+      <a href="{% url 'user_profile' seller.username %}" class="bs-seller-avatar" style="{% if seller_profile.profile_photo %}background-image:url({{ seller_profile.profile_photo.url }}){% endif %}">{% if not seller_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</a>
+      <div class="bs-seller-info">
+        <span class="bs-seller-label">Sold by</span>
+        <a href="{% url 'user_profile' seller.username %}" class="bs-seller-name">{{ seller.get_full_name|default:seller.username }}</a>
+        <span class="bs-seller-sub">{% if seller_profile %}{{ seller_profile.department.name }} · {{ seller_profile.level.name }}{% endif %}</span>
+        <span class="bs-seller-stats"><i class="bi bi-book"></i> {{ seller_books }} for sale · <i class="bi bi-bag-check"></i> {{ seller_sold }} sold · joined {{ seller.date_joined|date:"M Y" }}</span>
+      </div>
+      <a href="{% url 'user_profile' seller.username %}" class="bs-btn bs-btn-ghost">View profile</a>
+    </section>
+  </div>
+</article>
+
+{% for s in extra_shelves %}{% include 'bookshop/_shelf.html' %}{% endfor %}
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_title %}{% if q %}“{{ q }}” · {% endif %}Browse books{% endblock %}
+{% block bs_content %}
+<form class="bs-search" method="get" role="search">
+  <i class="bi bi-search"></i>
+  <input type="search" name="q" value="{{ q }}" placeholder="Title, author or course code" aria-label="Search books">
+  {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+  {% if condition %}<input type="hidden" name="condition" value="{{ condition }}">{% endif %}
+  {% if dept %}<input type="hidden" name="dept" value="{{ dept }}">{% endif %}
+  {% if sort != 'newest' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  <button type="submit" class="bs-btn bs-btn-primary">Search</button>
+</form>
+
+<div class="bs-chips">
+  {% for c in chips %}<a href="{{ c.href }}" class="bs-chip{% if c.active %} active{% endif %}"><i class="bi {{ c.icon }}"></i><span>{{ c.label }}</span></a>{% endfor %}
+</div>
+
+<div class="bs-toolbar">
+  <div class="bs-segment" role="group" aria-label="Condition">
+    {% for c in conditions %}<a href="{{ c.href }}" class="{% if c.active %}active{% endif %}">{{ c.label }}</a>{% endfor %}
+  </div>
+  <a href="{{ dept_link }}" class="bs-toggle{% if dept == 'mine' %} active{% endif %}"><i class="bi bi-mortarboard"></i> My department</a>
+  <form method="get" class="bs-sort">
+    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+    {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+    {% if condition %}<input type="hidden" name="condition" value="{{ condition }}">{% endif %}
+    {% if dept %}<input type="hidden" name="dept" value="{{ dept }}">{% endif %}
+    {% if max_price %}<input type="hidden" name="max" value="{{ max_price }}">{% endif %}
+    <label for="bsSort"><i class="bi bi-sort-down"></i></label>
+    <select id="bsSort" name="sort" class="bs-input bs-select js-bs-autosubmit" aria-label="Sort by">
+      {% for key, label in sorts %}<option value="{{ key }}"{% if key == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="bs-results-head">
+  <p><strong>{{ total }}</strong> book{{ total|pluralize }}{% if category_label %} in {{ category_label }}{% endif %}{% if q %} for “{{ q }}”{% endif %}{% if max_price %} under ₦{{ max_price }}{% endif %}</p>
+  {% if has_filters %}<a href="{% url 'bookshop_browse' %}" class="bs-clear"><i class="bi bi-x-circle"></i> Clear filters</a>{% endif %}
+</div>
+
+{% if books %}
+  <div class="bs-grid">{% for b in books %}{% include 'bookshop/_card.html' %}{% endfor %}</div>
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="bs-pages" aria-label="Pages">
+      {% if page.has_previous %}<a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page.previous_page_number }}" class="bs-btn bs-btn-ghost"><i class="bi bi-chevron-left"></i> Previous</a>{% else %}<span></span>{% endif %}
+      <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page.next_page_number }}" class="bs-btn bs-btn-ghost">Next <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+    </nav>
+  {% endif %}
+{% else %}
+  <div class="bs-empty">
+    <div class="bs-empty-art"><i class="bi bi-search"></i></div>
+    <h3>No books found</h3>
+    <p>{% if has_filters %}Try fewer filters or a different search.{% else %}No one has listed a book yet.{% endif %}</p>
+    {% if has_filters %}<a href="{% url 'bookshop_browse' %}" class="bs-btn bs-btn-ghost">Clear filters</a>{% endif %}
+    <a href="{% url 'bookshop_sell' %}" class="bs-btn bs-btn-primary"><i class="bi bi-plus-lg"></i> Sell a book</a>
+  </div>
+{% endif %}
+{% endblock %}

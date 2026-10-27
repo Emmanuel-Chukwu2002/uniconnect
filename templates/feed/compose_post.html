@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Create a Post — UniConnect{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/app.css' %}?v=95">{% endblock %}
+
+{% block body %}
+<div class="compose-page">
+  <form method="post" action="{% url 'compose_post' %}" enctype="multipart/form-data" class="compose-form">
+    {% csrf_token %}
+    {% if community %}<input type="hidden" name="community" value="{{ community.id }}">{% endif %}
+    <div class="compose-page-header">
+      <a href="{% if adding_to_thread %}{% url 'post_detail' adding_to_thread.id %}{% elif community %}{% url 'community_detail' community.id %}{% else %}{% url 'home' %}{% endif %}" class="compose-close-btn" aria-label="Close"><i class="bi bi-x-lg"></i></a>
+      <a href="{% url 'post_drafts' %}" class="compose-drafts-link">Drafts</a>
+      <button type="submit" class="btn btn-primary compose-post-btn" disabled>Post</button>
+    </div>
+
+    <div class="compose-page-body">
+      <div class="compose-avatar" style="{% if request.user.student_profile.profile_photo %}background-image:url({{ request.user.student_profile.profile_photo.url }}){% endif %}">
+        {% if not request.user.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}
+      </div>
+      <div class="compose-input-area">
+        {% if adding_to_thread %}<a href="{% url 'post_detail' adding_to_thread.id %}" class="compose-thread-pill"><i class="bi bi-list-nested"></i> Adding to your thread: <span>{{ adding_to_thread.content|default:"(photo post)"|truncatechars:60 }}</span></a>
+        {% elif community %}<div class="compose-community-pill"><i class="bi bi-people-fill"></i> Posting to <strong>{{ community.name }}</strong></div>{% endif %}
+        <textarea name="content" class="compose-textarea" placeholder="{% if adding_to_thread %}Add another post{% elif community %}Share something with {{ community.name }}{% else %}What's happening?{% endif %}" rows="4">{{ form.content.value|default:'' }}</textarea>
+        <div class="compose-media-preview-grid"></div>
+        {% include 'feed/_compose_poll.html' %}
+        {% include 'feed/_compose_video_extras.html' %}
+        {% include 'feed/_compose_extras.html' %}
+      </div>
+    </div>
+
+    {% if form.errors %}
+      <div class="compose-error">{{ form.non_field_errors|striptags }}{% for e in form.schedule_at.errors %} {{ e }}{% endfor %}{% for e in form.location.errors %} {{ e }}{% endfor %}{% for e in form.content.errors %} {{ e }}{% endfor %}</div>
+    {% endif %}
+
+    <div class="compose-page-footer">
+      <div class="compose-reply-pill">{% if community %}<i class="bi bi-people"></i> Shown in {{ community.name }} and to its members{% else %}<i class="bi bi-globe2"></i> Everyone can reply{% endif %}</div>
+      {% include 'feed/_compose_tools.html' %}
+    </div>
+  </form>
+</div>
+{% endblock %}

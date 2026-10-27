@@ -1,0 +1,375 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{{ panel_title }} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}
+  Settings (feed/settings_page.py). /settings/ shows the menu; each row's
+  arrow opens that screen at /settings/?s=<panel> (account, notifications,
+  security, appearance, help), with a back arrow to the menu. Each form on a
+  screen saves only its own section. Styles: static/css/restyle.css
+  ("Settings page").
+{% endcomment %}
+{% with sp=request.user.student_profile %}
+<div class="st-top">
+  <a href="{% if panel %}{% url 'account_settings' %}{% else %}{% url 'home' %}{% endif %}" class="st-back" aria-label="{% if panel %}Back to Settings{% else %}Back to home{% endif %}"><i class="bi bi-arrow-left"></i></a>
+  <h1>{{ panel_title }}</h1>
+</div>
+
+{% if not panel %}
+  <a href="{% url 'profile' %}" class="st-me">
+    <span class="st-me-avatar" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+    <span class="st-me-text">
+      <b>{{ request.user.get_full_name|default:request.user.username }}{% if sp.is_verified %} <i class="bi bi-patch-check-fill st-verified" title="Verified student"></i>{% endif %}</b>
+      <small>@{{ request.user.username }}</small>
+    </span>
+    <i class="bi bi-chevron-right st-chev"></i>
+  </a>
+
+  <nav class="st-menu" aria-label="Settings">
+    <a href="?s=account"><i class="bi bi-person"></i><span>Account &amp; Profile</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="?s=notifications"><i class="bi bi-bell"></i><span>Notifications</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="?s=security"><i class="bi bi-lock"></i><span>Privacy &amp; Security</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="?s=appearance"><i class="bi bi-palette"></i><span>Appearance</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="?s=help"><i class="bi bi-question-circle"></i><span>Help &amp; Support</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="?s=delete" class="is-danger"><i class="bi bi-trash3"></i><span>Delete account</span><i class="bi bi-chevron-right st-chev"></i></a>
+    <a href="{% url 'logout' %}" class="is-danger" data-no-soft><i class="bi bi-box-arrow-right"></i><span>Log Out</span></a>
+  </nav>
+{% elif panel == 'account' %}
+  <section class="st-card" id="st-username">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-at"></i></span><div><h2>Username</h2><p>Your @handle — how people find and mention you. You still sign in with your email or matric number.</p></div></header>
+  {% if username_is_default %}<p class="st-note un-note"><i class="bi bi-info-circle"></i> Your username is still your university and matric number. Choose your own so your matric number isn't shown on your profile.</p>{% endif %}
+  <form method="post" action="{% url 'account_settings' %}?s=account" class="js-un-form" novalidate>
+    {% csrf_token %}<input type="hidden" name="section" value="username">
+    <label class="st-field is-wide un-field">
+      <span>Username</span>
+      <span class="un-input{% if username_error %} is-bad{% endif %}"><b>@</b><input type="text" name="username" value="{{ username_value }}" maxlength="15" autocomplete="off" autocapitalize="off" spellcheck="false" class="js-un-input" data-current="{{ request.user.username }}" aria-describedby="un-msg"><i class="bi js-un-icon"></i></span>
+      <small class="un-msg js-un-msg{% if username_error %} is-bad{% endif %}" id="un-msg" aria-live="polite">{% if username_error %}{{ username_error }}{% else %}4–15 characters: letters, numbers and underscores.{% endif %}</small>
+    </label>
+    <div class="un-suggest js-un-suggest" hidden><span>Try:</span></div>
+    <p class="un-url">Your profile: <span>{{ request.scheme }}://{{ request.get_host }}/u/<b class="js-un-preview">{{ username_value }}</b>/</span></p>
+    <div class="st-actions">
+      <button type="submit" class="st-btn js-un-save"{% if not username_error %} disabled{% endif %}>Save username</button>
+    </div>
+  </form>
+</section>
+
+  <section class="st-card" id="st-account">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-person-badge"></i></span><div><h2>Account</h2><p>Your name and level. The rest was verified when you signed up.</p></div></header>
+  <form method="post" action="{% url 'account_settings' %}?s=account" novalidate>
+    {% csrf_token %}<input type="hidden" name="section" value="account">
+    <div class="st-grid">
+      {% for field in account_form %}
+        <label class="st-field{% if field.name == 'level' %} is-wide{% endif %}">
+          <span>{{ field.label }}</span>
+          {{ field }}
+          {% for e in field.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+        </label>
+      {% endfor %}
+    </div>
+    <dl class="st-facts">
+      <div><dt>University email</dt><dd>{{ student.university_email }}{% if student.is_verified %} <i class="bi bi-patch-check-fill st-verified" title="Verified"></i>{% endif %}</dd></div>
+      <div><dt>Matric number</dt><dd>{{ student.matric_number }}</dd></div>
+      <div><dt>University</dt><dd>{{ student.university }}</dd></div>
+      <div><dt>Faculty</dt><dd>{{ student.faculty }}</dd></div>
+      <div><dt>Department</dt><dd>{{ student.department }}</dd></div>
+    </dl>
+    <div class="st-actions">
+      <a href="{% url 'edit_profile' %}" class="st-btn-ghost"><i class="bi bi-pencil"></i> Edit photo, bio and links</a>
+      <button type="submit" class="st-btn">Save</button>
+    </div>
+  </form>
+</section>
+
+{% elif panel == 'notifications' %}
+  <section class="st-card" id="st-notifications">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-bell"></i></span><div><h2>Notifications</h2><p>Choose what shows up in your notifications. Follow requests always do.</p></div></header>
+  <form method="post" action="{% url 'account_settings' %}?s=notifications" class="js-st-autosave">
+    {% csrf_token %}<input type="hidden" name="section" value="notifications">
+    {% for g in notification_groups %}
+      <label class="st-row">
+        <span class="st-row-ico"><i class="bi {{ g.icon }}"></i></span>
+        <span class="st-row-text"><b>{{ g.label }}</b><small>{{ g.help }}</small></span>
+        <input type="checkbox" name="on" value="{{ g.key }}" class="st-switch" {% if g.on %}checked{% endif %}>
+      </label>
+    {% endfor %}
+    <noscript><div class="st-actions"><button type="submit" class="st-btn">Save</button></div></noscript>
+  </form>
+</section>
+
+{% elif panel == 'security' %}
+  <section class="st-card" id="st-privacy">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-eye-slash"></i></span><div><h2>Privacy</h2><p>Choose what others see.</p></div></header>
+  <form method="post" action="{% url 'account_settings' %}?s=security" class="js-st-autosave">
+    {% csrf_token %}<input type="hidden" name="section" value="privacy">
+    <label class="st-row">
+      <span class="st-row-text"><b>Show my date of birth</b><small>{% if student.date_of_birth %}On your profile, for people who can see it.{% else %}Add your date of birth in <a href="{% url 'edit_profile' %}">Edit profile</a> first.{% endif %}</small></span>
+      <input type="checkbox" name="show_date_of_birth" class="st-switch" {% if student.show_date_of_birth %}checked{% endif %}{% if not student.date_of_birth %} disabled{% endif %}>
+    </label>
+    <div class="st-row is-static">
+      <span class="st-row-text"><b>Follow requests</b><small>Everyone needs your approval to follow you.</small></span>
+      <a href="{% url 'follow_requests' %}" class="st-link">Review requests <i class="bi bi-chevron-right"></i></a>
+    </div>
+    <noscript><div class="st-actions"><button type="submit" class="st-btn">Save</button></div></noscript>
+  </form>
+</section>
+
+<section class="st-card" id="st-blocked">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-slash-circle"></i></span><div><h2>Blocked accounts</h2><p>You and they can't see each other's posts or profiles, or message each other.</p></div></header>
+  {% for b in blocked_accounts %}
+    <div class="st-row is-static st-blocked-row">
+      {% with u=b.blocked %}
+      <span class="st-blocked-ava">{% if u.student_profile.profile_photo %}<img src="{{ u.student_profile.profile_photo.url }}" alt="">{% else %}{{ u.first_name|first|default:u.username|first|upper }}{% endif %}</span>
+      <span class="st-row-text"><b>{{ u.get_full_name|default:u.username }}</b><small>@{{ u.username }} · blocked {{ b.created_at|date:"j M Y" }}</small></span>
+      <form method="post" action="{% url 'block_toggle' u.username %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'account_settings' %}?s=security#st-blocked"><button type="submit" class="st-btn-ghost">Unblock</button></form>
+      {% endwith %}
+    </div>
+  {% empty %}
+    <p class="st-muted st-blocked-empty">You haven't blocked anyone. To block someone, open the <i class="bi bi-three-dots-vertical"></i> menu on one of their posts or on their profile.</p>
+  {% endfor %}
+</section>
+
+<section class="st-card" id="st-muted">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-volume-mute"></i></span><div><h2>Muted accounts</h2><p>Their posts don't show on your Home. They aren't told, and you can still visit their profile.</p></div></header>
+  {% for m in muted_accounts %}
+    <div class="st-row is-static st-blocked-row">
+      {% with u=m.muted %}
+      <span class="st-blocked-ava">{% if u.student_profile.profile_photo %}<img src="{{ u.student_profile.profile_photo.url }}" alt="">{% else %}{{ u.first_name|first|default:u.username|first|upper }}{% endif %}</span>
+      <span class="st-row-text"><b>{{ u.get_full_name|default:u.username }}</b><small>@{{ u.username }} · muted {{ m.created_at|date:"j M Y" }}</small></span>
+      <form method="post" action="{% url 'mute_toggle' u.username %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'account_settings' %}?s=security#st-muted"><button type="submit" class="st-btn-ghost">Unmute</button></form>
+      {% endwith %}
+    </div>
+  {% empty %}
+    <p class="st-muted st-blocked-empty">You haven't muted anyone. To mute someone, open the <i class="bi bi-three-dots-vertical"></i> menu on one of their posts.</p>
+  {% endfor %}
+</section>
+
+<section class="st-card" id="st-password">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-shield-lock"></i></span><div><h2>Password</h2><p>Changing it signs you out on every other device.</p></div></header>
+  <form method="post" action="{% url 'account_settings' %}?s=security" novalidate>
+    {% csrf_token %}<input type="hidden" name="section" value="password">
+    <div class="st-grid">
+      {% for field in password_form %}
+        <label class="st-field is-wide">
+          <span>{% if field.name == 'old_password' %}Current password{% elif field.name == 'new_password1' %}New password{% else %}Confirm new password{% endif %}</span>
+          {{ field }}
+          {% for e in field.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+          {% if field.name == 'new_password1' and not field.errors %}<small class="st-hint">At least 8 characters, not all numbers, and not too close to your name or email.</small>{% endif %}
+        </label>
+      {% endfor %}
+    </div>
+    <div class="st-actions"><a href="{% url 'password_reset' %}" class="st-link">Forgot your current password?</a><button type="submit" class="st-btn">Change password</button></div>
+  </form>
+</section>
+
+<section class="st-card" id="st-sessions">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-laptop"></i></span><div><h2>Devices</h2><p>Signed in on a shared or lost device? End those sessions here.</p></div></header>
+  <div class="st-actions is-split">
+    <form method="post" action="{% url 'account_settings' %}?s=security">
+      {% csrf_token %}<input type="hidden" name="section" value="sessions">
+      <button type="submit" class="st-btn-ghost"><i class="bi bi-box-arrow-right"></i> Sign out of all other devices</button>
+    </form>
+    <a href="{% url 'logout' %}" class="st-btn-ghost" data-no-soft><i class="bi bi-power"></i> Sign out here</a>
+  </div>
+</section>
+
+{% elif panel == 'appearance' %}
+  <section class="st-card" id="st-appearance">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-palette"></i></span><div><h2>Appearance</h2><p>Theme, font and text size. Saved on this device.</p></div></header>
+
+  {# Live preview: a post card that follows the choices below. #}
+  {% with sp=request.user.student_profile %}
+  <div class="st-preview">
+    <span class="st-me-avatar is-sm" style="{% if sp.profile_photo %}background-image:url({{ sp.profile_photo.url }}){% endif %}">{% if not sp.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+    <div class="st-preview-body">
+      <div class="st-preview-head"><b>UniConnect</b> <i class="bi bi-patch-check-fill st-verified"></i> <span>@uniconnect · 2m</span></div>
+      <p>At the heart of UniConnect are conversations, like this one. Pick the font and text size that are easiest for you to read.</p>
+    </div>
+  </div>
+  {% endwith %}
+
+  <h3 class="st-sub">Font size</h3>
+  <div class="st-size">
+    <span class="st-size-a is-sm" aria-hidden="true">Aa</span>
+    <div class="st-size-track">
+      <input type="range" min="1" max="5" step="1" value="3" class="js-st-size" aria-label="Font size">
+    </div>
+    <span class="st-size-a is-lg" aria-hidden="true">Aa</span>
+  </div>
+  <p class="st-size-label js-st-size-label">Default</p>
+
+  <h3 class="st-sub">Font</h3>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@700&family=Nunito+Sans:wght@700&family=Poppins:wght@600&display=swap">
+  <div class="st-fonts js-st-fonts" role="radiogroup" aria-label="Font">
+    <button type="button" class="st-font" data-font="default" role="radio" style="--f:Arial,Helvetica,sans-serif"><b>Aa</b><span>Default</span></button>
+    <button type="button" class="st-font" data-font="system" role="radio" style="--f:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"><b>Aa</b><span>System</span></button>
+    <button type="button" class="st-font" data-font="inter" role="radio" style="--f:Inter,sans-serif"><b>Aa</b><span>Inter</span></button>
+    <button type="button" class="st-font" data-font="nunito" role="radio" style="--f:'Nunito Sans',sans-serif"><b>Aa</b><span>Nunito Sans</span></button>
+    <button type="button" class="st-font" data-font="poppins" role="radio" style="--f:Poppins,sans-serif"><b>Aa</b><span>Poppins</span></button>
+    <button type="button" class="st-font" data-font="serif" role="radio" style="--f:Georgia,'Times New Roman',serif"><b>Aa</b><span>Serif</span></button>
+  </div>
+
+  <h3 class="st-sub">Theme</h3>
+  <div class="st-themes js-st-themes" role="radiogroup" aria-label="Theme">
+    <button type="button" class="st-theme" data-theme="light" role="radio" aria-checked="false"><span class="st-theme-swatch is-light"><span></span><span></span></span><b>Light</b></button>
+    <button type="button" class="st-theme" data-theme="dark" role="radio" aria-checked="false"><span class="st-theme-swatch is-dark"><span></span><span></span></span><b>Dark</b></button>
+  </div>
+  <div class="st-actions"><button type="button" class="st-btn-ghost js-st-reset"><i class="bi bi-arrow-counterclockwise"></i> Reset font and size</button></div>
+</section>
+
+{% elif panel == 'delete' %}
+  <section class="st-card is-danger" id="st-delete">
+  <p class="st-intro">Deleting your account removes your profile, posts, comments, messages and listings for good. It can't be undone.</p>
+  <details class="st-danger"{% if open_section == 'delete' %} open{% endif %}>
+    <summary class="st-row">
+      <span class="st-row-ico is-danger"><i class="bi bi-trash3"></i></span>
+      <span class="st-row-text"><b>Delete my account</b><small>Permanently remove your account and everything in it</small></span>
+      <i class="bi bi-chevron-right st-chev"></i>
+    </summary>
+    <form method="post" action="{% url 'account_settings' %}?s=delete" novalidate class="st-danger-form">
+      {% csrf_token %}<input type="hidden" name="section" value="delete">
+      <label class="st-field is-wide">
+        <span>Type your password to confirm</span>
+        {{ delete_form.password }}
+        {% for e in delete_form.password.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+      </label>
+      <div class="st-actions"><button type="submit" class="st-btn is-danger">Delete my account</button></div>
+    </form>
+  </details>
+</section>
+{% elif panel == 'help' %}
+  <section class="st-card" id="st-help">
+  <header class="st-head"><span class="st-ico"><i class="bi bi-question-circle"></i></span><div><h2>Help &amp; Support</h2><p>Quick answers, and where to read more.</p></div></header>
+  <details class="st-faq"><summary>How do I change my department or university?</summary><p>These were verified with your university email when you signed up, so they can't be changed here. If they're wrong, contact the UniConnect administrators.</p></details>
+  <details class="st-faq"><summary>Why do people need my approval to follow me?</summary><p>Every follow on UniConnect is a request you approve, so only people you accept see your followers-only activity. Review them in <a href="{% url 'follow_requests' %}">Follow requests</a>.</p></details>
+  <details class="st-faq"><summary>I'm getting too many notifications</summary><p>Turn off the kinds you don't want in <a href="{% url 'account_settings' %}?s=notifications">Notifications</a>.</p></details>
+  <details class="st-faq"><summary>I think someone else is using my account</summary><p>Change your password in <a href="{% url 'account_settings' %}?s=security">Privacy &amp; Security</a>; that signs out every other device straight away.</p></details>
+  <div class="st-links">
+    <a href="{% url 'help' %}" data-no-soft><i class="bi bi-life-preserver"></i><span>Help centre</span><i class="bi bi-chevron-right"></i></a>
+    <a href="{% url 'about' %}" data-no-soft><i class="bi bi-info-circle"></i><span>About UniConnect</span><i class="bi bi-chevron-right"></i></a>
+    <a href="{% url 'privacy' %}" data-no-soft><i class="bi bi-shield"></i><span>Privacy policy</span><i class="bi bi-chevron-right"></i></a>
+    <a href="{% url 'terms' %}" data-no-soft><i class="bi bi-file-text"></i><span>Terms</span><i class="bi bi-chevron-right"></i></a>
+  </div>
+</section>
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Settings > Username: checks the name as you type (feed/usernames.py check_username).
+  UC.onPage(function (doc, signal) {
+    var form = document.querySelector('.js-un-form');
+    if (!form) { return; }
+    var input = form.querySelector('.js-un-input'), msg = form.querySelector('.js-un-msg'), icon = form.querySelector('.js-un-icon'),
+        save = form.querySelector('.js-un-save'), box = form.querySelector('.un-input'), sug = form.querySelector('.js-un-suggest'),
+        preview = form.querySelector('.js-un-preview'), timer = null, seq = 0;
+    function state(kind, text) {
+      box.classList.toggle('is-bad', kind === 'bad');
+      box.classList.toggle('is-ok', kind === 'ok');
+      msg.classList.toggle('is-bad', kind === 'bad');
+      msg.classList.toggle('is-ok', kind === 'ok');
+      icon.className = 'bi js-un-icon' + (kind === 'ok' ? ' bi-check-circle-fill' : kind === 'bad' ? ' bi-exclamation-circle-fill' : kind === 'wait' ? ' bi-arrow-repeat un-spin' : '');
+      msg.textContent = text;
+      save.disabled = kind !== 'ok';
+    }
+    function showSuggestions(list) {
+      sug.querySelectorAll('button').forEach(function (b) { b.remove(); });
+      (list || []).forEach(function (name) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'sg-chip'; b.textContent = '@' + name;
+        b.addEventListener('click', function () { input.value = name; check(); input.focus(); });
+        sug.appendChild(b);
+      });
+      sug.hidden = !(list && list.length);
+    }
+    function check() {
+      var v = input.value.replace(/^@/, '').trim();
+      if (input.value !== v) { input.value = v; }
+      preview.textContent = v || '…';
+      clearTimeout(timer);
+      if (v === input.dataset.current) { state('', "That's your username now."); showSuggestions([]); return; }
+      if (!/^[A-Za-z0-9_]*$/.test(v)) { state('bad', 'Use only letters, numbers and underscores (_).'); return; }
+      if (v.length < 4) { state(v ? 'bad' : '', v ? 'Your username must be at least 4 characters.' : '4–15 characters: letters, numbers and underscores.'); save.disabled = true; return; }
+      state('wait', 'Checking…');
+      var mine = ++seq;
+      timer = setTimeout(function () {
+        fetch('{% url "check_username" %}?u=' + encodeURIComponent(v), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (mine !== seq) { return; }
+            state(d.ok && !d.same ? 'ok' : (d.same ? '' : 'bad'), d.message);
+            showSuggestions(d.suggestions);
+          })
+          .catch(function () { if (mine === seq) { state('', 'Could not check right now — you can still try saving.'); save.disabled = false; } });
+      }, 300);
+    }
+    input.addEventListener('input', check, { signal: signal });
+    if (msg.classList.contains('is-bad')) { check(); }
+  });
+
+  UC.onPage(function (doc, signal) {
+    var group = document.querySelector('.js-st-themes');
+    function mark() {
+      if (!group) { return; }
+      var light = document.body.classList.contains('light-mode');
+      group.querySelectorAll('.st-theme').forEach(function (b) {
+        var on = (b.getAttribute('data-theme') === 'light') === light;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+    }
+    mark();
+    if (group) group.addEventListener('click', function (e) {
+      var b = e.target.closest('.st-theme');
+      if (!b) { return; }
+      var light = b.getAttribute('data-theme') === 'light';
+      document.body.classList.toggle('light-mode', light);
+      try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (err) {}
+      // Keep the sidebar's Light/Dark switch label in step.
+      document.querySelectorAll('.js-theme-toggle-label').forEach(function (el) { el.textContent = light ? 'Dark Mode' : 'Light Mode'; });
+      mark();
+    }, { signal: signal });
+
+    // Font size (1-5, 3 = default) and font: kept in this browser and applied
+    // to every page by the script at the top of templates/base.html.
+    var SIZES = ['Smallest', 'Small', 'Default', 'Large', 'Largest'];
+    var range = document.querySelector('.js-st-size');
+    var fonts = document.querySelector('.js-st-fonts');
+    function store(k, v) { try { if (v === null) { localStorage.removeItem(k); } else { localStorage.setItem(k, v); } } catch (err) {} }
+    function read(k) { try { return localStorage.getItem(k); } catch (err) { return null; } }
+    function applyFont() {
+      if (!range || !fonts) { return; }
+      var size = read('uc-font-size') || '3', font = read('uc-font') || 'default';
+      range.value = size;
+      range.style.setProperty('--fill', ((size - 1) * 25) + '%');
+      document.querySelector('.js-st-size-label').textContent = SIZES[size - 1];
+      fonts.querySelectorAll('.st-font').forEach(function (b) {
+        var on = b.getAttribute('data-font') === font;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+      if (window.UC && UC.applyFontPrefs) { UC.applyFontPrefs(); }
+    }
+    applyFont();
+    if (range) range.addEventListener('input', function () { store('uc-font-size', range.value === '3' ? null : range.value); applyFont(); }, { signal: signal });
+    if (fonts) fonts.addEventListener('click', function (e) {
+      var b = e.target.closest('.st-font');
+      if (!b) { return; }
+      store('uc-font', b.getAttribute('data-font') === 'default' ? null : b.getAttribute('data-font'));
+      applyFont();
+    }, { signal: signal });
+    var reset = document.querySelector('.js-st-reset');
+    if (reset) reset.addEventListener('click', function () { store('uc-font', null); store('uc-font-size', null); applyFont(); }, { signal: signal });
+
+    // Switches save as soon as they're flipped.
+    document.querySelectorAll('.js-st-autosave').forEach(function (form) {
+      form.addEventListener('change', function () {
+        var data = new FormData(form);
+        fetch(form.action, { method: 'POST', body: data, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (r) { if (!r.ok) { throw new Error(); } form.classList.add('is-saved'); setTimeout(function () { form.classList.remove('is-saved'); }, 1400); })
+          .catch(function () { form.submit(); });
+      }, { signal: signal });
+    });
+  });
+</script>
+{% endblock %}

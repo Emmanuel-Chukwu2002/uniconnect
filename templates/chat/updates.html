@@ -1,0 +1,68 @@
+{% extends 'chat/base.html' %}
+{% load chat_tags %}
+{% block wa_title %}Updates{% endblock %}
+{% comment %}
+  Status updates are UniConnect Stories (feed.Story): posting one here
+  is the same as posting one on Home, and the viewer is the same one.
+{% endcomment %}
+{% block list_pane %}
+<header class="wa-pane-header">
+  <h1 class="wa-pane-title is-visible">Updates</h1>
+  <div class="wa-header-actions">
+    <button type="button" class="wa-icon-btn js-wa-filter-toggle" aria-label="Search updates"><i class="bi bi-search"></i></button>
+    <div class="dropdown">
+      <button type="button" class="wa-icon-btn" data-bs-toggle="dropdown" aria-label="More options"><i class="bi bi-three-dots-vertical"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end wa-menu">
+        <li><button type="button" class="dropdown-item js-wa-add-status">Add status</button></li>
+        <li><a class="dropdown-item" href="{% url 'home' %}">Back to UniConnect</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+<div class="wa-pane-scroll">
+  <label class="wa-search js-wa-filter-box" hidden>
+    <i class="bi bi-search"></i>
+    <input type="search" class="js-wa-filter-input" placeholder="Search" aria-label="Search updates">
+  </label>
+  <h2 class="wa-section-title">Status</h2>
+
+  <div class="wa-status-row js-wa-status-row" data-user="{{ me.id }}" data-mine="1" data-count="{{ my_status.count }}" role="button" tabindex="0">
+    <span class="wa-status-ring{% if my_status.count %} is-seen{% else %} is-empty{% endif %}" style="--segments:{{ my_status.count|default:1 }}">
+      {% include 'chat/_avatar.html' with p=me size=50 %}
+      {% if not my_status.count %}<span class="wa-status-add"><i class="bi bi-plus"></i></span>{% endif %}
+    </span>
+    <span class="wa-status-text">
+      <span class="wa-status-name">My status</span>
+      <span class="wa-status-time">{% if my_status.latest %}<time class="js-wa-time" data-ts="{{ my_status.latest.created_at|date:'c' }}" data-format="ago">{{ my_status.latest.created_at|timesince }} ago</time>{% else %}Tap to add status update{% endif %}</span>
+    </span>
+    {% if my_status.count %}<button type="button" class="wa-icon-btn wa-status-add-btn js-wa-add-status" aria-label="Add status"><i class="bi bi-plus-circle"></i></button>{% endif %}
+  </div>
+
+  {% if recent %}
+    <h3 class="wa-subsection">Recent updates</h3>
+    {% for item in recent %}{% include 'chat/_status_row.html' with seen=False %}{% endfor %}
+  {% endif %}
+  {% if viewed %}
+    <h3 class="wa-subsection">Viewed updates</h3>
+    {% for item in viewed %}{% include 'chat/_status_row.html' with seen=True %}{% endfor %}
+  {% endif %}
+  {% if not recent and not viewed %}
+    <div class="wa-empty"><i class="bi bi-bullseye"></i><p>No status updates from people at your university right now.</p></div>
+  {% endif %}
+</div>
+<button type="button" class="wa-fab js-wa-add-status" aria-label="Add status"><i class="bi bi-camera-fill"></i></button>
+{% endblock %}
+
+{% block main_pane %}
+<div class="wa-placeholder">
+  <div class="wa-placeholder-icon"><i class="bi bi-bullseye"></i></div>
+  <h2>Status updates</h2>
+  <p>Photo updates that disappear after 24 hours. Click someone to view theirs, or add your own.</p>
+</div>
+{% endblock %}
+
+{% block page_data %}
+{{ stories_json|json_script:"storiesData" }}
+<div id="storiesRow" hidden></div>
+{% include 'feed/_story_dialogs.html' %}
+{% endblock %}

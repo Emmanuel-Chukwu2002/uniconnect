@@ -1,0 +1,26 @@
+{% comment %}
+  Composer extras for a video (static/js/video-upload.js): the optional
+  thumbnail picker (shown once a video is attached) and the upload
+  progress bar. With ImageKit configured, the video and thumbnail go
+  straight from the browser to ImageKit and only their IDs are posted
+  (ik_video_file_id / ik_thumbnail_file_id); otherwise they're posted
+  with the form as before.
+{% endcomment %}
+<div class="compose-video-extras js-compose-video" data-imagekit="{{ imagekit_enabled|yesno:'1,0' }}" data-auth-url="{% url 'imagekit_auth' %}" data-max-video-mb="{{ video_max_mb|default:50 }}">
+  <input type="hidden" name="ik_video_file_id" class="js-ik-video-id" value="">
+  <input type="hidden" name="ik_thumbnail_file_id" class="js-ik-thumb-id" value="">
+  <div class="compose-thumb-row js-compose-thumb" hidden>
+    <img class="compose-thumb-preview js-compose-thumb-preview" alt="Chosen thumbnail" hidden>
+    <label class="compose-thumb-btn">
+      <i class="bi bi-card-image"></i> <span class="js-compose-thumb-label">Add a thumbnail</span>
+      <input type="file" name="video_thumbnail" accept="image/*" class="js-compose-thumb-input" hidden>
+    </label>
+    <button type="button" class="compose-thumb-remove js-compose-thumb-remove" hidden>Remove</button>
+    <span class="compose-thumb-hint">Optional — {% if imagekit_enabled %}without one, a thumbnail is made from your video{% else %}without one, the video's first frame shows{% endif %}.</span>
+    <span class="compose-thumb-hint compose-video-limit"><i class="bi bi-scissors"></i> Short clips work best — videos can be up to {{ video_max_mb|default:50 }} MB (roughly a minute of phone video).</span>
+  </div>
+  <div class="compose-upload js-compose-progress" hidden>
+    <div class="compose-upload-bar"><span class="js-compose-progress-bar"></span></div>
+    <span class="compose-upload-text js-compose-progress-text" role="status" aria-live="polite"></span>
+  </div>
+</div>

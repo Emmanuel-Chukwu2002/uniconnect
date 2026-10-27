@@ -1,0 +1,10 @@
+{# Author, time, text (and "Quoting @x" if it is itself a quote) of a quoted post — used by _quoted_post.html. #}
+<div class="quote-embed-head">
+  <span class="quote-embed-avatar" style="{% if q.author.student_profile.profile_photo %}background-image:url({{ q.author.student_profile.profile_photo.url }}){% endif %}">{% if not q.author.student_profile.profile_photo %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+  <span class="quote-embed-name">{{ q.author.get_full_name|default:q.author.username }}</span>
+  <span class="quote-embed-meta">@{{ q.author.username }} &middot; {{ q.created_at|timesince }} ago</span>
+</div>
+{% if q.content %}<div class="quote-embed-text">{{ q.content|linebreaksbr }}</div>{% endif %}
+{% if q.is_quote %}
+  <div class="quote-embed-nested"><i class="bi bi-quote"></i> {% if q.quote_of %}Quoting @{{ q.quote_of.author.username }}{% else %}Quoting a post that's no longer available{% endif %}</div>
+{% endif %}

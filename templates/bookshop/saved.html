@@ -1,0 +1,15 @@
+{% extends 'bookshop/base.html' %}
+{% block bs_title %}Saved books{% endblock %}
+{% block bs_content %}
+{% if books %}
+  <div class="bs-results-head"><p><strong>{{ books|length }}</strong> saved book{{ books|length|pluralize }}</p></div>
+  <div class="bs-grid js-bs-saved-grid">{% for b in books %}{% include 'bookshop/_card.html' %}{% endfor %}</div>
+{% else %}
+  <div class="bs-empty">
+    <div class="bs-empty-art"><i class="bi bi-heart"></i></div>
+    <h3>No saved books yet</h3>
+    <p>Tap the <i class="bi bi-heart"></i> on any book to keep it here for later.</p>
+    <a href="{% url 'bookshop_browse' %}" class="bs-btn bs-btn-primary">Browse books</a>
+  </div>
+{% endif %}
+{% endblock %}

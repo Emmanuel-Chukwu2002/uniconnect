@@ -1,0 +1,11 @@
+{% comment %}A book cover: the seller's photo, or a made-up cover in one of 8 palettes. b = Book.{% endcomment %}
+{% if b.cover %}
+  <img src="{{ b.cover.url }}" alt="Cover of {{ b.title }}" class="bs-cover-img" loading="lazy">
+{% else %}
+  <div class="bs-cover-gen bs-pal-{{ b.cover_palette }}" role="img" aria-label="Cover of {{ b.title }}">
+    <span class="bs-cover-gen-icon"><i class="bi {{ b.category_icon }}"></i></span>
+    <span class="bs-cover-gen-title">{{ b.title }}</span>
+    <span class="bs-cover-gen-rule"></span>
+    <span class="bs-cover-gen-author">{{ b.author }}</span>
+  </div>
+{% endif %}

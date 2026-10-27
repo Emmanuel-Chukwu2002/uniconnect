@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Invalid link — UniConnect{% endblock %}
+
+{% block body %}
+<div class="portal">
+  <div class="portal-left">
+    <div class="crest">U</div>
+    <div>
+      <h1>That link isn't valid</h1>
+      <p>It may have already been used, or copied incorrectly.</p>
+    </div>
+  </div>
+  <div class="portal-right">
+    <div class="portal-card" style="text-align:center;">
+      <h2>Verification link not found</h2>
+      <div class="lede">If you've already verified your account, just sign in below. Otherwise, try registering again.</div>
+      <a href="{% url 'login' %}" class="btn btn-primary btn-gold d-block">Go to sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Official Timetable{% endblock %}
+{% block content %}
+{% comment %}
+  The department's official class timetable (adminpanel/views.py timetable, courses/official.py).
+  Upload a CSV or Excel sheet; every student taking each course gets the classes on their own
+  timetable. One week's class can be cancelled or moved for everyone, and students are told.
+{% endcomment %}
+<div class="ad-head"><div><h1>Official Timetable</h1><p>Upload your department's class timetable once. Every student taking those courses gets the classes on their UniConnect timetable, with reminders, and anyone who adds a course later gets them too.</p></div></div>
+
+{% if universities %}
+<section class="ad-panel"><form method="get" class="ad-panel-body ad-toolbar">
+  <label class="ad-tt-pick">University
+    <select class="ad-select" name="university" onchange="this.form.submit()"><option value="">Choose a university</option>{% for u in universities %}<option value="{{ u.pk }}"{% if uni and uni.pk == u.pk %} selected{% endif %}>{{ u.name }}</option>{% endfor %}</select>
+  </label>
+  <noscript><button class="ad-btn sm" type="submit">Show</button></noscript>
+</form></section>
+{% endif %}
+
+{% if uni %}
+<section class="ad-panel" id="upload"><div class="ad-panel-head"><h2>Upload a timetable · {{ uni.short_name }}</h2><a class="ad-btn sm" href="{% url 'staff_timetable_template' %}" data-no-soft><i class="bi bi-download"></i> Download template</a></div>
+  <form method="post" enctype="multipart/form-data" class="ad-panel-body ad-form">{% csrf_token %}
+    {% if universities %}<input type="hidden" name="university" value="{{ uni.pk }}">{% endif %}
+    <p class="ad-tt-help">One class per row, in a CSV file or an Excel (.xlsx) sheet. The first row names the columns:</p>
+    <div class="ad-table-wrap"><table class="ad-table ad-tt-sample"><thead><tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr></thead><tbody>
+      {% for r in template_rows %}<tr>{% for v in r %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody></table></div>
+    <p class="ad-tt-help">Only <b>course_code</b>, <b>day</b>, <b>start</b> and <b>end</b> are required. Type is Lecture, Tutorial, Practical or Other (Lecture if empty). Times can be 08:00, 14:00 or 2:00 PM. A course that isn't on UniConnect yet is created from its course_title.</p>
+    <div class="ad-form-row">
+      <label>Timetable file<input class="ad-input ad-file" type="file" name="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label>
+      <label>Department <small>for courses created from this file</small><select class="ad-select" name="department"><option value="">Not set</option>{% for d in departments %}<option value="{{ d.pk }}">{{ d.name }} ({{ d.faculty.name }})</option>{% endfor %}</select></label>
+    </div>
+    <label class="ad-check"><input type="checkbox" name="replace" value="1" checked> Replace: a course's official classes that are not in this file are removed</label>
+    <div><button class="ad-btn primary" type="submit"><i class="bi bi-upload"></i> Upload timetable</button></div>
+  </form></section>
+
+<section class="ad-panel"><div class="ad-panel-head"><h2>Official classes <small class="mut">{{ classes|length }} class{{ classes|length|pluralize:"es" }} · {{ course_count }} course{{ course_count|pluralize }}</small></h2>
+  <form method="get" class="ad-inline">{% if universities %}<input type="hidden" name="university" value="{{ uni.pk }}">{% endif %}<input class="ad-input" type="search" name="q" value="{{ q }}" placeholder="Search course or venue"></form></div>
+  <div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Course</th><th>Type</th><th>Day &amp; time</th><th>Venue</th><th>Students</th><th>Coming changes</th><th></th></tr></thead><tbody>
+  {% for o in classes %}
+    <tr>
+      <td><b>{{ o.course.code }}</b><br><small class="mut">{{ o.course.title }}</small></td>
+      <td class="mut">{{ o.get_kind_display }}</td>
+      <td>{{ o.get_day_display }}<br><small class="mut">{{ o.start|time:"g:i A" }} – {{ o.end|time:"g:i A" }}</small></td>
+      <td class="mut">{{ o.venue|default:"—" }}</td>
+      <td>{{ o.students }}</td>
+      <td>{% for c in o.coming_changes %}
+          <form method="post" action="{% url 'staff_timetable_action' o.pk %}" class="ad-tt-change">{% csrf_token %}<input type="hidden" name="date" value="{{ c.date|date:'Y-m-d' }}">
+            {% if c.status == 'cancelled' %}<span class="pill red">Cancelled {{ c.date|date:"D j M" }}</span>{% else %}<span class="pill amber">{{ c.date|date:"D j M" }} → {{ c.new_date|date:"D j M" }} {{ c.new_start|time:"g:i A" }}</span>{% endif %}
+            <button class="ad-btn sm" name="action" value="undo" title="Back to normal for every student">Undo</button></form>
+        {% empty %}<span class="mut">—</span>{% endfor %}</td>
+      <td class="ad-tt-actions">
+        <details class="ad-tt-menu"><summary class="ad-btn sm"><i class="bi bi-calendar-x"></i> Change a week</summary>
+          <form method="post" action="{% url 'staff_timetable_action' o.pk %}" class="ad-form ad-tt-form">{% csrf_token %}
+            <label>Which {{ o.get_day_display }}<select class="ad-select" name="date">{% for d in o.next_dates %}<option value="{{ d|date:'Y-m-d' }}">{{ d|date:"D j M" }}</option>{% endfor %}</select></label>
+            <label>Note to students <small>optional</small><input class="ad-input" name="note" maxlength="140" placeholder="e.g. Lecturer away at a conference"></label>
+            <button class="ad-btn danger" name="action" value="cancel"><i class="bi bi-x-circle"></i> Cancel that week</button>
+            <p class="ad-tt-or">or move it to</p>
+            <div class="ad-form-row">
+              <label>Date<input class="ad-input" type="date" name="new_date"></label>
+              <label>Starts<input class="ad-input" type="time" name="new_start" value="{{ o.start|time:'H:i' }}"></label>
+              <label>Ends<input class="ad-input" type="time" name="new_end" value="{{ o.end|time:'H:i' }}"></label>
+            </div>
+            <label>Venue<input class="ad-input" name="new_venue" maxlength="80" value="{{ o.venue }}"></label>
+            <button class="ad-btn primary" name="action" value="move"><i class="bi bi-arrow-right-circle"></i> Move that week</button>
+          </form>
+        </details>
+        <form method="post" action="{% url 'staff_timetable_action' o.pk %}" class="ad-inline">{% csrf_token %}
+          <button class="ad-btn sm danger" name="action" value="delete" title="Remove from the official timetable and from students' timetables"><i class="bi bi-trash3"></i></button></form>
+      </td>
+    </tr>
+  {% empty %}<tr><td colspan="7" class="ad-empty">{% if q %}No official classes match "{{ q }}".{% else %}No official timetable yet. Upload one above.{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div></section>
+{% else %}
+<section class="ad-panel"><div class="ad-panel-body ad-empty">Choose a university to see or upload its official timetable.</div></section>
+{% endif %}
+{% endblock %}

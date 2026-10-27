@@ -1,0 +1,167 @@
+{% extends 'feed/base_app.html' %}
+{% block title %}{% if editing %}Edit group{% else %}New group{% endif %} — UniConnect{% endblock %}
+
+{% block feed_content %}
+{% comment %}Start / edit a group (studygroups/views.py create, edit).{% endcomment %}
+<div class="st-top">
+  <a href="{% if editing %}{{ group.get_absolute_url }}?tab=about{% else %}{% url 'groups' %}{% endif %}" class="st-back" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+  <h1>{% if editing %}Edit group{% else %}New group{% endif %}</h1>
+</div>
+
+<form method="post" class="sr-card op-form sg-form" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<p class="op-form-error"><i class="bi bi-exclamation-circle"></i> {{ form.non_field_errors.0 }}</p>{% endif %}
+
+  <fieldset class="sg-fieldset">
+    <legend>What kind of group?</legend>
+    <div class="sg-pick is-types">
+      {% for value, label, icon, colour, help in types %}
+        <label class="sg-pick-option">
+          <input type="radio" name="group_type" value="{{ value }}" {% if form.group_type.value == value %}checked{% endif %} class="js-sg-type">
+          <span class="sg-pick-card"><span class="sg-tile is-sm is-{{ colour }}"><i class="bi {{ icon }}"></i></span><span><strong>{{ label }}</strong><small>{{ help }}</small></span></span>
+        </label>
+      {% endfor %}
+    </div>
+    {% for e in form.group_type.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+  </fieldset>
+
+  <div class="st-grid">
+    <label class="st-field is-wide">
+      <span>Group name <em class="op-req">*</em></span>
+      {{ form.name }}
+      {% for e in form.name.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+    </label>
+    <div class="st-field is-wide sg-photo-field">
+      <span>Group photo</span>
+      <div class="sg-photo-row">
+        <span class="sg-photo-preview js-sg-photo-preview" style="background-image:url('{% if form.instance.pk %}{{ form.instance.icon_url }}{% endif %}')">{% if not form.instance.pk %}<i class="bi bi-image"></i>{% endif %}</span>
+        <label class="st-btn-ghost sg-photo-pick"><i class="bi bi-upload"></i> {% if form.instance.photo %}Change photo{% else %}Choose a photo{% endif %}<input type="file" name="photo" accept="image/*" class="js-sg-photo" hidden></label>
+        {% if form.instance.photo %}<label class="op-check"><input type="checkbox" name="photo-clear"> Remove photo</label>{% endif %}
+      </div>
+      {% for e in form.photo.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+      <small class="st-hint">Optional — the group's round picture. Groups without one get a photo for their subject.</small>
+    </div>
+    <div class="st-field is-wide sg-photo-field">
+      <span>Cover photo</span>
+      <div class="sg-photo-row">
+        <span class="sg-cover-preview js-sg-cover-preview" style="background-image:url('{% if form.instance.pk %}{{ form.instance.cover_url }}{% endif %}')">{% if not form.instance.pk %}<i class="bi bi-image"></i>{% endif %}</span>
+        <label class="st-btn-ghost sg-photo-pick"><i class="bi bi-upload"></i> {% if form.instance.cover %}Change cover{% else %}Choose a cover{% endif %}<input type="file" name="cover" accept="image/*" class="js-sg-cover" hidden></label>
+        {% if form.instance.cover %}<label class="op-check"><input type="checkbox" name="cover-clear"> Remove cover</label>{% endif %}
+      </div>
+      {% for e in form.cover.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+      <small class="st-hint">Optional — the wide background photo at the top of the group's page.</small>
+    </div>
+    <label class="st-field js-sg-academic">
+      <span>Course code</span>
+      {{ form.course_code }}
+      {% for e in form.course_code.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+      <small class="st-hint">Optional. Shown on the group's card.</small>
+    </label>
+    <label class="st-field">
+      <span>Level</span>
+      {{ form.level }}
+      <small class="st-hint">Optional.</small>
+    </label>
+    <label class="st-field is-wide">
+      <span>Description</span>
+      {{ form.description }}
+      {% for e in form.description.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+    </label>
+  </div>
+
+  <fieldset class="sg-fieldset">
+    <legend>Who can join?</legend>
+    <div class="sg-pick is-privacy">
+      {% for value, label in form.fields.privacy.choices %}
+        {% for key, info in privacy_info.items %}{% if key == value %}
+        <label class="sg-pick-option">
+          <input type="radio" name="privacy" value="{{ value }}" {% if form.privacy.value == value %}checked{% endif %}>
+          <span class="sg-pick-card"><i class="bi {{ info.0 }} sg-pick-ico"></i><span><strong>{{ label }}</strong><small>{{ info.1 }}</small></span></span>
+        </label>
+        {% endif %}{% endfor %}
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <label class="st-field">
+    <span>Rules <small>optional · one per line, shown in About</small></span>
+    {{ form.rules }}
+    {% for e in form.rules.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+  </label>
+
+  <fieldset class="sg-fieldset">
+    <legend>Sections</legend>
+    <p class="st-hint">Every group has Chat, Files, Members and About. A small group — a hostel room, a hangout — may not need Posts.</p>
+    <label class="op-check"><input type="checkbox" name="show_posts" value="on" class="js-sg-show-posts"{% if form.show_posts.value %} checked{% endif %}> <b>Posts</b> — longer discussions, assignment instructions, announcements and polls</label>
+  </fieldset>
+
+  <details class="sg-more"{% if form.mode.value or form.max_members.value or form.errors.max_members or form.errors.meeting_link %} open{% endif %}>
+    <summary><i class="bi bi-sliders"></i> Meetings and member limit <small>optional</small><i class="bi bi-chevron-down st-chev"></i></summary>
+    <div class="st-grid">
+      <label class="st-field">
+        <span>How you meet</span>
+        {{ form.mode }}
+      </label>
+      <label class="st-field">
+        <span>When</span>
+        {{ form.schedule }}
+      </label>
+      <label class="st-field">
+        <span>Where</span>
+        {{ form.place }}
+      </label>
+      <label class="st-field">
+        <span>Online meeting link</span>
+        {{ form.meeting_link }}
+        {% for e in form.meeting_link.errors %}<small class="st-error">{{ e }}</small>{% endfor %}
+      </label>
+      <label class="st-field">
+        <span>Member limit</span>
+        {{ form.max_members }}
+        {% if form.max_members.errors %}<small class="st-error">{{ form.max_members.errors.0 }}</small>{% else %}<small class="st-hint">Leave empty for no limit.</small>{% endif %}
+      </label>
+    </div>
+  </details>
+
+  {% if not editing %}<p class="op-note">You'll be the group's owner, and a group chat for it is created in Messages.</p>{% endif %}
+  <div class="st-actions">
+    <a href="{% if editing %}{{ group.get_absolute_url }}?tab=about{% else %}{% url 'groups' %}{% endif %}" class="st-btn-ghost">Cancel</a>
+    <button type="submit" class="st-btn">{% if editing %}Save changes{% else %}Create group{% endif %}</button>
+  </div>
+</form>
+
+{% if editing and is_owner %}
+  <section class="sr-card op-owner">
+    <header class="sr-head"><h2>Delete group</h2></header>
+    <details class="op-delete">
+      <summary class="st-btn-ghost is-danger"><i class="bi bi-trash3"></i> Delete this group</summary>
+      <form method="post" action="{% url 'group_delete' group.pk %}">{% csrf_token %}<p>Its posts and files are deleted. The group chat stays in Messages so nobody loses their messages.</p><button type="submit" class="st-btn is-danger">Yes, delete</button></form>
+    </details>
+  </section>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>document.addEventListener('change',function(e){if(!e.target.classList||!e.target.files||!e.target.files[0]){return;}var k=e.target.classList.contains('js-sg-photo')?'.js-sg-photo-preview':e.target.classList.contains('js-sg-cover')?'.js-sg-cover-preview':null;if(!k){return;}var p=document.querySelector(k);p.style.backgroundImage='url('+URL.createObjectURL(e.target.files[0])+')';p.innerHTML='';});</script>
+<script>
+  // Course code only matters for Academic groups.
+  UC.onPage(function (doc, signal) {
+    function sync() {
+      var on = document.querySelector('.js-sg-type:checked');
+      document.querySelectorAll('.js-sg-academic').forEach(function (el) { el.hidden = !(on && on.value === 'academic'); });
+    }
+    document.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('js-sg-type')) { sync(); } }, { signal: signal });
+    sync();
+  });
+  // A new hostel or social group starts without Posts (until you tick it yourself).
+  (function () {
+    var box = document.querySelector('.js-sg-show-posts'), touched = {% if editing %}true{% else %}false{% endif %};
+    if (!box) { return; }
+    box.addEventListener('change', function () { touched = true; });
+    document.querySelectorAll('input[name="group_type"]').forEach(function (r) {
+      r.addEventListener('change', function () { if (!touched) { box.checked = ['hostel', 'social'].indexOf(r.value) === -1; } });
+    });
+  })();
+</script>
+{% endblock %}

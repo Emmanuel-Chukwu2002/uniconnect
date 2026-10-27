@@ -1,0 +1,74 @@
+{% extends 'accounts/auth_split.html' %}
+{% block title %}Sign in — UniConnect{% endblock %}
+{% comment %}
+  Sign-in panel. One box takes an email address or a matric number —
+  accounts/views.py login_view sends anything with an @ to the email check
+  and anything else to the registration-number check. "Continue with
+  Google" only shows once GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are in
+  .env (accounts/google_auth.py).
+{% endcomment %}
+{% block welcome %}
+  {% comment %}Phones only (login.css "Welcome screen"): a full-screen welcome before the sign-in form.
+     Not shown after a failed sign-in or a message, or with ?signin=1.{% endcomment %}
+  {% if not messages and not email_form.errors and not matric_form.errors and not email_form.non_field_errors and not matric_form.non_field_errors and not request.GET.signin %}
+  <section class="lp-welcome" id="lpWelcome" aria-label="Welcome to UniConnect">
+    <div class="lp-w-top">
+      <i class="bi bi-mortarboard-fill lp-w-cap" aria-hidden="true"></i>
+      <h1 class="lp-w-name">Uni<b>Connect</b></h1>
+      <p class="lp-w-tagline">Your University. Your Community.</p>
+      <p class="lp-w-words">Connect <span aria-hidden="true">✦</span> Learn <span aria-hidden="true">✦</span> Grow</p>
+    </div>
+    <div class="lp-w-actions">
+      <a href="{% url 'register' %}" class="lp-w-start js-lp-welcome-go">Get Started</a>
+      <a href="?signin=1" class="lp-w-login js-lp-welcome-login">Log In</a>
+    </div>
+  </section>
+  {% endif %}
+{% endblock %}
+
+{% block panel %}
+    <div class="lp-topline">Don't have an account? <a href="{% url 'register' %}" data-lp-swap>Sign Up</a></div>
+
+    <div class="lp-card">
+      <a href="{% url 'login' %}" class="lp-card-brand" aria-label="UniConnect"><i class="bi bi-mortarboard-fill lp-cap"></i><span class="lp-name">Uni<b>Connect</b></span></a>
+      <h2>Welcome Back!</h2>
+      <p class="lp-sub">Sign in to your UniConnect account</p>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="lp-alert {% if message.tags == 'error' %}is-error{% endif %}" role="alert"><i class="bi {% if message.tags == 'error' %}bi-exclamation-circle-fill{% else %}bi-check-circle-fill{% endif %}"></i><span>{{ message }}</span></div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate class="lp-form">
+        {% csrf_token %}
+        {% if mode == 'matric' %}{% with errs=matric_form.matric_number.errors %}{% include 'accounts/_login_field.html' %}{% endwith %}
+        {% else %}{% with errs=email_form.email.errors %}{% include 'accounts/_login_field.html' %}{% endwith %}{% endif %}
+
+        <label class="visually-hidden" for="id_password">Password</label>
+        <div class="lp-input">
+          <i class="bi bi-lock lp-input-icon"></i>
+          <input type="password" name="password" id="id_password" class="form-control{% if email_form.password.errors or matric_form.password.errors %} is-invalid{% endif %}" placeholder="Password" autocomplete="current-password" required>
+        </div>
+        {% for e in email_form.password.errors %}<div class="lp-error">{{ e }}</div>{% endfor %}
+        {% for e in matric_form.password.errors %}<div class="lp-error">{{ e }}</div>{% endfor %}
+
+        <div class="lp-row">
+          <label class="lp-remember"><input type="checkbox" name="remember" value="1" class="js-lp-remember"{% if remember %} checked{% endif %}> Remember me</label>
+          <a href="{% url 'password_reset' %}" class="lp-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="lp-submit">Sign In</button>
+      </form>
+
+      {% if google_enabled %}
+        <div class="lp-or"><span>or</span></div>
+        <a href="{% url 'google_start' %}" class="lp-social js-lp-google"><i class="bi bi-google lp-google"></i>Continue with Google</a>
+      {% endif %}
+
+      <div class="lp-note">
+        <i class="bi bi-shield-check"></i>
+        <div><b>Verifying student accounts</b><span>We ensure a safe and authentic community for all students.</span></div>
+      </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,630 @@
+{% extends 'feed/base_app.html' %} {% block title %}Events — UniConnect{% endblock %} {% block feed_content %}
+<div class="profile-topbar">
+  <a href="{% url 'home' %}" class="profile-back-btn" aria-label="Back"
+    ><i class="bi bi-arrow-left"></i
+  ></a>
+  <div class="profile-topbar-info">
+    <div class="profile-topbar-name">Events</div>
+    <div class="profile-topbar-sub">{{ events_count }} upcoming</div>
+  </div>
+  {% if tab == 'events' %}
+  <button
+    type="button"
+    class="profile-topbar-icon js-toggle-events-search"
+    aria-label="Search events"
+    title="Search events"
+  >
+    <i class="bi bi-search"></i>
+  </button>
+  {% endif %}
+</div>
+
+<div class="profile-tabs">
+  <a
+    href="?tab=events"
+    class="profile-tab {% if tab == 'events' %}active{% endif %}"
+    >Events</a
+  >
+  <a
+    href="?tab=attendees"
+    class="profile-tab {% if tab == 'attendees' %}active{% endif %}"
+    >Attendees</a
+  >
+  <a
+    href="?tab=venues"
+    class="profile-tab {% if tab == 'venues' %}active{% endif %}"
+    >Venues</a
+  >
+  <a
+    href="?tab=analytics"
+    class="profile-tab {% if tab == 'analytics' %}active{% endif %}"
+    >Analytics</a
+  >
+</div>
+
+{% if tab == 'events' %}
+{% include 'recommendations/_row.html' with recs=recs hint='Upcoming events with room for you' %}
+
+<details class="events-form-card">
+  <summary><i class="bi bi-plus-circle"></i> Create event</summary>
+  <form
+    method="post"
+    action="{% url 'create_event' %}"
+    enctype="multipart/form-data"
+    class="events-form"
+  >
+    {% csrf_token %}
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ event_form.title.id_for_label }}">Event name</label>
+        {{ event_form.title }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ event_form.category.id_for_label }}">Category</label>
+        {{ event_form.category }}
+      </div>
+    </div>
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ event_form.date.id_for_label }}">Date</label>
+        {{ event_form.date }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ event_form.time.id_for_label }}">Time</label>
+        {{ event_form.time }}
+      </div>
+    </div>
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ event_form.location.id_for_label }}">Location</label>
+        {{ event_form.location }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ event_form.capacity.id_for_label }}"
+          >Max participants</label
+        >
+        {{ event_form.capacity }}
+      </div>
+    </div>
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ event_form.price.id_for_label }}">Entry fee (₦)</label>
+        {{ event_form.price }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ event_form.image.id_for_label }}">Event image</label>
+        {{ event_form.image }}
+        <small class="events-form-hint"
+          >For a crisp banner, use an image at least 800px wide.</small
+        >
+      </div>
+    </div>
+    <div class="events-form-field">
+      <label for="{{ event_form.description.id_for_label }}">Description</label>
+      {{ event_form.description }}
+    </div>
+    <button type="submit" class="btn-events-primary">
+      <i class="bi bi-plus-circle"></i> Create event
+    </button>
+  </form>
+</details>
+
+<div class="events-stats-row">
+  <div class="events-stat-card">
+    <div class="events-stat-label">Upcoming</div>
+    <div class="events-stat-value events-stat-accent">{{ events_count }}</div>
+  </div>
+  <div class="events-stat-card">
+    <div class="events-stat-label">This Week</div>
+    <div class="events-stat-value events-stat-success">
+      {{ this_week_count }}
+    </div>
+  </div>
+  <div class="events-stat-card">
+    <div class="events-stat-label">Categories</div>
+    <div class="events-stat-value events-stat-danger">
+      {{ categories_count }}
+    </div>
+  </div>
+</div>
+
+<div class="events-search-bar" id="eventsSearchBar">
+  <i class="bi bi-search"></i>
+  <input
+    type="text"
+    id="eventsSearchInput"
+    placeholder="Search events by name, location or description…"
+    autocomplete="off"
+  />
+  <button
+    type="button"
+    class="events-search-close"
+    id="eventsSearchClose"
+    aria-label="Close search"
+  >
+    <i class="bi bi-x"></i>
+  </button>
+</div>
+
+<div class="events-category-filters">
+  <a
+    href="?tab=events"
+    class="events-category-filter {% if selected_category == 'all' %}active{% endif %}"
+  >
+    <i class="bi bi-grid"></i> All
+  </a>
+  {% for pill in category_pills %}
+  <a
+    href="?tab=events&category={{ pill.code }}"
+    class="events-category-filter {% if selected_category == pill.code %}active{% endif %}"
+  >
+    <i class="bi {{ pill.icon }}"></i> {{ pill.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="events-grid ev-grid">
+  {% for event in filtered_events %}
+  <div
+    class="events-card js-event-card" style="--i:{{ forloop.counter0 }}"
+    data-event-id="{{ event.id }}"
+    data-event-url="{% url 'event_detail' event.id %}"
+    data-event-title="{{ event.title }}"
+    data-event-category-label="{{ event.get_category_display }}"
+    data-event-category-color="{{ event.category_color }}"
+    data-event-icon="{{ event.category_icon }}"
+    data-event-image="{% if event.image %}{{ event.image.url }}{% endif %}"
+    data-event-location="{{ event.location }}"
+    data-event-datetime="{{ event.date|date:'l, F j, Y' }}{% if event.time %} &middot; {{ event.time|time:'g:i A' }}{% endif %}"
+    data-event-organizer="{% if event.organizer %}{{ event.organizer.get_full_name|default:event.organizer.username }}{% endif %}"
+    data-event-description="{{ event.description }}"
+    data-event-price="{% if event.is_free %}Free{% else %}&#8358;{{ event.price }}{% endif %}"
+    data-event-attending="{{ event.attendees.count }} attending{% if event.spots_left is not None %} &middot; {{ event.spots_left }} spots left{% endif %}"
+  >
+    <div
+      class="events-card-banner events-card-banner-{{ event.category_color }}"
+      {% if event.image %}style="background-image:url('{{ event.image.url }}');background-size:cover;background-position:center;background-repeat:no-repeat;"
+      {% endif %}
+    >
+      {% if not event.image %}<i class="bi {{ event.category_icon }}"></i>{% endif %}
+      <span class="events-card-date-badge">
+        <span class="events-card-date-day">{{ event.date|date:"d" }}</span>
+        <span class="events-card-date-month">{{ event.date|date:"M" }}</span>
+      </span>
+      {% if event.organizer_id == request.user.id %}
+      <form
+        method="post"
+        action="{% url 'delete_event' event.id %}"
+        class="event-delete-form"
+        style="display: none"
+      >
+        {% csrf_token %}
+      </form>
+      <div class="events-card-menu dropdown">
+        <button
+          type="button"
+          class="events-card-menu-btn"
+          data-bs-toggle="dropdown"
+          aria-label="Event options"
+        >
+          <i class="bi bi-three-dots"></i>
+        </button>
+        <ul class="dropdown-menu post-card-dropdown">
+          <li>
+            <button
+              type="button"
+              class="dropdown-item js-open-edit-event-modal"
+              data-event-id="{{ event.id }}"
+              data-event-title="{{ event.title }}"
+              data-event-category="{{ event.category }}"
+              data-event-date="{{ event.date|date:'Y-m-d' }}"
+              data-event-time="{{ event.time|time:'H:i'|default:'' }}"
+              data-event-location="{{ event.location }}"
+              data-event-capacity="{{ event.capacity|default:'' }}"
+              data-event-price="{{ event.price }}"
+              data-event-description="{{ event.description }}"
+            >
+              <i class="bi bi-pencil"></i> Edit event
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              class="dropdown-item post-card-delete-btn js-confirm-delete-event"
+              data-event-id="{{ event.id }}"
+            >
+              <i class="bi bi-trash3"></i> Delete event
+            </button>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+    <div class="events-card-body">
+      <div class="events-card-top">
+        <h4 class="events-card-title">{{ event.title }}</h4>
+        <span
+          class="event-badge-{{ event.category_color }} events-card-category-pill"
+          >{{ event.get_category_display }}</span
+        >
+      </div>
+      <div class="events-card-meta">
+        <span><i class="bi bi-geo-alt"></i> {{ event.location }}</span>
+        <span
+          ><i class="bi bi-calendar3"></i> {{ event.date|date:"D, j M Y" }}{% if event.time %} &middot; {{ event.time|time:"g:i A" }}{% endif %}</span
+        >
+      </div>
+      <div class="events-card-footer">
+        <span class="events-card-price"
+          >{% if event.is_free %}Free{% else %}₦{{ event.price }}{% endif %}</span
+        >
+        <span class="events-card-spots">
+          {{ event.attendees.count }} attending{% if event.spots_left is not None %} &middot; {{ event.spots_left }} spots left{% endif %}
+        </span>
+      </div>
+      {# Details opens the event's page (description and everything else). #}
+      <div class="ev-actions">
+      <a href="{% url 'event_detail' event.id %}" class="mkt-details ev-details">Details</a>
+      {% if event.organizer_id == request.user.id %}
+      <div class="btn-events-attend is-organizer">
+        <i class="bi bi-star-fill"></i> Organizing
+      </div>
+      {% elif event.id in attending_event_ids %}
+      <form
+        method="post"
+        action="{% url 'toggle_attendance' %}"
+        class="events-card-attend-form"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="event_id" value="{{ event.id }}" />
+        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+        <button type="submit" class="btn-events-attend is-registered">
+          <i class="bi bi-check-circle-fill"></i> Registered
+        </button>
+      </form>
+      {% else %}
+      <button
+        type="button"
+        class="btn-events-attend js-open-register-modal"
+        data-event-id="{{ event.id }}"
+        data-event-title="{{ event.title }}"
+      >
+        <i class="bi bi-person-plus"></i> Register
+      </button>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="center-card text-center" style="padding: 48px 24px">
+    <i
+      class="bi bi-calendar-event"
+      style="
+        font-size: 40px;
+        color: var(--accent);
+        margin-bottom: 16px;
+        display: block;
+      "
+    ></i>
+    {% if selected_category == 'all' %}
+    <h4>No upcoming events</h4>
+    <p>Events your organizers create will show up here.</p>
+    {% else %}
+    <h4>No upcoming events in this category</h4>
+    <p>
+      Try a different category, or <a href="?tab=events">view all events</a>.
+    </p>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <div
+    class="center-card text-center"
+    id="eventsSearchNoResults"
+    style="padding: 48px 24px; display: none"
+  >
+    <i
+      class="bi bi-search"
+      style="
+        font-size: 40px;
+        color: var(--accent);
+        margin-bottom: 16px;
+        display: block;
+      "
+    ></i>
+    <h4>No events match your search</h4>
+    <p>Try a different name, location or keyword.</p>
+  </div>
+</div>
+
+{% elif tab == 'attendees' %}
+
+<div class="events-form-card">
+  <h4><i class="bi bi-person-plus"></i> Register for an event</h4>
+  <form
+    method="post"
+    action="{% url 'toggle_attendance' %}"
+    class="events-form"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="attendee-event-select">Event</label>
+        <select
+          name="event_id"
+          id="attendee-event-select"
+          class="events-select"
+          required
+        >
+          <option value="" disabled selected>Choose an event</option>
+          {% for event in all_events %}
+          <option value="{{ event.id }}">
+            {{ event.title }} — {{ event.date|date:"M j" }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="events-form-field">
+        <label for="attendee-type-select">Role</label>
+        <select
+          name="attendee_type"
+          id="attendee-type-select"
+          class="events-select"
+        >
+          <option value="attendee">Attendee</option>
+          <option value="speaker">Speaker</option>
+          <option value="organizer">Organizer</option>
+          <option value="vip">VIP</option>
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn-events-primary">
+      <i class="bi bi-person-plus"></i> Register
+    </button>
+  </form>
+</div>
+
+<div class="events-list-container">
+  {% for a in attendees %}
+  <div class="events-list-item">
+    <div
+      class="events-list-item-avatar"
+      style="{% if a.user.student_profile.profile_photo %}background-image:url({{ a.user.student_profile.profile_photo.url }}){% endif %}"
+    >
+      {% if not a.user.student_profile.profile_photo %}<i
+        class="bi bi-person-fill"
+      ></i
+      >{% endif %}
+    </div>
+    <div class="events-list-item-info">
+      <div class="events-list-item-title">
+        {{ a.user.get_full_name|default:a.user.username }}
+      </div>
+      <div class="events-list-item-details">
+        <span>{{ a.event.title }}</span>
+        <span class="event-badge-{{ a.type_color }} events-card-category-pill"
+          >{{ a.get_attendee_type_display }}</span
+        >
+      </div>
+    </div>
+    {% if a.user_id == user.id or a.event.organizer_id == user.id %}
+    <form
+      method="post"
+      action="{% url 'remove_attendee' a.id %}"
+      class="events-list-item-actions"
+    >
+      {% csrf_token %}
+      <button type="submit" title="Remove"><i class="bi bi-x-lg"></i></button>
+    </form>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="center-card text-center" style="padding: 48px 24px">
+    <i
+      class="bi bi-people"
+      style="
+        font-size: 40px;
+        color: var(--accent);
+        margin-bottom: 16px;
+        display: block;
+      "
+    ></i>
+    <h4>No attendees yet</h4>
+    <p>Register for an event above and you'll show up here.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif tab == 'venues' %}
+
+<details class="events-form-card">
+  <summary><i class="bi bi-plus-circle"></i> Add venue</summary>
+  <form method="post" action="{% url 'create_venue' %}" class="events-form">
+    {% csrf_token %}
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ venue_form.name.id_for_label }}">Venue name</label>
+        {{ venue_form.name }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ venue_form.venue_type.id_for_label }}">Type</label>
+        {{ venue_form.venue_type }}
+      </div>
+    </div>
+    <div class="events-form-row">
+      <div class="events-form-field">
+        <label for="{{ venue_form.address.id_for_label }}">Address</label>
+        {{ venue_form.address }}
+      </div>
+      <div class="events-form-field">
+        <label for="{{ venue_form.capacity.id_for_label }}">Capacity</label>
+        {{ venue_form.capacity }}
+      </div>
+    </div>
+    <button type="submit" class="btn-events-primary">
+      <i class="bi bi-plus-circle"></i> Add venue
+    </button>
+  </form>
+</details>
+
+<div class="events-list-container">
+  {% for venue in venues %}
+  <div class="events-list-item">
+    <div class="events-list-item-info">
+      <div class="events-list-item-title">{{ venue.name }}</div>
+      <div class="events-list-item-details">
+        <span><i class="bi bi-geo-alt"></i> {{ venue.address }}</span>
+        <span class="event-badge-primary events-card-category-pill"
+          >{{ venue.get_venue_type_display }}</span
+        >
+        {% if venue.capacity %}<span>Capacity: {{ venue.capacity }}</span>{% endif %}
+      </div>
+    </div>
+    {% if venue.created_by_id == request.user.id %}
+    <form
+      method="post"
+      action="{% url 'delete_venue' venue.id %}"
+      class="venue-delete-form"
+      style="display: none"
+    >
+      {% csrf_token %}
+    </form>
+    <div class="events-list-item-actions">
+      <button
+        type="button"
+        class="js-confirm-delete-venue"
+        data-venue-id="{{ venue.id }}"
+        title="Delete"
+      >
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="center-card text-center" style="padding: 48px 24px">
+    <i
+      class="bi bi-geo-alt"
+      style="
+        font-size: 40px;
+        color: var(--accent);
+        margin-bottom: 16px;
+        display: block;
+      "
+    ></i>
+    <h4>No venues added</h4>
+    <p>Add a venue above to start building your directory.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif tab == 'analytics' %} {{ category_chart_data|json_script:"categoryChartData" }} {{ registrations_chart_data|json_script:"registrationsChartData" }}
+
+<div class="events-chart-card">
+  <h4><i class="bi bi-pie-chart"></i> Events by Category</h4>
+  <div class="events-chart-container"><canvas id="categoryChart"></canvas></div>
+</div>
+
+<div class="events-chart-card">
+  <h4><i class="bi bi-bar-chart"></i> Registrations per Event</h4>
+  <div class="events-chart-container">
+    {% if registrations_chart_data.labels %}
+    <canvas id="registrationsChart"></canvas>
+    {% else %}
+    <p class="events-chart-empty">
+      No registrations yet — once people register for events, this chart fills
+      in.
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% endif %} {% endblock %} {% block extra_js %} {% if tab == 'analytics' %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    function colors() {
+      var styles = getComputedStyle(document.body);
+      return {
+        accent: styles.getPropertyValue("--accent").trim(),
+        danger: styles.getPropertyValue("--danger").trim(),
+        success: styles.getPropertyValue("--success").trim(),
+        warning: styles.getPropertyValue("--warning").trim(),
+        text: styles.getPropertyValue("--text-muted").trim(),
+        border: styles.getPropertyValue("--border").trim(),
+      };
+    }
+    var c = colors();
+    var palette = [
+      c.accent,
+      c.success,
+      c.danger,
+      c.warning,
+      "#9c6ade",
+      "#36b3c2",
+      "#e07a5f",
+      "#5e60ce",
+    ];
+
+    var categoryData = JSON.parse(
+      document.getElementById("categoryChartData").textContent,
+    );
+    var categoryEl = document.getElementById("categoryChart");
+    if (categoryEl && categoryData.labels.length) {
+      new Chart(categoryEl, {
+        type: "doughnut",
+        data: {
+          labels: categoryData.labels,
+          datasets: [
+            {
+              data: categoryData.data,
+              backgroundColor: palette,
+              borderWidth: 0,
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: c.text, padding: 12 },
+            },
+          },
+        },
+      });
+    }
+
+    var regEl = document.getElementById("registrationsChart");
+    if (regEl) {
+      var regData = JSON.parse(
+        document.getElementById("registrationsChartData").textContent,
+      );
+      new Chart(regEl, {
+        type: "bar",
+        data: {
+          labels: regData.labels,
+          datasets: [
+            {
+              label: "Registrations",
+              data: regData.data,
+              backgroundColor: c.accent,
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: c.text }, grid: { color: c.border } },
+            y: {
+              beginAtZero: true,
+              ticks: { color: c.text, precision: 0 },
+              grid: { color: c.border },
+            },
+          },
+        },
+      });
+    }
+  })();
+</script>
+{% endif %} {% endblock %}
