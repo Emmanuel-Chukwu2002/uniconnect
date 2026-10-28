@@ -113,7 +113,7 @@
       data = new FormData(form);
       if (e.submitter && e.submitter.name) { data.append(e.submitter.name, e.submitter.value); }
     }
-    if (go(form.action || location.href, { method: 'POST', body: data })) { e.preventDefault(); }
+    if (go(form.getAttribute('action') || location.href, { method: 'POST', body: data })) { e.preventDefault(); }
   });
 })();
 
