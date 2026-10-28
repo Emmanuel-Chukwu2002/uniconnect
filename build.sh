@@ -4,6 +4,7 @@ set -o errexit
 pip install -r requirements.txt
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
+python manage.py seed_universities
 # Accounts listed in SUPER_ADMINS (Render > Environment, e.g. "ada,ben") become Super Admins.
 # Does nothing when it's empty, and never creates accounts or changes passwords.
 python manage.py make_admin --from-env
