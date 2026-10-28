@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'formtools',
     'channels',
+    'anymail',
     'accounts',
     'feed',
     'chat',
@@ -298,7 +299,18 @@ EMAIL_PORT = int(_os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_SSL = _os.environ.get('EMAIL_USE_SSL', '1' if EMAIL_PORT == 465 else '') == '1'
 EMAIL_USE_TLS = not EMAIL_USE_SSL and _os.environ.get('EMAIL_USE_TLS', '1') == '1'
 EMAIL_TIMEOUT = 20
-if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+# if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+#     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#     DEFAULT_FROM_EMAIL = _os.environ.get('DEFAULT_FROM_EMAIL', f'UniConnect <{EMAIL_HOST_USER}>')
+# else:
+#     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#     DEFAULT_FROM_EMAIL = 'UniConnect <no-reply@uniconnect.app>'
+BREVO_API_KEY = _os.environ.get('BREVO_API_KEY', '')
+if BREVO_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+    ANYMAIL = {'BREVO_API_KEY': BREVO_API_KEY}
+    DEFAULT_FROM_EMAIL = _os.environ.get('DEFAULT_FROM_EMAIL', 'UniConnect <chukwunnamdiemmanuel81@gmail.com>')
+elif EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     DEFAULT_FROM_EMAIL = _os.environ.get('DEFAULT_FROM_EMAIL', f'UniConnect <{EMAIL_HOST_USER}>')
 else:
